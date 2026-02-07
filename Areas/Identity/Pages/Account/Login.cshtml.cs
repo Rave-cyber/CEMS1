@@ -20,11 +20,13 @@ namespace CEMS.Areas.Identity.Pages.Account
     public class LoginModel : PageModel
     {
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -115,6 +117,29 @@ namespace CEMS.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+
+                    // If a returnUrl was explicitly provided (and is local) keep it.
+                    var isDefaultReturn = string.IsNullOrEmpty(returnUrl) || returnUrl == Url.Content("~/") || returnUrl == "/";
+
+                    if (!isDefaultReturn)
+                    {
+                        return LocalRedirect(returnUrl);
+                    }
+
+                    // Otherwise redirect to role-specific dashboard
+                    var user = await _userManager.FindByEmailAsync(Input.Email);
+                    var roles = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
+
+                    if (roles.Contains("CEO"))
+                        return RedirectToAction("Dashboard", "CEO");
+                    if (roles.Contains("Manager"))
+                        return RedirectToAction("Dashboard", "Manager");
+                    if (roles.Contains("Driver"))
+                        return RedirectToAction("Dashboard", "Driver");
+                    if (roles.Contains("Finance"))
+                        return RedirectToAction("Dashboard", "Finance");
+
+                    // Fallback to home index
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
