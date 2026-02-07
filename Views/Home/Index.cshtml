@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to CEMS</h1>
+    <p>Expense Management System</p>
+
+    @if (ViewBag.IsAuthenticated == true)
+    {
+        <div class="mt-5">
+            <div class="alert alert-info">
+                <h5>👋 Welcome back, @User.Identity.Name!</h5>
+                <p>You are logged in as: <span class="badge bg-primary">@ViewBag.UserRole</span></p>
+            </div>
+
+            <a href="/Home/GoToDashboard" class="btn btn-lg btn-success mt-3">
+                🚀 Go to My Dashboard
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="mt-5">
+            <a href="/Identity/Account/Login" class="btn btn-primary btn-lg me-3">
+                🔐 Login
+            </a>
+            <a href="/Identity/Account/Register" class="btn btn-outline-primary btn-lg">
+                📝 Register
+            </a>
+        </div>
+    }
+</div>
