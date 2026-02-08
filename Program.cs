@@ -33,16 +33,17 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-// ✅ ADD THIS: Create test user on startup
+// ✅ APPLY MIGRATIONS ON STARTUP (replaces EnsureCreated)
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var services = scope.ServiceProvider;
 
-        // Ensure database is created
+        // Apply any pending EF Core migrations. This ensures the database schema
+        // is up-to-date with the model (creates tables like Expenses when missing).
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
 
         // Get UserManager and RoleManager
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
@@ -142,7 +143,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error during seeding: {ex.Message}");
+        Console.WriteLine($"Error during seeding/migration: {ex.Message}");
         Console.WriteLine($"Stack trace: {ex.StackTrace}");
     }
 }

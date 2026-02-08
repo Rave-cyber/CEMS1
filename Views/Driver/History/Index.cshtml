@@ -1,0 +1,61 @@
+@{
+    ViewData["Title"] = "My Expenses Status";
+    Layout = "~/Views/Shared/_DriverLayout.cshtml";
+}
+
+<h2 class="mb-3">My Expenses</h2>
+<form class="row g-3 mb-3" method="get" action="@Context.Request.Path">
+    <div class="col-md-3">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start" class="form-control" value="@Context.Request.Query["start"]" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end" class="form-control" value="@Context.Request.Query["end"]" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+            <option value="">All</option>
+            <option value="Pending" selected="@(Context.Request.Query["status"]=="Pending")">Pending</option>
+            <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
+            <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary" type="submit">Filter</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Description</th>
+            <th>Receipt</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach(var e in ViewBag.Items as List<CEMS.Models.Expense> ?? new List<CEMS.Models.Expense>()){
+        <tr>
+            <td>@e.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
+            <td>@e.Category</td>
+            <td>₱@e.Amount</td>
+            <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Status</span></td>
+            <td>@e.Description</td>
+            <td>
+                @if(e.ReceiptData != null && e.ReceiptData.Length>0){
+                    <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt","Driver", new { id = e.Id })">View</a>
+                } else if(!string.IsNullOrEmpty(e.ReceiptPath)){
+                    <a class="btn btn-sm btn-outline-primary" target="_blank" href="@e.ReceiptPath">View</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

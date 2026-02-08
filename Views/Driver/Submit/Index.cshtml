@@ -1,0 +1,43 @@
+@model CEMS.Models.Expense
+@{
+    ViewData["Title"] = "Submit Expense";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <h2>Submit New Expense</h2>
+
+    <form asp-action="Submit" asp-controller="Driver" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select asp-for="Category" class="form-select">
+                <option>Fuel</option>
+                <option>Toll</option>
+                <option>Maintenance</option>
+                <option>Meal</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Amount</label>
+            <input asp-for="Amount" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input asp-for="Date" type="date" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Receipt</label>
+            <input type="file" name="receipt" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Expense</button>
+    </form>
+</div>

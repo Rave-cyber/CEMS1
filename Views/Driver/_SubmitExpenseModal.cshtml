@@ -1,0 +1,84 @@
+@model CEMS.Models.Expense
+<div class="modal fade" id="submitExpenseModal" tabindex="-1" aria-labelledby="submitExpenseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="submitExpenseModalLabel">Submit New Expense</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="submitExpenseForm" asp-action="Submit" asp-controller="Driver" method="post" enctype="multipart/form-data">
+          @Html.AntiForgeryToken()
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select asp-for="Category" class="form-select">
+                <option>Fuel</option>
+                <option>Toll</option>
+                <option>Maintenance</option>
+                <option>Meal</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Amount</label>
+            <input asp-for="Amount" class="form-control" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input asp-for="Date" type="date" class="form-control" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Receipt</label>
+            <input type="file" name="receipt" class="form-control" />
+          </div>
+        </form>
+        <div id="submitExpenseFeedback" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="submitExpenseBtn" class="btn btn-primary">Submit Expense</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var submitBtn = document.getElementById('submitExpenseBtn');
+  submitBtn?.addEventListener('click', async function () {
+    var form = document.getElementById('submitExpenseForm');
+    var feedback = document.getElementById('submitExpenseFeedback');
+    var formData = new FormData(form);
+
+    feedback.innerHTML = '';
+
+    try {
+      var response = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      });
+
+      var json = await response.json();
+      if (json.success) {
+        feedback.innerHTML = '<div class="alert alert-success">' + json.message + '</div>';
+        setTimeout(function() { location.reload(); }, 900);
+      } else {
+        var msg = json.message || (json.errors ? json.errors.join('<br/>') : 'Failed to submit.');
+        feedback.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+      }
+    } catch (err) {
+      feedback.innerHTML = '<div class="alert alert-danger">' + err.message + '</div>';
+    }
+  });
+});
+</script>

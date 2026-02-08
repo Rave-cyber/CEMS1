@@ -161,29 +161,40 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Juan Dela Cruz</td>
-                            <td><span class="badge bg-primary">Fuel</span></td>
-                            <td>₱1,200</td>
-                            <td>Today</td>
-                            <td><span class="badge bg-warning">Within Budget</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-success">✓ Approve</button>
-                                <button class="btn btn-sm btn-danger">✗ Reject</button>
-                                <button class="btn btn-sm btn-info">👁 View</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Maria Santos</td>
-                            <td><span class="badge bg-danger">Maintenance</span></td>
-                            <td>₱3,200 <small class="text-danger">(Over Budget)</small></td>
-                            <td>Yesterday</td>
-                            <td><span class="badge bg-danger">Over Budget</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-warning">⚠ Flag to CEO</button>
-                                <button class="btn btn-sm btn-danger">✗ Reject</button>
-                            </td>
-                        </tr>
+                        @{
+                            var pending = ViewBag.Pending as List<CEMS.Models.PendingExpenseDto> ?? new List<CEMS.Models.PendingExpenseDto>();
+                        }
+                        @foreach(var item in pending)
+                        {
+                            var e = item.Expense;
+                            <tr>
+                                <td>@(item.UserName ?? "Unknown")</td>
+                                <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-primary" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Category</span></td>
+                                <td>₱@e.Amount</td>
+                                <td>@e.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Status</span></td>
+                                <td>
+                                    <form method="post" asp-action="Approve" asp-controller="Manager" style="display:inline-block;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@e.Id" />
+                                        <button class="btn btn-sm btn-success">✓ Approve</button>
+                                    </form>
+                                    <form method="post" asp-action="Reject" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@e.Id" />
+                                        <button class="btn btn-sm btn-danger">✗ Reject</button>
+                                    </form>
+                                    @if(e.ReceiptData != null && e.ReceiptData.Length > 0)
+                                    {
+                                        <a class="btn btn-sm btn-info" href="@Url.Action("Receipt","Driver", new { id = e.Id })" target="_blank">👁 View</a>
+                                    }
+                                    else if (!string.IsNullOrEmpty(e.ReceiptPath))
+                                    {
+                                        <a class="btn btn-sm btn-info" href="@e.ReceiptPath" target="_blank">👁 View</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>

@@ -1,6 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Driver Dashboard";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_DriverLayout.cshtml";
 }
 
 <div class="container-fluid px-4">
@@ -92,7 +92,7 @@
             <h4 class="mb-3">⚡ Driver Actions</h4>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <a href="@Url.Action("Submit", "Driver")" class="card text-decoration-none shadow-sm hover-shadow">
+                    <button type="button" class="card text-start text-decoration-none shadow-sm hover-shadow btn p-0 border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#submitExpenseModal">
                         <div class="card-body text-center py-4">
                             <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
                                 <i class="bi bi-plus-circle text-primary fs-2"></i>
@@ -100,7 +100,7 @@
                             <h5 class="card-title">Submit New Expense</h5>
                             <p class="card-text text-muted small">Fuel, Toll, Meal, Maintenance</p>
                         </div>
-                    </a>
+                    </button>
                 </div>
 
                 <div class="col-md-6">
@@ -137,30 +137,26 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Feb 10, 2024</td>
-                            <td><span class="badge bg-primary">Fuel</span></td>
-                            <td>₱1,200</td>
-                            <td>Petron Gasoline</td>
-                            <td><span class="badge bg-warning">Pending Review</span></td>
-                            <td><button class="btn btn-sm btn-outline-primary">📄 View</button></td>
-                        </tr>
-                        <tr>
-                            <td>Feb 9, 2024</td>
-                            <td><span class="badge bg-success">Meal</span></td>
-                            <td>₱400</td>
-                            <td>Lunch during delivery</td>
-                            <td><span class="badge bg-success">Approved</span></td>
-                            <td><button class="btn btn-sm btn-outline-success">📄 View</button></td>
-                        </tr>
-                        <tr>
-                            <td>Feb 8, 2024</td>
-                            <td><span class="badge bg-danger">Maintenance</span></td>
-                            <td>₱3,200</td>
-                            <td>Tire replacement</td>
-                            <td><span class="badge bg-danger">Rejected</span></td>
-                            <td><button class="btn btn-sm btn-outline-danger">📄 View</button></td>
-                        </tr>
+                        @foreach(var expense in ViewBag.RecentExpenses as List<CEMS.Models.Expense> ?? new List<CEMS.Models.Expense>())
+                        {
+                            <tr>
+                                <td>@expense.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td><span class="badge @(expense.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-primary" : expense.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@expense.Category</span></td>
+                                <td>₱@expense.Amount</td>
+                                <td>@expense.Description</td>
+                                <td><span class="badge @(expense.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : expense.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@expense.Status</span></td>
+                                <td>
+                                    @if(expense.ReceiptData != null && expense.ReceiptData.Length > 0)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = expense.Id })">📄 View</a>
+                                    }
+                                    else if(!string.IsNullOrEmpty(expense.ReceiptPath))
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@expense.ReceiptPath">📄 View</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -173,4 +169,22 @@
     .hover-shadow:hover {
         transform: translateY(-2px);
         transition: all 0.3s ease;
-    }</style>
+    }
+</style>
+
+@* Render submit modal *@
+@await Html.PartialAsync("_SubmitExpenseModal", new CEMS.Models.Expense())
+
+@* TempData alerts *@
+@if (TempData["Success"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 m-4" style="z-index:1050;">
+        <div class="alert alert-success">@TempData["Success"]</div>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="position-fixed bottom-0 end-0 m-4" style="z-index:1050;">
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    </div>
+}
