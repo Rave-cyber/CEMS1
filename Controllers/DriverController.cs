@@ -39,6 +39,59 @@ namespace CEMS.Controllers
             return View("Dashboard/Index");
         }
 
+        [HttpGet("Metrics")]
+        public async Task<IActionResult> Metrics()
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var reportsQuery = _db.ExpenseReports.Where(r => r.UserId == userId);
+
+            var nowUtc = DateTime.UtcNow;
+            var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1);
+
+            var pendingCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Submitted);
+            var approvedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Approved);
+            var rejectedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Rejected);
+
+            var approvedTotal = await _db.ExpenseItems
+                .Include(i => i.Report)
+                .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved)
+                .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+            var approvedThisMonthTotal = await _db.ExpenseItems
+                .Include(i => i.Report)
+                .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved && i.Date >= monthStart)
+                .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+            var recentItems = await _db.ExpenseItems
+                .Include(i => i.Report)
+                .Where(i => i.Report != null && i.Report.UserId == userId)
+                .OrderByDescending(i => i.Date)
+                .Take(10)
+                .ToListAsync();
+
+            var recent = recentItems.Select(i => new
+            {
+                id = i.Id,
+                date = i.Date.ToString("o"),
+                category = i.Category,
+                amount = i.Amount,
+                description = i.Description,
+                reportStatus = i.Report != null ? i.Report.Status.ToString() : ReportStatus.Submitted.ToString(),
+                receiptUrl = (i.ReceiptData != null && i.ReceiptData.Length > 0) ? Url.Action("Receipt", "Driver", new { id = i.Id }) : (string.IsNullOrEmpty(i.ReceiptPath) ? null : i.ReceiptPath)
+            }).ToList();
+
+            return Json(new
+            {
+                pendingCount,
+                approvedCount,
+                rejectedCount,
+                approvedTotal,
+                approvedThisMonthTotal,
+                recent
+            });
+        }
+
         [HttpGet("Expenses")]
         public IActionResult Expenses()
         {
@@ -51,7 +104,7 @@ namespace CEMS.Controllers
             return View("Submit/Index");
         }
 
-        [HttpPost]
+        [HttpPost("Submit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Submit(Models.Expense model, IFormFile receipt)
         {
@@ -119,7 +172,7 @@ namespace CEMS.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("SubmitMultiple")]
         [Authorize(Roles = "Driver")]
         public async Task<IActionResult> SubmitMultiple()
         {
@@ -129,7 +182,7 @@ namespace CEMS.Controllers
                 if (user == null)
                     return Json(new { success = false, message = "User not found" });
 
-                var items = new List<Expense>();
+                var items = new List<ExpenseItem>();
                 // Bind dynamic rows from form-data: items[i].Field
                 var files = Request.Form.Files;
                 var form = Request.Form;
@@ -141,9 +194,7 @@ namespace CEMS.Controllers
                     if (!form.ContainsKey(prefix + ".Category") && !form.ContainsKey(prefix + ".Amount"))
                         break;
 
-                    var expense = new Expense();
-                    expense.UserId = user.Id;
-                    expense.Status = ExpenseStatus.Pending;
+                    var expense = new ExpenseItem();
                     // Date optional
                     if (DateTime.TryParse(form[prefix + ".Date"], out var dt))
                         expense.Date = dt;
@@ -172,10 +223,49 @@ namespace CEMS.Controllers
                     return Json(new { success = false, message = "No expenses to submit." });
                 }
 
-                await _db.Expenses.AddRangeAsync(items);
+                var report = new ExpenseReport
+                {
+                    UserId = user.Id,
+                    SubmissionDate = DateTime.UtcNow,
+                    Status = ReportStatus.Submitted,
+                    TotalAmount = items.Sum(i => i.Amount)
+                };
+
+                var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var reportCategories = items.Select(i => i.Category).Distinct().ToList();
+                var overBudget = false;
+
+                foreach (var category in reportCategories)
+                {
+                    var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
+                    if (budget == null)
+                        continue;
+
+                    var currentMonthSpent = await _db.ExpenseItems
+                        .Where(i => i.Category == category && i.Date >= monthStart)
+                        .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+                    var reportCategoryTotal = items.Where(i => i.Category == category).Sum(i => i.Amount);
+
+                    if (currentMonthSpent + reportCategoryTotal > budget.Allocated)
+                    {
+                        overBudget = true;
+                        break;
+                    }
+                }
+
+                report.BudgetCheck = overBudget ? BudgetCheckStatus.OverBudget : BudgetCheckStatus.WithinBudget;
+
+                foreach (var item in items)
+                {
+                    item.Report = report;
+                }
+
+                _db.ExpenseReports.Add(report);
+                await _db.ExpenseItems.AddRangeAsync(items);
                 await _db.SaveChangesAsync();
 
-                return Json(new { success = true, message = $"Submitted {items.Count} expense(s)." });
+                return Json(new { success = true, message = $"Submitted {items.Count} expense(s) in report #{report.Id}." });
             }
             catch (Exception ex)
             {
@@ -185,19 +275,40 @@ namespace CEMS.Controllers
 
         
 
-        [HttpGet]
+        [HttpGet("Receipt/{id:int}")]
         public async Task<IActionResult> Receipt(int id)
         {
+            var currentUserId = _userManager.GetUserId(User);
+
+            var item = await _db.ExpenseItems
+                .Include(i => i.Report)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item != null)
+            {
+                var isOwner = item.Report != null && item.Report.UserId == currentUserId;
+                var canView = isOwner || User.IsInRole("Manager") || User.IsInRole("Finance") || User.IsInRole("CEO");
+
+                if (!canView)
+                    return Forbid();
+
+                if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                    return File(item.ReceiptData, item.ReceiptContentType ?? "application/octet-stream");
+
+                if (!string.IsNullOrEmpty(item.ReceiptPath))
+                    return Redirect(item.ReceiptPath);
+
+                return NotFound();
+            }
+
             var expense = await _db.Expenses.FindAsync(id);
             if (expense == null)
                 return NotFound();
 
-            // Ensure current user owns the expense or user has Manager/Finance/CEO role
-            var currentUserId = _userManager.GetUserId(User);
-            var isOwner = expense.UserId != null && expense.UserId == currentUserId;
-            var canView = isOwner || User.IsInRole("Manager") || User.IsInRole("Finance") || User.IsInRole("CEO");
+            var legacyOwner = expense.UserId != null && expense.UserId == currentUserId;
+            var legacyCanView = legacyOwner || User.IsInRole("Manager") || User.IsInRole("Finance") || User.IsInRole("CEO");
 
-            if (!canView)
+            if (!legacyCanView)
                 return Forbid();
 
             if (expense.ReceiptData != null && expense.ReceiptData.Length > 0)
@@ -217,15 +328,26 @@ namespace CEMS.Controllers
         public async Task<IActionResult> History(DateTime? start, DateTime? end, string status)
         {
             var userId = _userManager.GetUserId(User);
-            var q = _db.Expenses.Where(e => e.UserId == userId);
-            if (start.HasValue)
-                q = q.Where(e => e.Date >= start.Value);
-            if (end.HasValue)
-                q = q.Where(e => e.Date <= end.Value);
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ExpenseStatus>(status, out var s))
-                q = q.Where(e => e.Status == s);
+            var q = _db.ExpenseItems
+                .Include(i => i.Report)
+                .Where(i => i.Report != null && i.Report.UserId == userId);
 
-            var items = await q.OrderByDescending(e => e.Date).ToListAsync();
+            if (start.HasValue)
+                q = q.Where(i => i.Date >= start.Value);
+            if (end.HasValue)
+                q = q.Where(i => i.Date <= end.Value);
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ReportStatus>(status, out var s))
+                q = q.Where(i => i.Report != null && i.Report.Status == s);
+
+            var items = await q
+                .OrderByDescending(i => i.Date)
+                .Select(i => new ExpenseItemSummaryDto
+                {
+                    Item = i,
+                    ReportStatus = i.Report != null ? i.Report.Status : ReportStatus.Submitted
+                })
+                .ToListAsync();
+
             ViewBag.Items = items;
             return View("History/Index");
         }

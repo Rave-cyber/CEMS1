@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Payment History";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<h2>Payment History</h2>
+
+@if(ViewBag.Payments != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Amount</th>
+                    <th>Processed At</th>
+                    <th>Processed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var item in ViewBag.Payments as IEnumerable<dynamic>)
+                {
+                    var r = item.Report;
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>₱@r.TotalAmount.ToString("N2")</td>
+                        <td>@(item.DecisionDate?.ToLocalTime().ToString("MMM d, yyyy"))</td>
+                        <td>@(item.ApprovedBy ?? "Finance")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No payments found.</div>
+}

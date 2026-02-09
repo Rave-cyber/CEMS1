@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Budget Monitoring";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<h2>Budget Monitoring</h2>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">Budgets</div>
+            <div class="card-body">
+                <div id="budgetList">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">Budget Usage Chart</div>
+            <div class="card-body">
+                <canvas id="budgetChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+async function loadBudgets(){
+    try{
+        const res = await fetch('@Url.Action("Metrics","Manager")');
+        const data = await res.json();
+        const container = document.getElementById('budgetList');
+        container.innerHTML = '';
+        const labels = [];
+        const used = [];
+        const allocated = [];
+        for(const b of data.budgets || []){
+            labels.push(b.Category);
+            used.push(b.Spent);
+            allocated.push(b.Allocated);
+            const percent = b.Allocated === 0 ? 0 : Math.min(100, Math.round((b.Spent / b.Allocated) * 100));
+            const div = document.createElement('div');
+            div.className = 'mb-3';
+            div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.Category}</div><div>₱${b.Spent.toFixed(2)} / ₱${b.Allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar ${percent>=100? 'bg-danger':''}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
+            container.appendChild(div);
+        }
+
+        // render chart
+        const ctx = document.getElementById('budgetChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Allocated',
+                    data: allocated,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                },{
+                    label: 'Spent',
+                    data: used,
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }catch(e){ console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', loadBudgets);
+</script>
+}

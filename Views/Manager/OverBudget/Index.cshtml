@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Over-Budget Reports";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<h2>Over-Budget Expense Reports</h2>
+
+@if(ViewBag.OverBudget != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Driver</th>
+                    <th>Total</th>
+                    <th>Exceed Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var dto in ViewBag.OverBudget as List<CEMS.Models.OverBudgetReportDto>)
+                {
+                    <tr>
+                        <td>@dto.Report.Id</td>
+                        <td>@(dto.UserName ?? "Unknown")</td>
+                        <td>₱@dto.Report.TotalAmount.ToString("N2")</td>
+                        <td>₱@dto.ExceedAmount.ToString("N2")</td>
+                        <td>
+                            <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Manager", new { id = dto.Report.Id })">Details</a>
+                            <form method="post" asp-action="ForwardToCEO" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@dto.Report.Id" />
+                                <button class="btn btn-sm btn-dark">Forward to CEO</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No over-budget reports.</div>
+}

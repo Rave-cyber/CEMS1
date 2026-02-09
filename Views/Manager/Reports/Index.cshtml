@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Expense Reports";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<h2 class="mb-3">Expense Reports</h2>
+
+<form id="filters" class="row g-3 mb-3" method="get" action="@Context.Request.Path">
+    <div class="col-md-3">
+        <label class="form-label">Driver</label>
+        <input type="text" name="driver" class="form-control" value="@Context.Request.Query["driver"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Start</label>
+        <input type="date" name="start" class="form-control" value="@Context.Request.Query["start"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">End</label>
+        <input type="date" name="end" class="form-control" value="@Context.Request.Query["end"]" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+            <option value="">All</option>
+            <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Pending</option>
+            <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
+            <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary" type="submit">Filter</button>
+    </div>
+</form>
+
+<div id="reportsList">
+    @if (ViewBag.Reports != null)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Report ID</th>
+                        <th>Driver</th>
+                        <th>Total</th>
+                        <th>Submitted</th>
+                        <th>Budget Status</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
+                    {
+                        var r = dto.Report;
+                        <tr>
+                            <td>@r.Id</td>
+                            <td>@(dto.UserName ?? "Unknown")</td>
+                            <td>₱@r.TotalAmount.ToString("N2")</td>
+                            <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            <td>
+                                <span class="badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "bg-success" : "bg-danger")">@r.BudgetCheck</span>
+                            </td>
+                            <td>
+                                <span class="badge @(r.Status == CEMS.Models.ReportStatus.Submitted ? "bg-warning" : r.Status == CEMS.Models.ReportStatus.Approved ? "bg-success" : "bg-danger")">@r.Status</span>
+                            </td>
+                            <td>
+                                <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">Details</a>
+                                <form method="post" asp-action="ForwardToCEO" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button class="btn btn-sm btn-dark">Forward to CEO</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No reports found.</div>
+    }
+</div>

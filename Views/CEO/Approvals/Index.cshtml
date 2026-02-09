@@ -1,0 +1,52 @@
+@{
+    ViewData["Title"] = "CEO Approvals";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml"; // reuse manager layout for CEO
+}
+
+<h2>Reports Requiring CEO Approval</h2>
+
+@if(ViewBag.Forwarded != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Driver</th>
+                    <th>Total</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var dto in ViewBag.Forwarded as List<CEMS.Models.PendingExpenseReportDto>)
+                {
+                    var r = dto.Report;
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@(dto.UserName ?? "Unknown")</td>
+                        <td>₱@r.TotalAmount.ToString("N2")</td>
+                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td>
+                            <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">Details</a>
+                            <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline-block; margin-left:6px;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                            <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline-block; margin-left:6px;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No forwarded reports.</div>
+}

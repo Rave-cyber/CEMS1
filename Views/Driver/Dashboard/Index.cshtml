@@ -3,6 +3,44 @@
     Layout = "~/Views/Shared/_DriverLayout.cshtml";
 }
 
+@section Scripts {
+<script>
+async function loadDriverMetrics(){
+    try{
+        const res = await fetch('@Url.Action("Metrics","Driver")');
+        if(!res.ok) throw new Error('Failed to load metrics');
+        const data = await res.json();
+
+        document.getElementById('pendingCount').textContent = data.pendingCount ?? 0;
+        document.getElementById('rejectedCount').textContent = data.rejectedCount ?? 0;
+        document.getElementById('approvedTotal').textContent = (data.approvedTotal ?? 0).toFixed(2);
+        document.getElementById('approvedThisMonthTotal').textContent = (data.approvedThisMonthTotal ?? 0).toFixed(2);
+
+        const tbody = document.getElementById('recentItems');
+        tbody.innerHTML = '';
+        for(const item of data.recent || []){
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${new Date(item.date).toLocaleDateString()}</td>
+                <td><span class="badge bg-primary">${item.category}</span></td>
+                <td>₱${Number(item.amount).toFixed(2)}</td>
+                <td>${item.description || ''}</td>
+                <td><span class="badge bg-warning">${item.reportStatus}</span></td>
+                <td>${item.receiptUrl ? `<a class="btn btn-sm btn-outline-primary" target="_blank" href="${item.receiptUrl}">📄 View</a>` : ''}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }catch(e){
+        console.error(e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    loadDriverMetrics();
+});
+</script>
+}
+
 <div class="container-fluid px-4">
     <!-- Dashboard Header -->
     <div class="d-flex justify-content-between align-items-center py-4">
@@ -18,106 +56,83 @@
     <!-- Driver Quick Stats -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Pending</h6>
-                            <h3 class="fw-bold">2</h3>
-                            <p class="mb-0 text-muted">Expense Requests</p>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-clock text-primary fs-3"></i>
+            <a href="@Url.Action("Expenses", "Driver")" class="text-decoration-none">
+                <div class="card border-start border-primary border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Pending</h6>
+                                <h3 class="fw-bold"><span id="pendingCount">-</span></h3>
+                                <p class="mb-0 text-muted">Expense Requests</p>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-clock text-primary fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Approved</h6>
-                            <h3 class="fw-bold">₱5,400</h3>
-                            <p class="mb-0 text-muted">This Month</p>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-check-circle text-success fs-3"></i>
+            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
+                <div class="card border-start border-success border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Approved</h6>
+                                <h3 class="fw-bold">₱<span id="approvedThisMonthTotal">0.00</span></h3>
+                                <p class="mb-0 text-muted">This Month</p>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-check-circle text-success fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Reimbursed</h6>
-                            <h3 class="fw-bold">₱4,200</h3>
-                            <p class="mb-0 text-muted">Paid to you</p>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-cash text-warning fs-3"></i>
+            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
+                <div class="card border-start border-warning border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Reimbursed</h6>
+                                <h3 class="fw-bold">₱<span id="approvedTotal">0.00</span></h3>
+                                <p class="mb-0 text-muted">Approved Total</p>
+                            </div>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-cash text-warning fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-danger border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Rejected</h6>
-                            <h3 class="fw-bold">₱800</h3>
-                            <p class="mb-0 text-muted">Need revision</p>
-                        </div>
-                        <div class="bg-danger bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-x-circle text-danger fs-3"></i>
+            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
+                <div class="card border-start border-danger border-4 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Rejected</h6>
+                                <h3 class="fw-bold"><span id="rejectedCount">-</span></h3>
+                                <p class="mb-0 text-muted">Need revision</p>
+                            </div>
+                            <div class="bg-danger bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-x-circle text-danger fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
-    <!-- Driver Quick Actions -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">⚡ Driver Actions</h4>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <button type="button" class="card text-start text-decoration-none shadow-sm hover-shadow btn p-0 border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#submitExpenseModal">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-plus-circle text-primary fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Submit New Expense</h5>
-                            <p class="card-text text-muted small">Fuel, Toll, Meal, Maintenance</p>
-                        </div>
-                    </button>
-                </div>
-
-                <div class="col-md-6">
-                    <a href="@Url.Action("History", "Driver")" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-clock-history text-success fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Expense History</h5>
-                            <p class="card-text text-muted small">View all your submissions</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
+  
     <!-- Recent Submissions -->
     <div class="card shadow-sm">
         <div class="card-header bg-light">
@@ -137,26 +152,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(var expense in ViewBag.RecentExpenses as List<CEMS.Models.Expense> ?? new List<CEMS.Models.Expense>())
-                        {
-                            <tr>
-                                <td>@expense.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                <td><span class="badge @(expense.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-primary" : expense.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@expense.Category</span></td>
-                                <td>₱@expense.Amount</td>
-                                <td>@expense.Description</td>
-                                <td><span class="badge @(expense.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : expense.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@expense.Status</span></td>
-                                <td>
-                                    @if(expense.ReceiptData != null && expense.ReceiptData.Length > 0)
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = expense.Id })">📄 View</a>
-                                    }
-                                    else if(!string.IsNullOrEmpty(expense.ReceiptPath))
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@expense.ReceiptPath">📄 View</a>
-                                    }
-                                </td>
-                            </tr>
-                        }
+                        <tbody id="recentItems">
+                            <!-- populated by JS -->
+                        </tbody>
                     </tbody>
                 </table>
             </div>

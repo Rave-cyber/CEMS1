@@ -1,0 +1,53 @@
+@model CEMS.Models.ExpenseReport
+@{
+    ViewData["Title"] = "Expense Report Details";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">Expense Report #@Model.Id</h2>
+    <div class="mb-3">
+        <div><strong>Driver:</strong> @ViewBag.ReportUserName</div>
+        <div><strong>Submitted:</strong> @Model.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</div>
+        <div><strong>Status:</strong> @Model.Status</div>
+        <div><strong>Budget Check:</strong> @Model.BudgetCheck</div>
+        <div><strong>Total Amount:</strong> ₱@Model.TotalAmount.ToString("N2")</div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Receipt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                        <td>@item.Category</td>
+                        <td>₱@item.Amount</td>
+                        <td>@item.Description</td>
+                        <td>
+                            @if(item.ReceiptData != null && item.ReceiptData.Length > 0)
+                            {
+                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
+                            }
+                            else if(!string.IsNullOrEmpty(item.ReceiptPath))
+                            {
+                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">View</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <a class="btn btn-secondary" href="@Url.Action("Dashboard", "Manager")">Back to Dashboard</a>
+</div>

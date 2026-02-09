@@ -1,0 +1,44 @@
+@{
+    ViewData["Title"] = "Approved Expense Reports";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<h2>Approved Expense Reports</h2>
+
+@if(ViewBag.ApprovedReports != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Driver</th>
+                    <th>Total</th>
+                    <th>Submitted</th>
+                    <th>Budget Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
+                {
+                    var r = dto.Report;
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@(dto.UserName ?? "Unknown")</td>
+                        <td>₱@r.TotalAmount.ToString("N2")</td>
+                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td><span class="badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "bg-success" : "bg-danger")">@r.BudgetCheck</span></td>
+                        <td>
+                            <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No approved reports.</div>
+}

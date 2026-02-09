@@ -1,0 +1,45 @@
+@{
+    ViewData["Title"] = "Budget Summary";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<h2>Budget Summary (Read-Only)</h2>
+
+@if(ViewBag.Budgets != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Allocated</th>
+                    <th>Spent</th>
+                    <th>Remaining</th>
+                    <th>Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var b in ViewBag.Budgets as List<CEMS.Models.Budget>)
+                {
+                    var remaining = b.Allocated - b.Spent;
+                    var pct = b.Allocated == 0 ? 0 : Math.Min(100, (int)Math.Round((double)(b.Spent / b.Allocated * 100)));
+                    <tr>
+                        <td>@b.Category</td>
+                        <td>₱@b.Allocated.ToString("N2")</td>
+                        <td>₱@b.Spent.ToString("N2")</td>
+                        <td>₱@remaining.ToString("N2")</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar @(pct>=100?"bg-danger":"")" role="progressbar" style="width:@pct%" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">@pct%</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No budgets found.</div>
+}

@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Reimbursements";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<h2>Reimbursements</h2>
+
+@if(ViewBag.Reports != null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Driver</th>
+                    <th>Total</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
+                {
+                    var r = dto.Report;
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@(dto.UserName ?? "Unknown")</td>
+                        <td>₱@r.TotalAmount.ToString("N2")</td>
+                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td>
+                            <form method="post" asp-action="Reimburse" asp-controller="Finance">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button class="btn btn-sm btn-success">Mark Reimbursed</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No reimbursements pending.</div>
+}

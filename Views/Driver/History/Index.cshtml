@@ -17,7 +17,7 @@
         <label class="form-label">Status</label>
         <select name="status" class="form-select">
             <option value="">All</option>
-            <option value="Pending" selected="@(Context.Request.Query["status"]=="Pending")">Pending</option>
+            <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Submitted</option>
             <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
             <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
         </select>
@@ -40,12 +40,13 @@
         </tr>
     </thead>
     <tbody>
-    @foreach(var e in ViewBag.Items as List<CEMS.Models.Expense> ?? new List<CEMS.Models.Expense>()){
+    @foreach(var summary in ViewBag.Items as List<CEMS.Models.ExpenseItemSummaryDto> ?? new List<CEMS.Models.ExpenseItemSummaryDto>()){
+        var e = summary.Item;
         <tr>
             <td>@e.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
             <td>@e.Category</td>
             <td>₱@e.Amount</td>
-            <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Status</span></td>
+            <td><span class="badge @(summary.ReportStatus == CEMS.Models.ReportStatus.Submitted ? "bg-warning" : summary.ReportStatus == CEMS.Models.ReportStatus.Approved ? "bg-success" : "bg-danger")">@summary.ReportStatus</span></td>
             <td>@e.Description</td>
             <td>
                 @if(e.ReceiptData != null && e.ReceiptData.Length>0){

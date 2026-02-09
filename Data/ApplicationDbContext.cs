@@ -14,6 +14,9 @@ namespace CEMS.Data
         }
 
         public DbSet<Expense> Expenses { get; set; }
+        public DbSet<ExpenseReport> ExpenseReports { get; set; }
+        public DbSet<ExpenseItem> ExpenseItems { get; set; }
+        public DbSet<Approval> Approvals { get; set; }
         public DbSet<Budget> Budgets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -32,6 +35,36 @@ namespace CEMS.Data
             builder.Entity<Expense>()
                 .Property(e => e.Amount)
                 .HasPrecision(18, 2);
+
+            builder.Entity<ExpenseReport>()
+                .HasOne<IdentityUser>(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ExpenseReport>()
+                .Property(r => r.TotalAmount)
+                .HasPrecision(18, 2);
+
+            builder.Entity<ExpenseReport>()
+                .Property(r => r.Reimbursed)
+                .HasDefaultValue(false);
+
+            builder.Entity<ExpenseItem>()
+                .HasOne(i => i.Report)
+                .WithMany(r => r.Items)
+                .HasForeignKey(i => i.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ExpenseItem>()
+                .Property(i => i.Amount)
+                .HasPrecision(18, 2);
+
+            builder.Entity<Approval>()
+                .HasOne(a => a.Report)
+                .WithMany()
+                .HasForeignKey(a => a.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Budget>()
                 .Property(b => b.Allocated)

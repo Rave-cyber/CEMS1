@@ -1,6 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Manager Dashboard";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
 <div class="container-fluid px-4">
@@ -10,6 +10,32 @@
             <h1 class="h2 fw-bold">👔 Manager Dashboard</h1>
             <p class="text-muted mb-0">Welcome, @User.Identity?.Name</p>
         </div>
+
+    <script>
+        async function loadManagerMetrics(){
+            try{
+                const res = await fetch('@Url.Action("Metrics","Manager")');
+                const data = await res.json();
+                document.getElementById('mgrPendingCount').textContent = data.totalPending ?? 0;
+                document.getElementById('mgrOverBudget').textContent = data.overBudgetCount ?? 0;
+                document.getElementById('mgrApproved').textContent = '₱' + ((data.approved ?? 0).toFixed ? data.approved.toFixed(2) : Number(data.approved).toFixed(2));
+                // budgets display
+                const container = document.getElementById('budgetOverview');
+                if(container && data.budgets){
+                    container.innerHTML = '';
+                    for(const b of data.budgets){
+                        const percent = b.Allocated === 0 ? 0 : Math.min(100, Math.round((b.Spent / b.Allocated) * 100));
+                        const div = document.createElement('div');
+                        div.className = 'mb-2';
+                        div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.Category}</div><div>₱${b.Spent.toFixed(2)} / ₱${b.Allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
+                        container.appendChild(div);
+                    }
+                }
+            }catch(e){ console.error(e); }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadManagerMetrics);
+    </script>
         <div>
             <span class="badge bg-warning fs-6 px-3 py-2">MANAGER</span>
         </div>
@@ -23,7 +49,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="text-uppercase text-muted mb-1">Pending Review</h6>
-                            <h3 class="fw-bold">5</h3>
+                            <h3 class="fw-bold" id="mgrPendingCount">-</h3>
                             <p class="mb-0 text-muted">Expense Requests</p>
                         </div>
                         <div class="bg-primary bg-opacity-10 p-3 rounded">
@@ -33,6 +59,34 @@
                 </div>
             </div>
         </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">Current Budget Usage</div>
+                <div class="card-body">
+                    <div id="budgetOverview">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">Overview</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <h6>Over-Budget Reports</h6>
+                            <h3 id="mgrOverBudget">0</h3>
+                        </div>
+                        <div class="col-6">
+                            <h6>Approved Total</h6>
+                            <h3 id="mgrApproved">₱0.00</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <div class="col-xl-3 col-md-6">
             <div class="card border-start border-success border-4 shadow-sm">
@@ -142,10 +196,10 @@
         </div>
     </div>
 
-    <!-- Pending Expenses Table -->
+    <!-- Pending Expense Reports Table -->
     <div class="card shadow-sm">
         <div class="card-header bg-light">
-            <h5 class="mb-0">📋 Expenses Pending Your Approval</h5>
+            <h5 class="mb-0">📋 Expense Reports Pending Your Approval</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -153,45 +207,46 @@
                     <thead class="table-light">
                         <tr>
                             <th>Driver</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Submitted</th>
+                            <th>Budget Check</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @{
-                            var pending = ViewBag.Pending as List<CEMS.Models.PendingExpenseDto> ?? new List<CEMS.Models.PendingExpenseDto>();
+                            var pendingReports = ViewBag.PendingReports as List<CEMS.Models.PendingExpenseReportDto> ?? new List<CEMS.Models.PendingExpenseReportDto>();
                         }
-                        @foreach(var item in pending)
+                        @foreach(var item in pendingReports)
                         {
-                            var e = item.Expense;
+                            var report = item.Report;
                             <tr>
                                 <td>@(item.UserName ?? "Unknown")</td>
-                                <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-primary" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Category</span></td>
-                                <td>₱@e.Amount</td>
-                                <td>@e.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                <td><span class="badge @(e.Status == CEMS.Models.ExpenseStatus.Pending ? "bg-warning" : e.Status == CEMS.Models.ExpenseStatus.Approved ? "bg-success" : "bg-danger")">@e.Status</span></td>
+                                <td>₱@report.TotalAmount.ToString("N2")</td>
+                                <td>@report.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
                                 <td>
-                                    <form method="post" asp-action="Approve" asp-controller="Manager" style="display:inline-block;">
+                                    <span class="badge @(report.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "bg-success" : "bg-danger")">
+                                        @report.BudgetCheck
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @(report.Status == CEMS.Models.ReportStatus.Submitted ? "bg-warning" : report.Status == CEMS.Models.ReportStatus.Approved ? "bg-success" : "bg-danger")">
+                                        @report.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails", "Manager", new { id = report.Id })">👁 Details</a>
+                                    <form method="post" asp-action="ApproveReport" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
                                         @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@e.Id" />
+                                        <input type="hidden" name="id" value="@report.Id" />
                                         <button class="btn btn-sm btn-success">✓ Approve</button>
                                     </form>
-                                    <form method="post" asp-action="Reject" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                    <form method="post" asp-action="RejectReport" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
                                         @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@e.Id" />
+                                        <input type="hidden" name="id" value="@report.Id" />
                                         <button class="btn btn-sm btn-danger">✗ Reject</button>
                                     </form>
-                                    @if(e.ReceiptData != null && e.ReceiptData.Length > 0)
-                                    {
-                                        <a class="btn btn-sm btn-info" href="@Url.Action("Receipt","Driver", new { id = e.Id })" target="_blank">👁 View</a>
-                                    }
-                                    else if (!string.IsNullOrEmpty(e.ReceiptPath))
-                                    {
-                                        <a class="btn btn-sm btn-info" href="@e.ReceiptPath" target="_blank">👁 View</a>
-                                    }
                                 </td>
                             </tr>
                         }
