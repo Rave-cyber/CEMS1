@@ -21,6 +21,69 @@ body {
   margin-bottom: 60px;
 }
 
+/* Driver navbar: white background, black text; highlight with landing gradient on active/hover */
+.driver-navbar {
+  background: #ffffff;
+}
+
+.driver-navbar {
+  background: #ffffff;
+  overflow: visible; /* allow scaled logo to overflow without increasing navbar height */
+}
+
+.driver-navbar .navbar-brand {
+  line-height: 32px; /* keep brand vertically centered when image is scaled */
+}
+
+.driver-navbar .navbar-brand img {
+  object-fit: contain;
+  height: 32px; /* keep layout height */
+  transform: scale(4.0); /* visually enlarge without changing layout height */
+  transform-origin: left center;
+  display: inline-block;
+}
+
+/* add spacing so scaled logo doesn't overlap nav items */
+.driver-navbar .navbar-brand {
+  padding-right: 1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.driver-navbar .navbar-nav {
+  margin-left: 6.5rem;
+}
+
+.driver-navbar .nav-link {
+  color: #0a0a0a;
+  font-weight: 500;
+}
+
+.driver-navbar .nav-link:hover,
+.driver-navbar .nav-link:focus,
+.driver-navbar .nav-link.active {
+  /* gradient text only (no box) */
+  color: transparent !important;
+  background-image: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: all 0.25s ease;
+}
+
+/* keep highlight when clicked (JS will add 'active' class) */
+
+.driver-navbar .btn-outline-secondary {
+  border-color: rgba(10,25,47,0.08);
+}
+
+/* content card shadow and spacing */
+.driver-content-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(10, 25, 47, 0.12);
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;

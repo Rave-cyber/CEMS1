@@ -3,86 +3,493 @@
     Layout = "~/Views/Shared/_DriverLayout.cshtml";
 }
 
-<h2 class="mb-3">My Expenses</h2>
-<form class="row g-3 mb-3" method="get" action="@Context.Request.Path">
-    <div class="col-md-3">
-        <label class="form-label">Start Date</label>
-        <input type="date" name="start" class="form-control" value="@Context.Request.Query["start"]" />
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">End Date</label>
-        <input type="date" name="end" class="form-control" value="@Context.Request.Query["end"]" />
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Status</label>
-        <select name="status" class="form-select">
-            <option value="">All</option>
-            <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Submitted</option>
-            <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
-            <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
-            <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"]=="PendingCEOApproval")">Pending CEO</option>
-        </select>
-    </div>
-    <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-primary" type="submit">Filter</button>
-    </div>
-</form>
-
-<div class="table-responsive">
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Budget</th>
-            <th>Description</th>
-            <th>Receipt</th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach(var summary in ViewBag.Items as List<CEMS.Models.ExpenseItemSummaryDto> ?? new List<CEMS.Models.ExpenseItemSummaryDto>()){
-        var e = summary.Item;
-        var statusBadge = summary.ReportStatus switch
-        {
-            CEMS.Models.ReportStatus.Submitted => "bg-warning",
-            CEMS.Models.ReportStatus.Approved => "bg-success",
-            CEMS.Models.ReportStatus.Rejected => "bg-danger",
-            CEMS.Models.ReportStatus.PendingCEOApproval => "bg-info",
-            _ => "bg-secondary"
-        };
-        var statusLabel = summary.ReportStatus switch
-        {
-            CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO",
-            _ => summary.ReportStatus.ToString()
-        };
-        var budgetFlag = e.Report != null && e.Report.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget;
-        <tr class="@(budgetFlag ? "table-warning" : "")">
-            <td>@e.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
-            <td>@e.Category</td>
-            <td>₱@e.Amount.ToString("N2")</td>
-            <td><span class="badge @statusBadge">@statusLabel</span></td>
-            <td>
-                @if(budgetFlag)
-                {
-                    <span class="badge bg-danger">🚩 Over Budget</span>
-                }
-                else
-                {
-                    <span class="badge bg-success">✓ OK</span>
-                }
-            </td>
-            <td>@e.Description</td>
-            <td>
-                @if(e.ReceiptData != null && e.ReceiptData.Length>0){
-                    <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt","Driver", new { id = e.Id })">View</a>
-                } else if(!string.IsNullOrEmpty(e.ReceiptPath)){
-                    <a class="btn btn-sm btn-outline-primary" target="_blank" href="@e.ReceiptPath">View</a>
-                }
-            </td>
-        </tr>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-sm: 6px;
     }
-    </tbody>
-</table>
+
+    .expenses-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    /* Header */
+    .expenses-header {
+        margin-bottom: 28px;
+    }
+
+    .expenses-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+    }
+
+    .expenses-subtitle {
+        color: var(--d-muted);
+        font-size: .92rem;
+    }
+
+    /* Filter Card */
+    .filter-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--d-text);
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .filter-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-sm);
+        background: #fff;
+        font-size: .9rem;
+        color: var(--d-text);
+        transition: border-color .2s;
+    }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--d-primary);
+            box-shadow: 0 0 0 3px rgba(26,107,181,.1);
+        }
+
+    .filter-btn {
+        background: var(--d-primary);
+        color: white;
+        border: none;
+        border-radius: var(--d-radius-sm);
+        padding: 10px 22px;
+        font-size: .9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s;
+        width: 100%;
+        height: 42px;
+    }
+
+        .filter-btn:hover {
+            background: #155a9a;
+        }
+
+        .filter-btn:active {
+            transform: translateY(1px);
+        }
+
+    .filter-reset {
+        color: var(--d-muted);
+        text-decoration: none;
+        font-size: .85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+        .filter-reset:hover {
+            color: var(--d-primary);
+        }
+
+    /* Table */
+    .expenses-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        overflow: hidden;
+    }
+
+        .expenses-table thead th {
+            background: #f8fafc;
+            color: var(--d-muted);
+            font-weight: 600;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--d-border);
+            text-align: left;
+        }
+
+        .expenses-table tbody td {
+            padding: 18px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: var(--d-text);
+            font-size: .9rem;
+        }
+
+        .expenses-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .expenses-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .expenses-table tbody tr.table-warning {
+            background: rgba(245, 158, 11, .04);
+        }
+
+            .expenses-table tbody tr.table-warning:hover {
+                background: rgba(245, 158, 11, .08);
+            }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    .status-badge--pending {
+        background: rgba(245, 158, 11, .1);
+        color: #d97706;
+    }
+
+    .status-badge--approved {
+        background: rgba(16, 185, 129, .1);
+        color: #059669;
+    }
+
+    .status-badge--rejected {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    .status-badge--ceo {
+        background: rgba(99, 102, 241, .1);
+        color: #4f46e5;
+    }
+
+    .status-badge--default {
+        background: rgba(148, 163, 184, .1);
+        color: #64748b;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .status-dot--pending {
+        background: #f59e0b;
+    }
+
+    .status-dot--approved {
+        background: #10b981;
+    }
+
+    .status-dot--rejected {
+        background: #ef4444;
+    }
+
+    .status-dot--ceo {
+        background: #6366f1;
+    }
+
+    .status-dot--default {
+        background: #94a3b8;
+    }
+
+    /* Budget Flags */
+    .budget-flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    .budget-flag--over {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    .budget-flag--ok {
+        background: rgba(16, 185, 129, .1);
+        color: #059669;
+    }
+
+    /* Category Chip */
+    .category-chip {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        background: rgba(46, 196, 182, .1);
+        color: #0d8b7d;
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    /* Action Button */
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: var(--d-radius-sm);
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
+    }
+
+        .view-btn:hover {
+            background: rgba(26, 107, 181, .12);
+            color: #155a9a;
+            text-decoration: none;
+        }
+
+        .view-btn i {
+            font-size: .9rem;
+        }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--d-muted);
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: #cbd5e1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--d-text);
+    }
+
+    .empty-text {
+        font-size: .9rem;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    @@media (max-width: 768px) {
+        .expenses-wrapper {
+            padding: 20px 0 32px;
+        }
+
+        .expenses-table {
+            font-size: .85rem;
+        }
+
+            .expenses-table thead th,
+            .expenses-table tbody td {
+                padding: 14px 16px;
+            }
+    }
+</style>
+
+<div class="expenses-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- Header -->
+        <div class="expenses-header">
+            <h1 class="expenses-title">My Expenses Status</h1>
+            <p class="expenses-subtitle">Track and manage your expense submissions</p>
+        </div>
+
+        <!-- Filter Card -->
+        <div class="filter-card">
+            <form method="get" action="@Context.Request.Path">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-label">Start Date</label>
+                        <input type="date" name="start" class="filter-input" value="@Context.Request.Query["start"]" />
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-label">End Date</label>
+                        <input type="date" name="end" class="filter-input" value="@Context.Request.Query["end"]" />
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="filter-input">
+                            <option value="">All Status</option>
+                            <option value="Submitted" selected="@(Context.Request.Query["status"] == "Submitted")">Submitted</option>
+                            <option value="Approved" selected="@(Context.Request.Query["status"] == "Approved")">Approved</option>
+                            <option value="Rejected" selected="@(Context.Request.Query["status"] == "Rejected")">Rejected</option>
+                            <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"] == "PendingCEOApproval")">Pending CEO</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 d-flex flex-column">
+                        <label class="filter-label">&nbsp;</label>
+                        <div class="d-flex gap-2" style="height: 42px;">
+                            <button class="filter-btn" type="submit">
+                                <i class="bi bi-funnel me-1"></i> Apply Filters
+                            </button>
+                            @if (!string.IsNullOrEmpty(Context.Request.QueryString.Value))
+                            {
+                                <a href="@Context.Request.Path" class="filter-reset">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Expenses Table -->
+        @{
+            var items = ViewBag.Items as List<CEMS.Models.ExpenseItemSummaryDto> ?? new List<CEMS.Models.ExpenseItemSummaryDto>();
+        }
+
+        @if (items.Any())
+        {
+            <div class="table-responsive">
+                <table class="expenses-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Budget</th>
+                            <th>Description</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var summary in items)
+                        {
+                            var e = summary.Item;
+                            var isOverBudget = e.Report != null && e.Report.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget;
+
+                            var statusClass = summary.ReportStatus switch
+                            {
+                                CEMS.Models.ReportStatus.Submitted => "status-badge--pending",
+                                CEMS.Models.ReportStatus.Approved => "status-badge--approved",
+                                CEMS.Models.ReportStatus.Rejected => "status-badge--rejected",
+                                CEMS.Models.ReportStatus.PendingCEOApproval => "status-badge--ceo",
+                                _ => "status-badge--default"
+                            };
+
+                            var dotClass = summary.ReportStatus switch
+                            {
+                                CEMS.Models.ReportStatus.Submitted => "status-dot--pending",
+                                CEMS.Models.ReportStatus.Approved => "status-dot--approved",
+                                CEMS.Models.ReportStatus.Rejected => "status-dot--rejected",
+                                CEMS.Models.ReportStatus.PendingCEOApproval => "status-dot--ceo",
+                                _ => "status-dot--default"
+                            };
+
+                            var statusLabel = summary.ReportStatus switch
+                            {
+                                CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO",
+                                _ => summary.ReportStatus.ToString()
+                            };
+
+                            <tr class="@(isOverBudget ? "table-warning" : "")">
+                                <td>@e.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td><span class="category-chip">@e.Category</span></td>
+                                <td class="fw-semibold">₱@e.Amount.ToString("N2")</td>
+                                <td>
+                                    <span class="status-badge @statusClass">
+                                        <span class="status-dot @dotClass"></span>
+                                        @statusLabel
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (isOverBudget)
+                                    {
+                                        <span class="budget-flag budget-flag--over">
+                                            <i class="bi bi-exclamation-triangle"></i> Over Budget
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="budget-flag budget-flag--ok">
+                                            <i class="bi bi-check-circle"></i> Within Budget
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-muted">@(e.Description ?? "—")</td>
+                                <td>
+                                    @if (e.ReceiptData != null && e.ReceiptData.Length > 0)
+                                    {
+                                        <a class="view-btn" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = e.Id })">
+                                            <i class="bi bi-file-earmark-text"></i> View
+                                        </a>
+                                    }
+                                    else if (!string.IsNullOrEmpty(e.ReceiptPath))
+                                    {
+                                        <a class="view-btn" target="_blank" href="@e.ReceiptPath">
+                                            <i class="bi bi-file-earmark-text"></i> View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <!-- Empty State -->
+            <div class="filter-card text-center">
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <h3 class="empty-title">No expenses found</h3>
+                    <p class="empty-text">
+                        @if (!string.IsNullOrEmpty(Context.Request.QueryString.Value))
+                        {
+                            <text>Try adjusting your filters or</text>
+                        }
+                        <a href="@Url.Action("Expenses", "Driver")" class="text-decoration-none" style="color:var(--d-primary);">
+                            submit a new expense
+                        </a>
+                    </p>
+                </div>
+            </div>
+        }
+
+    </div>
 </div>
+
+@* Bootstrap Icons *@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">

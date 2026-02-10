@@ -26,23 +26,22 @@ async function loadDriverMetrics(){
         for(const item of data.recent || []){
             const tr = document.createElement('tr');
             const isOver = item.budgetCheck === 'OverBudget';
-            if(isOver) tr.className = 'table-warning';
 
-            let statusBadge = 'bg-secondary';
+            let statusClass = 'status-dot--default';
             let statusLabel = item.reportStatus;
-            if(item.reportStatus === 'Submitted') statusBadge = 'bg-warning';
-            else if(item.reportStatus === 'Approved') statusBadge = 'bg-success';
-            else if(item.reportStatus === 'Rejected') statusBadge = 'bg-danger';
-            else if(item.reportStatus === 'PendingCEOApproval'){ statusBadge = 'bg-info'; statusLabel = 'Pending CEO'; }
+            if(item.reportStatus === 'Submitted'){ statusClass = 'status-dot--pending'; }
+            else if(item.reportStatus === 'Approved'){ statusClass = 'status-dot--approved'; }
+            else if(item.reportStatus === 'Rejected'){ statusClass = 'status-dot--rejected'; }
+            else if(item.reportStatus === 'PendingCEOApproval'){ statusClass = 'status-dot--pending'; statusLabel = 'Pending CEO'; }
 
             tr.innerHTML = `
                 <td>${new Date(item.date).toLocaleDateString()}</td>
-                <td><span class="badge bg-primary">${item.category}</span></td>
-                <td>₱${Number(item.amount).toFixed(2)}</td>
-                <td>${item.description || ''}</td>
-                <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
-                <td>${isOver ? '<span class="badge bg-danger">🚩 Over</span>' : '<span class="badge bg-success">✓ OK</span>'}</td>
-                <td>${item.receiptUrl ? `<a class="btn btn-sm btn-outline-primary" target="_blank" href="${item.receiptUrl}">📄 View</a>` : ''}</td>
+                <td><span class="category-chip">${item.category}</span></td>
+                <td class="fw-semibold">₱${Number(item.amount).toFixed(2)}</td>
+                <td class="text-muted">${item.description || '—'}</td>
+                <td><span class="status-dot ${statusClass}"></span> ${statusLabel}</td>
+                <td>${isOver ? '<span class="budget-flag budget-flag--over">Over</span>' : '<span class="budget-flag budget-flag--ok">OK</span>'}</td>
+                <td>${item.receiptUrl ? `<a class="dash-link" target="_blank" href="${item.receiptUrl}"><i class="bi bi-file-earmark-text"></i> View</a>` : '<span class="text-muted">—</span>'}</td>
             `;
             tbody.appendChild(tr);
         }
@@ -57,226 +56,452 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 }
 
-<div class="container-fluid px-4">
-    <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center py-4">
-        <div>
-            <h1 class="h2 fw-bold">🚚 Driver Dashboard</h1>
-            <p class="text-muted mb-0">Welcome, @User.Identity?.Name</p>
-        </div>
-        <div>
-            <span class="badge bg-info fs-6 px-3 py-2">DRIVER</span>
-        </div>
-    </div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-    <!-- Driver Quick Stats -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <a href="@Url.Action("MyReports", "Driver")" class="text-decoration-none">
-                <div class="card border-start border-primary border-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-uppercase text-muted mb-1">Pending</h6>
-                                <h3 class="fw-bold"><span id="pendingCount">-</span></h3>
-                                <p class="mb-0 text-muted">Expense Requests</p>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-clock text-primary fs-3"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
-                <div class="card border-start border-success border-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-uppercase text-muted mb-1">Approved</h6>
-                                <h3 class="fw-bold">₱<span id="approvedThisMonthTotal">0.00</span></h3>
-                                <p class="mb-0 text-muted">This Month</p>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-check-circle text-success fs-3"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
-                <div class="card border-start border-warning border-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-uppercase text-muted mb-1">Reimbursed</h6>
-                                <h3 class="fw-bold">₱<span id="approvedTotal">0.00</span></h3>
-                                <p class="mb-0 text-muted">Approved Total</p>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-cash text-warning fs-3"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <a href="@Url.Action("History", "Driver")" class="text-decoration-none">
-                <div class="card border-start border-danger border-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-uppercase text-muted mb-1">Rejected</h6>
-                                <h3 class="fw-bold"><span id="rejectedCount">-</span></h3>
-                                <p class="mb-0 text-muted">Need revision</p>
-                            </div>
-                            <div class="bg-danger bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-x-circle text-danger fs-3"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Budget Awareness Section -->
-    @if (budgets.Any())
-    {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">💰 Current Budget Limits</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small">These budgets are set by management. Expenses exceeding these limits will be flagged as over-budget.</p>
-                <div class="row">
-                    @foreach (var b in budgets)
-                    {
-                        var remaining = b.Allocated - b.Spent;
-                        var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
-                        var isOver = remaining < 0;
-                        <div class="col-md-4 mb-3">
-                            <div class="d-flex justify-content-between">
-                                <strong>@b.Category</strong>
-                                <small class="@(isOver ? "text-danger fw-bold" : "text-muted")">
-                                    @(isOver ? $"🚩 Over by ₱{Math.Abs(remaining):N2}" : $"₱{remaining:N2} left")
-                                </small>
-                            </div>
-                            <div class="progress" style="height:8px;">
-                                <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
-                                     style="width:@Math.Min(pct, 100)%"></div>
-                            </div>
-                            <small class="text-muted">₱@b.Spent.ToString("N2") / ₱@b.Allocated.ToString("N2")</small>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
+<style>
+    :root {
+        --d-primary: #1a6bb5; /* formal blue */
+        --d-accent: #2ec4b6;  /* subtle accent */
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-sm: 6px;
     }
 
-    <!-- My Recent Reports -->
-    @if (recentReports.Any())
-    {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light d-flex justify-content-between">
-                <h5 class="mb-0">📋 My Recent Reports</h5>
-                <a href="@Url.Action("MyReports", "Driver")" class="btn btn-sm btn-outline-primary">View All</a>
+    .dash-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    /* ── Header ── */
+    .dash-header {
+        margin-bottom: 36px;
+    }
+    .dash-greeting {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+    }
+    .dash-greeting span {
+        color: var(--d-primary);
+        font-weight:700;
+    }
+    .dash-date {
+        color: var(--d-muted);
+        font-size: .92rem;
+        margin-top: 2px;
+    }
+
+    /* ── Stat Cards ── */
+    .stat-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 18px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform .12s ease;
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .stat-icon--pending  { background: rgba(26,107,181,.06);  color: #1a6bb5; }
+    .stat-icon--approved { background: rgba(16,185,129,.06);  color: #10b981; }
+    .stat-icon--money    { background: rgba(99,102,241,.06);  color: #6366f1; }
+    .stat-icon--rejected { background: rgba(239,68,68,.06);   color: #ef4444; }
+    .stat-label {
+        font-size: .78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--d-muted);
+        margin-bottom: 4px;
+    }
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--d-text);
+        line-height: 1.2;
+    }
+    .stat-sub {
+        font-size: .82rem;
+        color: var(--d-muted);
+        margin-top: 2px;
+    }
+
+    /* ── Section Cards ── */
+    .dash-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .dash-card-head {
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--d-border);
+    }
+    .dash-card-title {
+        font-size: .98rem;
+        font-weight: 600;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .dash-card-title i { color: var(--d-primary); font-size:1.1rem; }
+    .dash-card-body { padding: 16px 18px; }
+    .dash-link {
+        color: var(--d-accent);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: .88rem;
+        transition: color .2s;
+    }
+    .dash-link:hover {
+        color: var(--d-primary);
+    }
+
+    /* ── Budget Progress ── */
+    .budget-item {
+        padding: 16px 0;
+    }
+    .budget-item + .budget-item {
+        border-top: 1px solid var(--d-border);
+    }
+    .budget-label {
+        font-weight: 600;
+        color: var(--d-text);
+        font-size: .92rem;
+    }
+    .budget-remain {
+        font-size: .82rem;
+        font-weight: 500;
+    }
+    .budget-remain--ok   { color: #0d8b7d; }
+    .budget-remain--over { color: #dc2626; }
+    .budget-bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top:8px; overflow:hidden; }
+    .budget-bar-fill { height:100%; border-radius:3px; transition: width .5s ease; }
+    .budget-bar-fill--ok     { background: var(--d-primary); }
+    .budget-bar-fill--warn   { background: #f59e0b; }
+    .budget-bar-fill--danger { background: #ef4444; }
+    .budget-amounts {
+        font-size: .78rem;
+        color: var(--d-muted);
+        margin-top: 4px;
+    }
+
+    /* ── Tables ── */
+    .dash-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .9rem;
+    }
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--d-border);
+    }
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+    }
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    /* ── Status Dots ── */
+    .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+    .status-dot--pending  { background: #f59e0b; }
+    .status-dot--approved { background: #10b981; }
+    .status-dot--rejected { background: #ef4444; }
+    .status-dot--ceo      { background: #6366f1; }
+    .status-dot--default  { background: #94a3b8; }
+
+    /* ── Category Chip ── */
+    .category-chip {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 6px;
+        background: rgba(46,196,182,.1);
+        color: #0d8b7d;
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    /* ── Budget Flag (no badge) ── */
+    .budget-flag {
+        font-size: .82rem;
+        font-weight: 600;
+    }
+    .budget-flag--over { color: #dc2626; }
+    .budget-flag--ok   { color: #10b981; }
+
+    /* ── Toast ── */
+    .dash-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 1055;
+        padding: 14px 22px;
+        border-radius: var(--d-radius-sm);
+        font-size: .9rem;
+        font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,.12);
+        animation: slideUp .4s ease;
+    }
+    .dash-toast--success {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+    .dash-toast--error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    @@keyframes slideUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @@media (max-width: 768px) {
+        .dash-wrapper { padding: 20px 0 32px; }
+        .stat-card { padding: 20px 18px; }
+        .dash-card-body { padding: 18px 18px; }
+    }
+</style>
+
+<div class="dash-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- ── Header ── -->
+        <div class="dash-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <h1 class="dash-greeting">Welcome back, <span>@User.Identity?.Name</span></h1>
+                <p class="dash-date mb-0">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
+                </p>
             </div>
-            <div class="card-body">
+            <a href="@Url.Action("Expenses", "Driver")" class="btn px-4 py-2 text-white" style="background:var(--d-gradient);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
+                <i class="bi bi-plus-lg me-1"></i> New Expense
+            </a>
+        </div>
+
+        <!-- ── Stats Row ── -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("MyReports", "Driver")" class="stat-card">
+                    <div class="stat-icon stat-icon--pending">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value"><span id="pendingCount">—</span></div>
+                        <div class="stat-sub">Expense requests</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("History", "Driver")" class="stat-card">
+                    <div class="stat-icon stat-icon--approved">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Approved</div>
+                        <div class="stat-value">₱<span id="approvedThisMonthTotal">0.00</span></div>
+                        <div class="stat-sub">This month</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("History", "Driver")" class="stat-card">
+                    <div class="stat-icon stat-icon--money">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Reimbursed</div>
+                        <div class="stat-value">₱<span id="approvedTotal">0.00</span></div>
+                        <div class="stat-sub">Total approved</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("History", "Driver")" class="stat-card">
+                    <div class="stat-icon stat-icon--rejected">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Rejected</div>
+                        <div class="stat-value"><span id="rejectedCount">—</span></div>
+                        <div class="stat-sub">Need revision</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- ── Budget Limits ── -->
+        @if (budgets.Any())
+        {
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <div class="dash-card-title"><i class="bi bi-pie-chart"></i> Budget Overview</div>
+                </div>
+                <div class="dash-card-body">
+                    <p class="text-muted mb-3" style="font-size:.85rem;">Budgets set by management. Expenses exceeding limits are flagged automatically.</p>
+                    <div class="row">
+                        @foreach (var b in budgets)
+                        {
+                            var remaining = b.Allocated - b.Spent;
+                            var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                            var isOver = remaining < 0;
+                            <div class="col-lg-4 col-md-6">
+                                <div class="budget-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="budget-label">@b.Category</span>
+                                        <span class="budget-remain @(isOver ? "budget-remain--over" : "budget-remain--ok")">
+                                            @(isOver ? $"Over by ₱{Math.Abs(remaining):N2}" : $"₱{remaining:N2} left")
+                                        </span>
+                                    </div>
+                                    <div class="budget-bar">
+                                        <div class="budget-bar-fill @(pct >= 100 ? "budget-bar-fill--danger" : pct >= 75 ? "budget-bar-fill--warn" : "budget-bar-fill--ok")"
+                                             style="width:@Math.Min(pct, 100)%"></div>
+                                    </div>
+                                    <div class="budget-amounts">₱@b.Spent.ToString("N2") / ₱@b.Allocated.ToString("N2")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ── Recent Reports ── -->
+        @if (recentReports.Any())
+        {
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <div class="dash-card-title"><i class="bi bi-file-earmark-bar-graph"></i> Recent Reports</div>
+                    <a href="@Url.Action("MyReports", "Driver")" class="dash-link">View all <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="dash-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="dash-table">
+                            <thead>
+                                <tr>
+                                    <th>Report</th>
+                                    <th>Submitted</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Budget</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in recentReports)
+                                {
+                                    var statusClass = r.Status switch
+                                    {
+                                        CEMS.Models.ReportStatus.Submitted => "status-dot--pending",
+                                        CEMS.Models.ReportStatus.Approved => "status-dot--approved",
+                                        CEMS.Models.ReportStatus.Rejected => "status-dot--rejected",
+                                        CEMS.Models.ReportStatus.PendingCEOApproval => "status-dot--ceo",
+                                        _ => "status-dot--default"
+                                    };
+                                    var statusLabel = r.Status switch
+                                    {
+                                        CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO",
+                                        _ => r.Status.ToString()
+                                    };
+                                    <tr>
+                                        <td class="fw-semibold">#@r.Id</td>
+                                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                        <td class="fw-semibold">₱@r.TotalAmount.ToString("N2")</td>
+                                        <td><span class="status-dot @statusClass"></span> @statusLabel</td>
+                                        <td>
+                                            @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                                            {
+                                                <span class="budget-flag budget-flag--over">Over budget</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="budget-flag budget-flag--ok">Within budget</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ── Recent Expense Items ── -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div class="dash-card-title"><i class="bi bi-receipt-cutoff"></i> Recent Expense Items</div>
+            </div>
+            <div class="dash-card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                    <table class="dash-table">
+                        <thead>
                             <tr>
-                                <th>Report #</th>
-                                <th>Submitted</th>
-                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Description</th>
                                 <th>Status</th>
                                 <th>Budget</th>
+                                <th>Receipt</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach (var r in recentReports)
-                            {
-                                var statusBadge = r.Status switch
-                                {
-                                    CEMS.Models.ReportStatus.Submitted => "bg-warning",
-                                    CEMS.Models.ReportStatus.Approved => "bg-success",
-                                    CEMS.Models.ReportStatus.Rejected => "bg-danger",
-                                    CEMS.Models.ReportStatus.PendingCEOApproval => "bg-info",
-                                    _ => "bg-secondary"
-                                };
-                                var statusLabel = r.Status switch
-                                {
-                                    CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO Approval",
-                                    _ => r.Status.ToString()
-                                };
-                                <tr class="@(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "table-warning" : "")">
-                                    <td><strong>#@r.Id</strong></td>
-                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                    <td class="fw-bold">₱@r.TotalAmount.ToString("N2")</td>
-                                    <td><span class="badge @statusBadge">@statusLabel</span></td>
-                                    <td>
-                                        @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
-                                        {
-                                            <span class="badge bg-danger">🚩 Over Budget</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success">✓ Within Budget</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
+                        <tbody id="recentItems">
+                            <!-- populated by JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    }
 
-    <!-- Recent Submissions -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">📋 Your Recent Expense Items</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Description</th>
-                            <th>Status</th>
-                            <th>Budget</th>
-                            <th>Receipt</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentItems">
-                        <!-- populated by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 </div>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-2px);
-        transition: all 0.3s ease;
-    }
-</style>
 
 @* Render submit modal *@
 @await Html.PartialAsync("_SubmitExpenseModal", new CEMS.Models.Expense())
@@ -284,13 +509,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 @* TempData alerts *@
 @if (TempData["Success"] != null)
 {
-    <div class="position-fixed bottom-0 end-0 m-4" style="z-index:1050;">
-        <div class="alert alert-success">@TempData["Success"]</div>
-    </div>
+    <div class="dash-toast dash-toast--success">@TempData["Success"]</div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="position-fixed bottom-0 end-0 m-4" style="z-index:1050;">
-        <div class="alert alert-danger">@TempData["Error"]</div>
-    </div>
+    <div class="dash-toast dash-toast--error">@TempData["Error"]</div>
 }

@@ -6,158 +6,734 @@
     var approvals = ViewBag.Approvals as List<CEMS.Models.Approval> ?? new List<CEMS.Models.Approval>();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="bi bi-file-earmark-text"></i> My Expense Reports</h2>
-        <p class="text-muted mb-0">Track the status of all your submitted expense reports.</p>
-    </div>
-    <span class="badge bg-info fs-6 px-3 py-2">@reports.Count Reports</span>
-</div>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-sm: 6px;
+        --d-danger: #ef4444;
+        --d-warning: #f59e0b;
+        --d-success: #10b981;
+        --d-info: #6366f1;
+    }
 
-@if (reports.Any())
-{
-    @foreach (var r in reports)
-    {
-        var statusBadge = r.Status switch
-        {
-            CEMS.Models.ReportStatus.Submitted => "bg-warning",
-            CEMS.Models.ReportStatus.Approved => "bg-success",
-            CEMS.Models.ReportStatus.Rejected => "bg-danger",
-            CEMS.Models.ReportStatus.PendingCEOApproval => "bg-info",
-            _ => "bg-secondary"
-        };
-        var statusLabel = r.Status switch
-        {
-            CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO Approval",
-            _ => r.Status.ToString()
-        };
-        var isOver = r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget;
-        var reportApprovals = approvals.Where(a => a.ReportId == r.Id).ToList();
+    .reports-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
 
-        <div class="card shadow-sm mb-4 @(isOver ? "border-warning border-2" : "")">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Report #@r.Id</strong>
-                    <span class="badge @statusBadge ms-2">@statusLabel</span>
-                    @if (isOver)
-                    {
-                        <span class="badge bg-danger ms-1">🚩 Over Budget</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-success ms-1">✓ Within Budget</span>
-                    }
-                    @if (r.Reimbursed)
-                    {
-                        <span class="badge bg-primary ms-1">💰 Reimbursed</span>
-                    }
-                </div>
-                <div>
-                    <small class="text-muted">Submitted: @r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</small>
-                    <span class="fw-bold ms-3">₱@r.TotalAmount.ToString("N2")</span>
-                </div>
+    /* Header */
+    .reports-header {
+        margin-bottom: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .reports-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .reports-title i {
+            color: var(--d-primary);
+        }
+
+    .reports-subtitle {
+        color: var(--d-muted);
+        font-size: .92rem;
+    }
+
+    .reports-count {
+        background: rgba(99, 102, 241, .1);
+        color: var(--d-info);
+        border-radius: var(--d-radius-sm);
+        padding: 8px 16px;
+        font-size: .9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .reports-count i {
+            font-size: 1rem;
+        }
+
+    /* Report Card */
+    .report-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        overflow: hidden;
+        margin-bottom: 20px;
+        transition: transform .2s, box-shadow .2s;
+    }
+
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        }
+
+    .report-card--overbudget {
+        border: 2px solid var(--d-warning);
+        background: rgba(245, 158, 11, .02);
+    }
+
+    .report-card-header {
+        padding: 18px 24px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--d-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .report-card-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .report-id {
+        font-weight: 700;
+        color: var(--d-text);
+        font-size: 1.1rem;
+    }
+
+    .report-date {
+        color: var(--d-muted);
+        font-size: .85rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .report-date i {
+            font-size: .9rem;
+        }
+
+    .report-amount {
+        font-weight: 700;
+        color: var(--d-primary);
+        font-size: 1.2rem;
+        margin-left: auto;
+    }
+
+    .report-card-body {
+        padding: 0;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: .8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .status-badge--pending {
+        background: rgba(245, 158, 11, .1);
+        color: #d97706;
+    }
+
+    .status-badge--approved {
+        background: rgba(16, 185, 129, .1);
+        color: #059669;
+    }
+
+    .status-badge--rejected {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    .status-badge--ceo {
+        background: rgba(99, 102, 241, .1);
+        color: #4f46e5;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .status-dot--pending {
+        background: #f59e0b;
+    }
+
+    .status-dot--approved {
+        background: #10b981;
+    }
+
+    .status-dot--rejected {
+        background: #ef4444;
+    }
+
+    .status-dot--ceo {
+        background: #6366f1;
+    }
+
+    /* Budget Flags */
+    .budget-flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    .budget-flag--over {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    .budget-flag--ok {
+        background: rgba(16, 185, 129, .1);
+        color: #059669;
+    }
+
+    .reimbursed-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .8rem;
+        font-weight: 600;
+        background: rgba(26, 107, 181, .1);
+        color: var(--d-primary);
+    }
+
+    /* Items Table */
+    .items-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .9rem;
+    }
+
+        .items-table thead th {
+            background: #f8fafc;
+            color: var(--d-muted);
+            font-weight: 600;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--d-border);
+            text-align: left;
+        }
+
+        .items-table tbody td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: var(--d-text);
+        }
+
+        .items-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .items-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .items-table tbody tr.table-warning {
+            background: rgba(245, 158, 11, .04);
+        }
+
+            .items-table tbody tr.table-warning:hover {
+                background: rgba(245, 158, 11, .08);
+            }
+
+    /* Category Chip */
+    .category-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 6px;
+        background: rgba(46, 196, 182, .1);
+        color: #0d8b7d;
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    .category-chip--over {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    /* View Button */
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: var(--d-radius-sm);
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
+    }
+
+        .view-btn:hover {
+            background: rgba(26, 107, 181, .12);
+            color: #155a9a;
+            text-decoration: none;
+        }
+
+    /* Approval Trail */
+    .approval-trail {
+        padding: 20px 24px;
+        border-top: 1px solid var(--d-border);
+    }
+
+    .approval-trail-title {
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--d-text);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .approval-trail-title i {
+            color: var(--d-primary);
+        }
+
+    .approval-item {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(233, 238, 246, .5);
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+        .approval-item:last-child {
+            border-bottom: none;
+        }
+
+    .approval-stage {
+        flex: 0 0 80px;
+        padding: 4px 10px;
+        background: rgba(148, 163, 184, .1);
+        color: #64748b;
+        border-radius: 4px;
+        font-size: .8rem;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .approval-details {
+        flex: 1;
+    }
+
+    .approval-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: .8rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .approval-status--approved {
+        background: rgba(16, 185, 129, .1);
+        color: #059669;
+    }
+
+    .approval-status--rejected {
+        background: rgba(239, 68, 68, .1);
+        color: #dc2626;
+    }
+
+    .approval-status--pending {
+        background: rgba(245, 158, 11, .1);
+        color: #d97706;
+    }
+
+    .approval-date {
+        color: var(--d-muted);
+        font-size: .8rem;
+        margin-left: 8px;
+    }
+
+    .approval-remarks {
+        color: var(--d-text);
+        font-size: .85rem;
+        font-style: italic;
+        margin-top: 4px;
+        padding-left: 8px;
+        border-left: 2px solid var(--d-border);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: #cbd5e1;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--d-text);
+    }
+
+    .empty-text {
+        font-size: .95rem;
+        color: var(--d-muted);
+        max-width: 400px;
+        margin: 0 auto 20px;
+    }
+
+    .empty-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 24px;
+        background: var(--d-primary);
+        color: white;
+        border: none;
+        border-radius: var(--d-radius-sm);
+        font-size: .9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background .2s;
+    }
+
+        .empty-action:hover {
+            background: #155a9a;
+            color: white;
+            text-decoration: none;
+        }
+
+    /* Status Indicator */
+    .status-indicator {
+        padding: 12px 20px;
+        margin: 0 24px;
+        border-bottom: 1px solid var(--d-border);
+        color: var(--d-muted);
+        font-size: .85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .status-indicator i {
+            color: var(--d-info);
+        }
+
+    @@media (max-width: 768px) {
+        .reports-wrapper {
+            padding: 20px 0 32px;
+        }
+
+        .reports-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .report-card-header {
+            padding: 16px 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .report-card-info {
+            flex-wrap: wrap;
+        }
+
+        .report-amount {
+            margin-left: 0;
+        }
+
+        .items-table {
+            font-size: .85rem;
+        }
+
+            .items-table thead th,
+            .items-table tbody td {
+                padding: 12px 16px;
+            }
+
+        .approval-trail {
+            padding: 16px 20px;
+        }
+    }
+</style>
+
+<div class="reports-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- Header -->
+        <div class="reports-header">
+            <div>
+                <h1 class="reports-title"><i class="bi bi-file-earmark-text"></i> My Expense Reports</h1>
+                <p class="reports-subtitle">Track the status of all your submitted expense reports</p>
             </div>
-            <div class="card-body">
-                <!-- Expense Items -->
-                @if (r.Items.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Category</th>
-                                    <th>Amount</th>
-                                    <th>Budget Limit</th>
-                                    <th>Description</th>
-                                    <th>Receipt</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in r.Items)
-                                {
-                                    var catBudget = budgets.FirstOrDefault(b => b.Category == item.Category);
-                                    var catOver = catBudget != null && catBudget.Spent > catBudget.Allocated;
-                                    <tr class="@(catOver ? "table-danger" : "")">
-                                        <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
-                                        <td>
-                                            <span class="badge bg-primary bg-opacity-10 text-primary">@item.Category</span>
-                                            @if (catOver)
-                                            {
-                                                <span class="badge bg-danger ms-1">🚩</span>
-                                            }
-                                        </td>
-                                        <td>₱@item.Amount.ToString("N2")</td>
-                                        <td>
-                                            @if (catBudget != null)
-                                            {
-                                                <span>₱@catBudget.Allocated.ToString("N2")</span>
-                                                <small class="text-muted">(spent ₱@catBudget.Spent.ToString("N2"))</small>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">No limit set</span>
-                                            }
-                                        </td>
-                                        <td>@item.Description</td>
-                                        <td>
-                                            @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
-                                            {
-                                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
-                                            }
-                                            else if (!string.IsNullOrEmpty(item.ReceiptPath))
-                                            {
-                                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">View</a>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
+            <div class="reports-count">
+                <i class="bi bi-files"></i> @reports.Count Reports
+            </div>
+        </div>
 
-                <!-- Approval Trail / Remarks -->
-                @if (reportApprovals.Any())
+        @if (reports.Any())
+        {
+            @foreach (var r in reports)
+            {
+                var isOver = r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget;
+                var reportApprovals = approvals.Where(a => a.ReportId == r.Id).ToList();
+
+                var statusClass = r.Status switch
                 {
-                    <div class="mt-3">
-                        <strong>Approval Trail:</strong>
-                        @foreach (var a in reportApprovals)
+                    CEMS.Models.ReportStatus.Submitted => "status-badge--pending",
+                    CEMS.Models.ReportStatus.Approved => "status-badge--approved",
+                    CEMS.Models.ReportStatus.Rejected => "status-badge--rejected",
+                    CEMS.Models.ReportStatus.PendingCEOApproval => "status-badge--ceo",
+                    _ => ""
+                };
+
+                var dotClass = r.Status switch
+                {
+                    CEMS.Models.ReportStatus.Submitted => "status-dot--pending",
+                    CEMS.Models.ReportStatus.Approved => "status-dot--approved",
+                    CEMS.Models.ReportStatus.Rejected => "status-dot--rejected",
+                    CEMS.Models.ReportStatus.PendingCEOApproval => "status-dot--ceo",
+                    _ => ""
+                };
+
+                var statusLabel = r.Status switch
+                {
+                    CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO Approval",
+                    _ => r.Status.ToString()
+                };
+
+                <div class="report-card @(isOver ? "report-card--overbudget" : "")">
+                    <!-- Report Header -->
+                    <div class="report-card-header">
+                        <div class="report-card-info">
+                            <div class="report-id">Report #@r.Id</div>
+                            <div class="report-date">
+                                <i class="bi bi-calendar3"></i>
+                                Submitted: @r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")
+                            </div>
+                            <span class="status-badge @statusClass">
+                                <span class="status-dot @dotClass"></span>
+                                @statusLabel
+                            </span>
+                            @if (isOver)
+                            {
+                                <span class="budget-flag budget-flag--over">
+                                    <i class="bi bi-exclamation-triangle"></i> Over Budget
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="budget-flag budget-flag--ok">
+                                    <i class="bi bi-check-circle"></i> Within Budget
+                                </span>
+                            }
+                            @if (r.Reimbursed)
+                            {
+                                <span class="reimbursed-badge">
+                                    <i class="bi bi-wallet2"></i> Reimbursed
+                                </span>
+                            }
+                        </div>
+                        <div class="report-amount">₱@r.TotalAmount.ToString("N2")</div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <div class="report-card-body">
+                        @if (r.Items.Any())
                         {
-                            var aBadge = a.Status == CEMS.Models.ApprovalStatus.Approved ? "bg-success" : a.Status == CEMS.Models.ApprovalStatus.Rejected ? "bg-danger" : "bg-warning";
-                            <div class="d-flex align-items-center mt-1">
-                                <span class="badge bg-secondary me-2">@a.Stage</span>
-                                <span class="badge @aBadge me-2">@a.Status</span>
-                                @if (a.DecisionDate.HasValue)
+                            <div class="table-responsive">
+                                <table class="items-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Category</th>
+                                            <th>Amount</th>
+                                            <th>Budget Limit</th>
+                                            <th>Description</th>
+                                            <th>Receipt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in r.Items)
+                                        {
+                                            var catBudget = budgets.FirstOrDefault(b => b.Category == item.Category);
+                                            var catOver = catBudget != null && catBudget.Spent > catBudget.Allocated;
+                                            <tr class="@(catOver ? "table-warning" : "")">
+                                                <td>@item.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                                <td>
+                                                    <span class="category-chip @(catOver ? "category-chip--over" : "")">
+                                                        @if (catOver)
+                                                        {
+                                                            <i class="bi bi-exclamation-triangle"></i>
+                                                        }
+                                                        @item.Category
+                                                    </span>
+                                                </td>
+                                                <td class="fw-semibold">₱@item.Amount.ToString("N2")</td>
+                                                <td>
+                                                    @if (catBudget != null)
+                                                    {
+                                                        <div>
+                                                            <span class="fw-medium">₱@catBudget.Allocated.ToString("N2")</span>
+                                                            <small class="text-muted d-block">Spent: ₱@catBudget.Spent.ToString("N2")</small>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">No limit</span>
+                                                    }
+                                                </td>
+                                                <td class="text-muted">@(item.Description ?? "—")</td>
+                                                <td>
+                                                    @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                                                    {
+                                                        <a class="view-btn" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </a>
+                                                    }
+                                                    else if (!string.IsNullOrEmpty(item.ReceiptPath))
+                                                    {
+                                                        <a class="view-btn" target="_blank" href="@item.ReceiptPath">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">—</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+
+                        <!-- Status Indicator -->
+                        @if (r.Status == CEMS.Models.ReportStatus.Submitted)
+                        {
+                            <div class="status-indicator">
+                                <i class="bi bi-hourglass-split"></i>
+                                Awaiting manager review...
+                            </div>
+                        }
+                        else if (r.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
+                        {
+                            <div class="status-indicator">
+                                <i class="bi bi-arrow-up-right-circle"></i>
+                                Manager approved — awaiting CEO approval for over-budget expense
+                            </div>
+                        }
+
+                        <!-- Approval Trail -->
+                        @if (reportApprovals.Any())
+                        {
+                            <div class="approval-trail">
+                                <div class="approval-trail-title">
+                                    <i class="bi bi-diagram-3"></i> Approval Trail
+                                </div>
+                                @foreach (var a in reportApprovals)
                                 {
-                                    <small class="text-muted me-2">@a.DecisionDate.Value.ToLocalTime().ToString("MMM d, yyyy")</small>
-                                }
-                                @if (!string.IsNullOrEmpty(a.Remarks))
-                                {
-                                    <span class="text-muted fst-italic">"@a.Remarks"</span>
+                                    var approvalStatusClass = a.Status switch
+                                    {
+                                        CEMS.Models.ApprovalStatus.Approved => "approval-status--approved",
+                                        CEMS.Models.ApprovalStatus.Rejected => "approval-status--rejected",
+                                        CEMS.Models.ApprovalStatus.Pending => "approval-status--pending",
+                                        _ => ""
+                                    };
+                                    <div class="approval-item">
+                                        <div class="approval-stage">@a.Stage</div>
+                                        <div class="approval-details">
+                                            <span class="approval-status @approvalStatusClass">
+                                                @a.Status
+                                            </span>
+                                            @if (a.DecisionDate.HasValue)
+                                            {
+                                                <span class="approval-date">
+                                                    @a.DecisionDate.Value.ToLocalTime().ToString("MMM d, yyyy")
+                                                </span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(a.Remarks))
+                                            {
+                                                <div class="approval-remarks">"@a.Remarks"</div>
+                                            }
+                                        </div>
+                                    </div>
                                 }
                             </div>
                         }
                     </div>
-                }
-                else if (r.Status == CEMS.Models.ReportStatus.Submitted)
-                {
-                    <div class="mt-2 text-muted"><small>⏳ Awaiting manager review...</small></div>
-                }
-                else if (r.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
-                {
-                    <div class="mt-2 text-info"><small>⏳ Manager approved — awaiting CEO approval for over-budget expense...</small></div>
-                }
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h3 class="empty-title">No Reports Found</h3>
+                <p class="empty-text">
+                    You haven't submitted any expense reports yet. Submit your first expense to get started.
+                </p>
+                <a href="@Url.Action("Expenses", "Driver")" class="empty-action">
+                    <i class="bi bi-plus-lg"></i> Submit Expenses
+                </a>
             </div>
-        </div>
-    }
-}
-else
-{
-    <div class="alert alert-info text-center py-4">
-        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-        You haven't submitted any expense reports yet.
-        <br />
-        <a href="@Url.Action("Expenses", "Driver")" class="btn btn-primary mt-2">Submit Expenses</a>
+        }
+
     </div>
-}
+</div>
+
+@* Bootstrap Icons *@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
