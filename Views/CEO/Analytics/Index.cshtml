@@ -1,0 +1,214 @@
+@{
+    ViewData["Title"] = "Financial Reports & Analytics";
+    Layout = "~/Views/Shared/_CEOLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    int totalReports = ViewBag.TotalReports ?? 0;
+    int approvedCount = ViewBag.ApprovedCount ?? 0;
+    int rejectedCount = ViewBag.RejectedCount ?? 0;
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    decimal monthlyReimbursed = ViewBag.MonthlyReimbursed ?? 0m;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-bar-chart text-primary"></i> Financial Reports &amp; Analytics</h2>
+        <p class="text-muted mb-0">Summarized expense and budget reports with charts and trends.</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-primary border-4">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Reports</h6>
+                <h2 class="fw-bold">@totalReports</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-success border-4">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Approved</h6>
+                <h2 class="fw-bold text-success">@approvedCount</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-danger border-4">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Rejected</h6>
+                <h2 class="fw-bold text-danger">@rejectedCount</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-warning border-4">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Pending</h6>
+                <h2 class="fw-bold text-warning">@pendingCount</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Monthly Reimbursed</h6>
+                <h3 class="fw-bold text-primary">₱@monthlyReimbursed.ToString("N2")</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light"><strong>Budget Usage by Category</strong></div>
+            <div class="card-body">
+                <canvas id="budgetChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light"><strong>Report Status Distribution</strong></div>
+            <div class="card-body">
+                <canvas id="statusChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light"><strong>Monthly Expense Trend (Last 6 Months)</strong></div>
+            <div class="card-body">
+                <canvas id="trendChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Summary Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-light"><strong>Budget Summary</strong></div>
+    <div class="card-body">
+        @if (budgets.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Category</th>
+                            <th>Allocated</th>
+                            <th>Spent</th>
+                            <th>Remaining</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in budgets)
+                        {
+                            var remaining = b.Allocated - b.Spent;
+                            var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                            <tr>
+                                <td class="fw-bold">@b.Category</td>
+                                <td>₱@b.Allocated.ToString("N2")</td>
+                                <td>₱@b.Spent.ToString("N2")</td>
+                                <td class="@(remaining < 0 ? "text-danger fw-bold" : "")">₱@remaining.ToString("N2")</td>
+                                <td style="min-width:150px;">
+                                    <div class="progress" style="height:20px;">
+                                        <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
+                                             style="width:@Math.Min(pct, 100)%">
+                                            @pct%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted text-center">No budget data available.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Budget usage chart
+    const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+    new Chart(budgetCtx, {
+        type: 'bar',
+        data: {
+            labels: [@Html.Raw(string.Join(",", budgets.Select(b => $"'{b.Category}'")))],
+            datasets: [
+                {
+                    label: 'Allocated',
+                    data: [@Html.Raw(string.Join(",", budgets.Select(b => b.Allocated.ToString("F2"))))],
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Spent',
+                    data: [@Html.Raw(string.Join(",", budgets.Select(b => b.Spent.ToString("F2"))))],
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+
+    // Status distribution chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Approved', 'Rejected', 'Pending'],
+            datasets: [{
+                data: [@approvedCount, @rejectedCount, @pendingCount],
+                backgroundColor: ['rgba(40, 167, 69, 0.7)', 'rgba(220, 53, 69, 0.7)', 'rgba(255, 193, 7, 0.7)'],
+                borderWidth: 2
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Monthly trend chart (loaded via API)
+    async function loadTrend() {
+        try {
+            const res = await fetch('@Url.Action("Metrics", "CEO")');
+            const data = await res.json();
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: data.monthlyData.map(m => m.label),
+                    datasets: [{
+                        label: 'Monthly Expenses (₱)',
+                        data: data.monthlyData.map(m => m.total),
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'top' } } }
+            });
+        } catch (e) { console.error('Failed to load trend data', e); }
+    }
+    loadTrend();
+</script>
+}

@@ -1,6 +1,13 @@
 ﻿@{
     ViewData["Title"] = "Manager Dashboard";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+
+    decimal totalBudget = ViewBag.TotalBudget ?? 0m;
+    decimal totalSpent = ViewBag.TotalSpent ?? 0m;
+    decimal totalRemaining = ViewBag.TotalRemaining ?? 0m;
+    int approvedTodayCount = ViewBag.ApprovedTodayCount ?? 0;
+    decimal approvedTodayTotal = ViewBag.ApprovedTodayTotal ?? 0m;
+    int activeDrivers = ViewBag.ActiveDrivers ?? 0;
 }
 
 <div class="container-fluid px-4">
@@ -24,10 +31,11 @@
                 if(container && data.budgets){
                     container.innerHTML = '';
                     for(const b of data.budgets){
-                        const percent = b.Allocated === 0 ? 0 : Math.min(100, Math.round((b.Spent / b.Allocated) * 100));
+                        const percent = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
+                        const barColor = percent >= 100 ? 'bg-danger' : percent >= 75 ? 'bg-warning' : '';
                         const div = document.createElement('div');
                         div.className = 'mb-2';
-                        div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.Category}</div><div>₱${b.Spent.toFixed(2)} / ₱${b.Allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
+                        div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.category}</div><div>₱${b.spent.toFixed(2)} / ₱${b.allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar ${barColor}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
                         container.appendChild(div);
                     }
                 }
@@ -60,10 +68,63 @@
             </div>
         </div>
 
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Approved Today</h6>
+                            <h3 class="fw-bold">₱@approvedTodayTotal.ToString("N2")</h3>
+                            <p class="mb-0 text-muted">@approvedTodayCount Expenses</p>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-check-circle text-success fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">Team Budget</h6>
+                            <h3 class="fw-bold">₱@totalBudget.ToString("N2")</h3>
+                            <p class="mb-0 text-muted">Spent: ₱@totalSpent.ToString("N2")</p>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-cash text-warning fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-start border-info border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1">My Drivers</h6>
+                            <h3 class="fw-bold">@activeDrivers</h3>
+                            <p class="mb-0 text-muted">Active Drivers</p>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-people text-info fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Overview & Stats Row -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-light">Current Budget Usage</div>
+                <div class="card-header bg-light">Current Budget Usage (Set by CEO)</div>
                 <div class="card-body">
                     <div id="budgetOverview">Loading...</div>
                 </div>
@@ -83,56 +144,21 @@
                             <h3 id="mgrApproved">₱0.00</h3>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Approved Today</h6>
-                            <h3 class="fw-bold">₱3,200</h3>
-                            <p class="mb-0 text-muted">3 Expenses</p>
+                    <hr/>
+                    <div class="row">
+                        <div class="col-6">
+                            <h6>Budget Remaining</h6>
+                            <h3 class="@(totalRemaining < 0 ? "text-danger" : "text-success")">₱@totalRemaining.ToString("N2")</h3>
                         </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-check-circle text-success fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Team Budget</h6>
-                            <h3 class="fw-bold">₱15,000</h3>
-                            <p class="mb-0 text-muted">Monthly Limit</p>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-cash text-warning fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-info border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">My Drivers</h6>
-                            <h3 class="fw-bold">6</h3>
-                            <p class="mb-0 text-muted">Active Drivers</p>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-people text-info fs-3"></i>
+                        <div class="col-6">
+                            <h6>Budget Utilization</h6>
+                            @{
+                                int budgetPct = totalBudget == 0 ? 0 : (int)Math.Round((double)(totalSpent / totalBudget * 100));
+                            }
+                            <div class="progress mt-2" style="height:24px;">
+                                <div class="progress-bar @(budgetPct >= 100 ? "bg-danger" : budgetPct >= 75 ? "bg-warning" : "bg-success")"
+                                     style="width:@Math.Min(budgetPct, 100)%">@budgetPct%</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -146,25 +172,25 @@
             <h4 class="mb-3">⚡ Manager Actions</h4>
             <div class="row g-3">
                 <div class="col-md-3">
-                    <a href="@Url.Action("Expenses", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
+                    <a href="@Url.Action("Reports", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
                         <div class="card-body text-center py-4">
                             <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
                                 <i class="bi bi-list-check text-primary fs-2"></i>
                             </div>
-                            <h5 class="card-title">Review Expenses</h5>
+                            <h5 class="card-title">Review Reports</h5>
                             <p class="card-text text-muted small">Approve/Reject submissions</p>
                         </div>
                     </a>
                 </div>
 
                 <div class="col-md-3">
-                    <a href="@Url.Action("Team", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
+                    <a href="@Url.Action("OverBudget", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
                         <div class="card-body text-center py-4">
-                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-truck text-success fs-2"></i>
+                            <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                                <i class="bi bi-exclamation-triangle text-danger fs-2"></i>
                             </div>
-                            <h5 class="card-title">Team Monitoring</h5>
-                            <p class="card-text text-muted small">View driver expenses</p>
+                            <h5 class="card-title">Over-Budget</h5>
+                            <p class="card-text text-muted small">Flag &amp; forward to CEO</p>
                         </div>
                     </a>
                 </div>
@@ -176,19 +202,19 @@
                                 <i class="bi bi-pie-chart text-warning fs-2"></i>
                             </div>
                             <h5 class="card-title">Budget Overview</h5>
-                            <p class="card-text text-muted small">Track spending</p>
+                            <p class="card-text text-muted small">Track spending vs limits</p>
                         </div>
                     </a>
                 </div>
 
                 <div class="col-md-3">
-                    <a href="#" class="card text-decoration-none shadow-sm hover-shadow">
+                    <a href="@Url.Action("Expenses", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
                         <div class="card-body text-center py-4">
                             <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-flag text-info fs-2"></i>
+                                <i class="bi bi-receipt text-info fs-2"></i>
                             </div>
-                            <h5 class="card-title">Escalate</h5>
-                            <p class="card-text text-muted small">Flag over-budget to CEO</p>
+                            <h5 class="card-title">All Expenses</h5>
+                            <p class="card-text text-muted small">View team expenses</p>
                         </div>
                     </a>
                 </div>

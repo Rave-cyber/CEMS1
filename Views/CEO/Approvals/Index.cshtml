@@ -1,44 +1,75 @@
 @{
-    ViewData["Title"] = "CEO Approvals";
-    Layout = "~/Views/Shared/_ManagerLayout.cshtml"; // reuse manager layout for CEO
+    ViewData["Title"] = "Over-Budget Expense Reports";
+    Layout = "~/Views/Shared/_CEOLayout.cshtml";
+    var reports = ViewBag.Forwarded as List<CEMS.Models.OverBudgetReportDto> ?? new List<CEMS.Models.OverBudgetReportDto>();
 }
 
-<h2>Reports Requiring CEO Approval</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-exclamation-triangle text-warning"></i> Over-Budget Expense Reports</h2>
+        <p class="text-muted mb-0">Expense reports that exceed budget limits and require CEO approval.</p>
+    </div>
+    <span class="badge bg-warning fs-6 px-3 py-2">@reports.Count Pending</span>
+</div>
 
-@if(ViewBag.Forwarded != null)
+@if (reports.Any())
 {
     <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
+        <table class="table table-hover shadow-sm">
+            <thead class="table-dark">
                 <tr>
-                    <th>Report ID</th>
+                    <th>Report #</th>
                     <th>Driver</th>
-                    <th>Total</th>
+                    <th>Total Amount</th>
+                    <th>Exceeded By</th>
                     <th>Submitted</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach(var dto in ViewBag.Forwarded as List<CEMS.Models.PendingExpenseReportDto>)
+                @foreach (var dto in reports)
                 {
                     var r = dto.Report;
                     <tr>
-                        <td>@r.Id</td>
-                        <td>@(dto.UserName ?? "Unknown")</td>
-                        <td>₱@r.TotalAmount.ToString("N2")</td>
-                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td><strong>#@r.Id</strong></td>
                         <td>
-                            <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">Details</a>
-                            <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline-block; margin-left:6px;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@r.Id" />
-                                <button class="btn btn-sm btn-success">Approve</button>
-                            </form>
-                            <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline-block; margin-left:6px;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@r.Id" />
-                                <button class="btn btn-sm btn-danger">Reject</button>
-                            </form>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">
+                                    <i class="bi bi-person text-primary"></i>
+                                </div>
+                                @(dto.UserName ?? "Unknown")
+                            </div>
+                        </td>
+                        <td class="fw-bold">₱@r.TotalAmount.ToString("N2")</td>
+                        <td>
+                            @if (dto.ExceedAmount > 0)
+                            {
+                                <span class="text-danger fw-bold">+₱@dto.ExceedAmount.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td><span class="badge bg-warning text-dark">Pending CEO</span></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a class="btn btn-info" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                                <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline-block;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
+                                </form>
+                                <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline-block;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -48,5 +79,8 @@
 }
 else
 {
-    <div class="alert alert-info">No forwarded reports.</div>
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
+        <strong>All clear!</strong> No over-budget expense reports awaiting your approval.
+    </div>
 }

@@ -1,6 +1,11 @@
 ﻿@{
     ViewData["Title"] = "Driver Dashboard";
     Layout = "~/Views/Shared/_DriverLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    decimal totalBudget = ViewBag.TotalBudget ?? 0m;
+    decimal totalSpent = ViewBag.TotalSpent ?? 0m;
+    decimal totalRemaining = ViewBag.TotalRemaining ?? 0m;
+    var recentReports = ViewBag.RecentReports as List<CEMS.Models.ExpenseReport> ?? new List<CEMS.Models.ExpenseReport>();
 }
 
 @section Scripts {
@@ -20,12 +25,23 @@ async function loadDriverMetrics(){
         tbody.innerHTML = '';
         for(const item of data.recent || []){
             const tr = document.createElement('tr');
+            const isOver = item.budgetCheck === 'OverBudget';
+            if(isOver) tr.className = 'table-warning';
+
+            let statusBadge = 'bg-secondary';
+            let statusLabel = item.reportStatus;
+            if(item.reportStatus === 'Submitted') statusBadge = 'bg-warning';
+            else if(item.reportStatus === 'Approved') statusBadge = 'bg-success';
+            else if(item.reportStatus === 'Rejected') statusBadge = 'bg-danger';
+            else if(item.reportStatus === 'PendingCEOApproval'){ statusBadge = 'bg-info'; statusLabel = 'Pending CEO'; }
+
             tr.innerHTML = `
                 <td>${new Date(item.date).toLocaleDateString()}</td>
                 <td><span class="badge bg-primary">${item.category}</span></td>
                 <td>₱${Number(item.amount).toFixed(2)}</td>
                 <td>${item.description || ''}</td>
-                <td><span class="badge bg-warning">${item.reportStatus}</span></td>
+                <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
+                <td>${isOver ? '<span class="badge bg-danger">🚩 Over</span>' : '<span class="badge bg-success">✓ OK</span>'}</td>
                 <td>${item.receiptUrl ? `<a class="btn btn-sm btn-outline-primary" target="_blank" href="${item.receiptUrl}">📄 View</a>` : ''}</td>
             `;
             tbody.appendChild(tr);
@@ -56,7 +72,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     <!-- Driver Quick Stats -->
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
-            <a href="@Url.Action("Expenses", "Driver")" class="text-decoration-none">
+            <a href="@Url.Action("MyReports", "Driver")" class="text-decoration-none">
                 <div class="card border-start border-primary border-4 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -132,11 +148,104 @@ document.addEventListener('DOMContentLoaded', ()=>{
         </div>
     </div>
 
-  
+    <!-- Budget Awareness Section -->
+    @if (budgets.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">💰 Current Budget Limits</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">These budgets are set by management. Expenses exceeding these limits will be flagged as over-budget.</p>
+                <div class="row">
+                    @foreach (var b in budgets)
+                    {
+                        var remaining = b.Allocated - b.Spent;
+                        var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                        var isOver = remaining < 0;
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>@b.Category</strong>
+                                <small class="@(isOver ? "text-danger fw-bold" : "text-muted")">
+                                    @(isOver ? $"🚩 Over by ₱{Math.Abs(remaining):N2}" : $"₱{remaining:N2} left")
+                                </small>
+                            </div>
+                            <div class="progress" style="height:8px;">
+                                <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
+                                     style="width:@Math.Min(pct, 100)%"></div>
+                            </div>
+                            <small class="text-muted">₱@b.Spent.ToString("N2") / ₱@b.Allocated.ToString("N2")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- My Recent Reports -->
+    @if (recentReports.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex justify-content-between">
+                <h5 class="mb-0">📋 My Recent Reports</h5>
+                <a href="@Url.Action("MyReports", "Driver")" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Report #</th>
+                                <th>Submitted</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Budget</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in recentReports)
+                            {
+                                var statusBadge = r.Status switch
+                                {
+                                    CEMS.Models.ReportStatus.Submitted => "bg-warning",
+                                    CEMS.Models.ReportStatus.Approved => "bg-success",
+                                    CEMS.Models.ReportStatus.Rejected => "bg-danger",
+                                    CEMS.Models.ReportStatus.PendingCEOApproval => "bg-info",
+                                    _ => "bg-secondary"
+                                };
+                                var statusLabel = r.Status switch
+                                {
+                                    CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO Approval",
+                                    _ => r.Status.ToString()
+                                };
+                                <tr class="@(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "table-warning" : "")">
+                                    <td><strong>#@r.Id</strong></td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td class="fw-bold">₱@r.TotalAmount.ToString("N2")</td>
+                                    <td><span class="badge @statusBadge">@statusLabel</span></td>
+                                    <td>
+                                        @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                                        {
+                                            <span class="badge bg-danger">🚩 Over Budget</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">✓ Within Budget</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Recent Submissions -->
     <div class="card shadow-sm">
         <div class="card-header bg-light">
-            <h5 class="mb-0">📋 Your Recent Expense Submissions</h5>
+            <h5 class="mb-0">📋 Your Recent Expense Items</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -148,13 +257,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
                             <th>Amount</th>
                             <th>Description</th>
                             <th>Status</th>
+                            <th>Budget</th>
                             <th>Receipt</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tbody id="recentItems">
-                            <!-- populated by JS -->
-                        </tbody>
+                    <tbody id="recentItems">
+                        <!-- populated by JS -->
                     </tbody>
                 </table>
             </div>

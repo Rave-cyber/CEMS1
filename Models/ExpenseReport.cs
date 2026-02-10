@@ -37,6 +37,8 @@ namespace CEMS.Models
         Submitted,
         Approved,
         Rejected
+        ,
+        PendingCEOApproval
     }
 
     public enum BudgetCheckStatus

@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "My Expense Reports";
+    Layout = "~/Views/Shared/_DriverLayout.cshtml";
+    var reports = ViewBag.Reports as List<CEMS.Models.ExpenseReport> ?? new List<CEMS.Models.ExpenseReport>();
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    var approvals = ViewBag.Approvals as List<CEMS.Models.Approval> ?? new List<CEMS.Models.Approval>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-file-earmark-text"></i> My Expense Reports</h2>
+        <p class="text-muted mb-0">Track the status of all your submitted expense reports.</p>
+    </div>
+    <span class="badge bg-info fs-6 px-3 py-2">@reports.Count Reports</span>
+</div>
+
+@if (reports.Any())
+{
+    @foreach (var r in reports)
+    {
+        var statusBadge = r.Status switch
+        {
+            CEMS.Models.ReportStatus.Submitted => "bg-warning",
+            CEMS.Models.ReportStatus.Approved => "bg-success",
+            CEMS.Models.ReportStatus.Rejected => "bg-danger",
+            CEMS.Models.ReportStatus.PendingCEOApproval => "bg-info",
+            _ => "bg-secondary"
+        };
+        var statusLabel = r.Status switch
+        {
+            CEMS.Models.ReportStatus.PendingCEOApproval => "Pending CEO Approval",
+            _ => r.Status.ToString()
+        };
+        var isOver = r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget;
+        var reportApprovals = approvals.Where(a => a.ReportId == r.Id).ToList();
+
+        <div class="card shadow-sm mb-4 @(isOver ? "border-warning border-2" : "")">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Report #@r.Id</strong>
+                    <span class="badge @statusBadge ms-2">@statusLabel</span>
+                    @if (isOver)
+                    {
+                        <span class="badge bg-danger ms-1">🚩 Over Budget</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success ms-1">✓ Within Budget</span>
+                    }
+                    @if (r.Reimbursed)
+                    {
+                        <span class="badge bg-primary ms-1">💰 Reimbursed</span>
+                    }
+                </div>
+                <div>
+                    <small class="text-muted">Submitted: @r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</small>
+                    <span class="fw-bold ms-3">₱@r.TotalAmount.ToString("N2")</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Expense Items -->
+                @if (r.Items.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Budget Limit</th>
+                                    <th>Description</th>
+                                    <th>Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in r.Items)
+                                {
+                                    var catBudget = budgets.FirstOrDefault(b => b.Category == item.Category);
+                                    var catOver = catBudget != null && catBudget.Spent > catBudget.Allocated;
+                                    <tr class="@(catOver ? "table-danger" : "")">
+                                        <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                        <td>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary">@item.Category</span>
+                                            @if (catOver)
+                                            {
+                                                <span class="badge bg-danger ms-1">🚩</span>
+                                            }
+                                        </td>
+                                        <td>₱@item.Amount.ToString("N2")</td>
+                                        <td>
+                                            @if (catBudget != null)
+                                            {
+                                                <span>₱@catBudget.Allocated.ToString("N2")</span>
+                                                <small class="text-muted">(spent ₱@catBudget.Spent.ToString("N2"))</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No limit set</span>
+                                            }
+                                        </td>
+                                        <td>@item.Description</td>
+                                        <td>
+                                            @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                                            {
+                                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
+                                            }
+                                            else if (!string.IsNullOrEmpty(item.ReceiptPath))
+                                            {
+                                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">View</a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <!-- Approval Trail / Remarks -->
+                @if (reportApprovals.Any())
+                {
+                    <div class="mt-3">
+                        <strong>Approval Trail:</strong>
+                        @foreach (var a in reportApprovals)
+                        {
+                            var aBadge = a.Status == CEMS.Models.ApprovalStatus.Approved ? "bg-success" : a.Status == CEMS.Models.ApprovalStatus.Rejected ? "bg-danger" : "bg-warning";
+                            <div class="d-flex align-items-center mt-1">
+                                <span class="badge bg-secondary me-2">@a.Stage</span>
+                                <span class="badge @aBadge me-2">@a.Status</span>
+                                @if (a.DecisionDate.HasValue)
+                                {
+                                    <small class="text-muted me-2">@a.DecisionDate.Value.ToLocalTime().ToString("MMM d, yyyy")</small>
+                                }
+                                @if (!string.IsNullOrEmpty(a.Remarks))
+                                {
+                                    <span class="text-muted fst-italic">"@a.Remarks"</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else if (r.Status == CEMS.Models.ReportStatus.Submitted)
+                {
+                    <div class="mt-2 text-muted"><small>⏳ Awaiting manager review...</small></div>
+                }
+                else if (r.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
+                {
+                    <div class="mt-2 text-info"><small>⏳ Manager approved — awaiting CEO approval for over-budget expense...</small></div>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        You haven't submitted any expense reports yet.
+        <br />
+        <a href="@Url.Action("Expenses", "Driver")" class="btn btn-primary mt-2">Submit Expenses</a>
+    </div>
+}

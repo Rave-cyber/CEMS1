@@ -19,13 +19,24 @@
                 <div class="collapse navbar-collapse" id="driverNavbar">
                     <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Driver" asp-action="Dashboard">Dashboard</a>
+                            <a class="nav-link" asp-controller="Driver" asp-action="Dashboard">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Driver" asp-action="Expenses">Expenses</a>
+                            <a class="nav-link" asp-controller="Driver" asp-action="Expenses">
+                                <i class="bi bi-plus-circle"></i> Submit Expenses
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Driver" asp-action="History">My Expenses Status</a>
+                            <a class="nav-link" asp-controller="Driver" asp-action="MyReports">
+                                <i class="bi bi-file-earmark-text"></i> My Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Driver" asp-action="History">
+                                <i class="bi bi-clock-history"></i> Expense History
+                            </a>
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />
@@ -38,6 +49,13 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
             @RenderBody()
         </main>
     </div>

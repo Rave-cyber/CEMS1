@@ -1,0 +1,112 @@
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/_CEOLayout.cshtml";
+    var users = ViewBag.Users as List<dynamic> ?? new List<dynamic>();
+    var roles = ViewBag.AvailableRoles as List<string> ?? new List<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-people text-primary"></i> User Management</h2>
+        <p class="text-muted mb-0">View user accounts and their assigned roles.</p>
+    </div>
+    <span class="badge bg-primary fs-6 px-3 py-2">@users.Count Users</span>
+</div>
+
+<!-- Available Roles -->
+<div class="mb-4">
+    <strong>Available Roles:</strong>
+    @foreach (var role in roles)
+    {
+        <span class="badge bg-secondary ms-1">@role</span>
+    }
+</div>
+
+<!-- Users Table -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        @if (users.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Username / Email</th>
+                            <th>Email Confirmed</th>
+                            <th>Roles</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in users)
+                        {
+                            var u = (Microsoft.AspNetCore.Identity.IdentityUser)item.User;
+                            string rolesStr = item.Roles;
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+                                            <i class="bi bi-person text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <strong>@u.UserName</strong>
+                                            <br /><small class="text-muted">@u.Email</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (u.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check"></i> Confirmed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Unconfirmed</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(rolesStr))
+                                    {
+                                        @foreach (var r in rolesStr.Split(',', StringSplitOptions.TrimEntries))
+                                        {
+                                            var badgeColor = r switch
+                                            {
+                                                "CEO" => "bg-danger",
+                                                "Manager" => "bg-primary",
+                                                "Finance" => "bg-success",
+                                                "Driver" => "bg-info",
+                                                _ => "bg-secondary"
+                                            };
+                                            <span class="badge @badgeColor me-1">@r</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No roles</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow)
+                                    {
+                                        <span class="badge bg-danger">Locked</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-people fs-1 d-block mb-2"></i>
+                No users found.
+            </div>
+        }
+    </div>
+</div>

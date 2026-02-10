@@ -2,52 +2,224 @@
 @{
     ViewData["Title"] = "Expense Report Details";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    var approvals = ViewBag.Approvals as List<CEMS.Models.Approval> ?? new List<CEMS.Models.Approval>();
 }
 
 <div class="container py-4">
-    <h2 class="mb-3">Expense Report #@Model.Id</h2>
-    <div class="mb-3">
-        <div><strong>Driver:</strong> @ViewBag.ReportUserName</div>
-        <div><strong>Submitted:</strong> @Model.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</div>
-        <div><strong>Status:</strong> @Model.Status</div>
-        <div><strong>Budget Check:</strong> @Model.BudgetCheck</div>
-        <div><strong>Total Amount:</strong> ₱@Model.TotalAmount.ToString("N2")</div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Expense Report #@Model.Id</h2>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Dashboard", "Manager")">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Description</th>
-                    <th>Receipt</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
-                        <td>@item.Category</td>
-                        <td>₱@item.Amount</td>
-                        <td>@item.Description</td>
-                        <td>
-                            @if(item.ReceiptData != null && item.ReceiptData.Length > 0)
-                            {
-                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
-                            }
-                            else if(!string.IsNullOrEmpty(item.ReceiptPath))
-                            {
-                                <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">View</a>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <!-- Report Summary -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Report Summary</strong></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Driver:</strong> @ViewBag.ReportUserName</div>
+                <div class="col-md-3"><strong>Submitted:</strong> @Model.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</div>
+                <div class="col-md-2">
+                    <strong>Status:</strong>
+                    @switch (Model.Status)
+                    {
+                        case CEMS.Models.ReportStatus.Submitted:
+                            <span class="badge bg-warning">Submitted</span>
+                            break;
+                        case CEMS.Models.ReportStatus.Approved:
+                            <span class="badge bg-success">Approved</span>
+                            break;
+                        case CEMS.Models.ReportStatus.Rejected:
+                            <span class="badge bg-danger">Rejected</span>
+                            break;
+                        case CEMS.Models.ReportStatus.PendingCEOApproval:
+                            <span class="badge bg-warning text-dark">Pending CEO</span>
+                            break;
+                    }
+                </div>
+                <div class="col-md-2">
+                    <strong>Budget:</strong>
+                    @if (Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                    {
+                        <span class="badge bg-danger">🚩 Over Budget</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">✓ Within Budget</span>
+                    }
+                </div>
+                <div class="col-md-2"><strong>Total:</strong> <span class="fw-bold fs-5 text-primary">₱@Model.TotalAmount.ToString("N2")</span></div>
+            </div>
+        </div>
     </div>
 
-    <a class="btn btn-secondary" href="@Url.Action("Dashboard", "Manager")">Back to Dashboard</a>
+    <!-- Expense Items -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Expense Items</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Budget Limit</th>
+                            <th>Budget Spent</th>
+                            <th>Description</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var catBudget = budgets.FirstOrDefault(b => b.Category == item.Category);
+                            var isOverCategory = catBudget != null && catBudget.Spent > catBudget.Allocated;
+                            <tr class="@(isOverCategory ? "table-danger" : "")">
+                                <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">@item.Category</span>
+                                    @if (isOverCategory)
+                                    {
+                                        <span class="badge bg-danger ms-1">🚩</span>
+                                    }
+                                </td>
+                                <td>₱@item.Amount.ToString("N2")</td>
+                                <td>
+                                    @if (catBudget != null)
+                                    {
+                                        <span>₱@catBudget.Allocated.ToString("N2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No budget set</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (catBudget != null)
+                                    {
+                                        <span class="@(catBudget.Spent > catBudget.Allocated ? "text-danger fw-bold" : "")">₱@catBudget.Spent.ToString("N2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>@item.Description</td>
+                                <td>
+                                    @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
+                                    }
+                                    else if (!string.IsNullOrEmpty(item.ReceiptPath))
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">View</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Summary for this report's categories -->
+    @if (budgets.Any())
+    {
+        var reportCategories = Model.Items.Select(i => i.Category).Distinct().ToList();
+        var relevantBudgets = budgets.Where(b => reportCategories.Contains(b.Category)).ToList();
+        if (relevantBudgets.Any())
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light"><strong>Budget Status for Report Categories</strong></div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var b in relevantBudgets)
+                        {
+                            var remaining = b.Allocated - b.Spent;
+                            var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                            <div class="col-md-4 mb-3">
+                                <strong>@b.Category</strong>
+                                <div class="d-flex justify-content-between">
+                                    <small>Spent ₱@b.Spent.ToString("N2") / ₱@b.Allocated.ToString("N2")</small>
+                                    <small class="@(remaining < 0 ? "text-danger fw-bold" : "text-success")">
+                                        @(remaining >= 0 ? $"₱{remaining:N2} left" : $"₱{Math.Abs(remaining):N2} over")
+                                    </small>
+                                </div>
+                                <div class="progress" style="height:10px;">
+                                    <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
+                                         style="width:@Math.Min(pct, 100)%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Approval Trail -->
+    @if (approvals.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light"><strong>Approval Trail</strong></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Stage</th>
+                                <th>Decision</th>
+                                <th>Date</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in approvals)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@a.Stage</span></td>
+                                    <td>
+                                        <span class="badge @(a.Status == CEMS.Models.ApprovalStatus.Approved ? "bg-success" : a.Status == CEMS.Models.ApprovalStatus.Rejected ? "bg-danger" : "bg-warning")">
+                                            @a.Status
+                                        </span>
+                                    </td>
+                                    <td>@(a.DecisionDate.HasValue ? a.DecisionDate.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "—")</td>
+                                    <td>@(a.Remarks ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Manager Actions -->
+    @if (Model.Status == CEMS.Models.ReportStatus.Submitted)
+    {
+        <div class="d-flex gap-2">
+            <form method="post" asp-action="ApproveReport" asp-controller="Manager">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-success"><i class="bi bi-check-lg"></i> Approve</button>
+            </form>
+            <form method="post" asp-action="RejectReport" asp-controller="Manager">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-danger"><i class="bi bi-x-lg"></i> Reject</button>
+            </form>
+            @if (Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+            {
+                <form method="post" asp-action="ForwardToCEO" asp-controller="Manager">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button class="btn btn-dark"><i class="bi bi-arrow-up-right"></i> Forward to CEO</button>
+                </form>
+            }
+        </div>
+    }
 </div>

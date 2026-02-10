@@ -19,6 +19,7 @@ namespace CEMS.Controllers
             _db = db;
             _userManager = userManager;
         }
+        
         public async Task<IActionResult> Dashboard()
         {
             var pendingReports = await _db.ExpenseReports
@@ -37,6 +38,26 @@ namespace CEMS.Controllers
             }).ToList();
 
             ViewBag.PendingReports = pendingWithUsers;
+
+            // Budget totals (set by CEO)
+            var budgets = await _db.Budgets.ToListAsync();
+            ViewBag.TotalBudget = budgets.Sum(b => b.Allocated);
+            ViewBag.TotalSpent = budgets.Sum(b => b.Spent);
+            ViewBag.TotalRemaining = budgets.Sum(b => b.Allocated - b.Spent);
+
+            // Approved today
+            var today = DateTime.UtcNow.Date;
+            var approvedToday = await _db.Approvals
+                .Include(a => a.Report)
+                .Where(a => a.Stage == "Manager" && a.Status == ApprovalStatus.Approved && a.DecisionDate.HasValue && a.DecisionDate.Value.Date == today)
+                .ToListAsync();
+            ViewBag.ApprovedTodayCount = approvedToday.Count;
+            ViewBag.ApprovedTodayTotal = approvedToday.Sum(a => a.Report != null ? a.Report.TotalAmount : 0m);
+
+            // Active drivers
+            var driverUsers = await _userManager.GetUsersInRoleAsync("Driver");
+            ViewBag.ActiveDrivers = driverUsers.Count;
+
             return View("Dashboard/Index");
         }
 
@@ -140,8 +161,10 @@ namespace CEMS.Controllers
             return View("Team/Index");
         }
 
-        public IActionResult Budget()
+        public async Task<IActionResult> Budget()
         {
+            var budgets = await _db.Budgets.OrderBy(b => b.Category).ToListAsync();
+            ViewBag.Budgets = budgets;
             return View("Budget/Index");
         }
 
@@ -176,7 +199,7 @@ namespace CEMS.Controllers
             if (report.BudgetCheck == BudgetCheckStatus.OverBudget)
             {
                 report.ForwardedToCEO = true;
-                // manager cannot reimburse; require CEO approval first
+                report.Status = ReportStatus.PendingCEOApproval;
             }
 
             foreach (var item in report.Items)
@@ -234,6 +257,17 @@ namespace CEMS.Controllers
             var user = report.UserId != null ? await _userManager.FindByIdAsync(report.UserId) : null;
             ViewBag.ReportUserName = user?.UserName ?? "Unknown";
 
+            // Load budgets so the details page can show per-category budget vs spent
+            var budgets = await _db.Budgets.ToListAsync();
+            ViewBag.Budgets = budgets;
+
+            // Load approval trail
+            var approvals = await _db.Approvals
+                .Where(a => a.ReportId == id)
+                .OrderBy(a => a.DecisionDate)
+                .ToListAsync();
+            ViewBag.Approvals = approvals;
+
             return View("Reports/Details", report);
         }
 
@@ -245,10 +279,10 @@ namespace CEMS.Controllers
             if (report == null) return NotFound();
 
             report.ForwardedToCEO = true;
+            report.Status = ReportStatus.PendingCEOApproval;
             await _db.SaveChangesAsync();
 
-            // In a real system you'd notify CEO via email or create a task; we just flag it here.
-            TempData["Success"] = "Report forwarded to CEO.";
+            TempData["Success"] = "Report forwarded to CEO for approval.";
             return RedirectToAction("Dashboard");
         }
     }

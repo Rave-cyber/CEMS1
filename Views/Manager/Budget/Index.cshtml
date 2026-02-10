@@ -1,14 +1,73 @@
 @{
     ViewData["Title"] = "Budget Monitoring";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
 }
 
 <h2>Budget Monitoring</h2>
+<p class="text-muted">Budgets are set by the CEO. This view shows current allocations and spending.</p>
+
+<!-- Budget Summary Table -->
+@if (budgets.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Budget Summary (Set by CEO)</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Category</th>
+                            <th>Allocated</th>
+                            <th>Spent</th>
+                            <th>Remaining</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in budgets)
+                        {
+                            var remaining = b.Allocated - b.Spent;
+                            var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                            <tr class="@(remaining < 0 ? "table-danger" : "")">
+                                <td class="fw-bold">@b.Category</td>
+                                <td>₱@b.Allocated.ToString("N2")</td>
+                                <td>₱@b.Spent.ToString("N2")</td>
+                                <td class="@(remaining < 0 ? "text-danger fw-bold" : "text-success")">₱@remaining.ToString("N2")</td>
+                                <td style="min-width:150px;">
+                                    <div class="progress" style="height:20px;">
+                                        <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
+                                             role="progressbar" style="width:@Math.Min(pct, 100)%">
+                                            @pct%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td>TOTAL</td>
+                            <td>₱@budgets.Sum(b => b.Allocated).ToString("N2")</td>
+                            <td>₱@budgets.Sum(b => b.Spent).ToString("N2")</td>
+                            <td class="@(budgets.Sum(b => b.Allocated - b.Spent) < 0 ? "text-danger" : "text-success")">₱@budgets.Sum(b => b.Allocated - b.Spent).ToString("N2")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">No budgets have been set by the CEO yet.</div>
+}
 
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card shadow-sm">
-            <div class="card-header bg-light">Budgets</div>
+            <div class="card-header bg-light">Budget Usage (from API)</div>
             <div class="card-body">
                 <div id="budgetList">Loading...</div>
             </div>
@@ -37,13 +96,14 @@ async function loadBudgets(){
         const used = [];
         const allocated = [];
         for(const b of data.budgets || []){
-            labels.push(b.Category);
-            used.push(b.Spent);
-            allocated.push(b.Allocated);
-            const percent = b.Allocated === 0 ? 0 : Math.min(100, Math.round((b.Spent / b.Allocated) * 100));
+            labels.push(b.category);
+            used.push(b.spent);
+            allocated.push(b.allocated);
+            const percent = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
+            const barColor = percent >= 100 ? 'bg-danger' : percent >= 75 ? 'bg-warning' : '';
             const div = document.createElement('div');
             div.className = 'mb-3';
-            div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.Category}</div><div>₱${b.Spent.toFixed(2)} / ₱${b.Allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar ${percent>=100? 'bg-danger':''}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
+            div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.category}</div><div>₱${b.spent.toFixed(2)} / ₱${b.allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar ${barColor}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
             container.appendChild(div);
         }
 

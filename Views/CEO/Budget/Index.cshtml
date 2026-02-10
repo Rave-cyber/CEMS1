@@ -1,0 +1,147 @@
+@{
+    ViewData["Title"] = "Budget Management";
+    Layout = "~/Views/Shared/_CEOLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-cash-stack text-primary"></i> Budget Management</h2>
+        <p class="text-muted mb-0">Create monthly budgets, set or adjust budget limits per category.</p>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <!-- Create New Budget -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-plus-circle"></i> Create New Budget
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="CreateBudget" asp-controller="CEO">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-control" placeholder="e.g., Fuel, Maintenance" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Allocated Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" step="0.01" name="allocated" class="form-control" placeholder="0.00" min="0" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-lg"></i> Create Budget
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Budgets -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <i class="bi bi-list-ul"></i> Current Budgets
+            </div>
+            <div class="card-body">
+                @if (budgets.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Allocated</th>
+                                    <th>Spent</th>
+                                    <th>Remaining</th>
+                                    <th>Usage</th>
+                                    <th>Adjust</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in budgets)
+                                {
+                                    var remaining = b.Allocated - b.Spent;
+                                    var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                                    <tr>
+                                        <td class="fw-bold">@b.Category</td>
+                                        <td>₱@b.Allocated.ToString("N2")</td>
+                                        <td>₱@b.Spent.ToString("N2")</td>
+                                        <td class="@(remaining < 0 ? "text-danger fw-bold" : "")">₱@remaining.ToString("N2")</td>
+                                        <td style="min-width:120px;">
+                                            <div class="progress" style="height:20px;">
+                                                <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
+                                                     role="progressbar" style="width:@Math.Min(pct, 100)%">
+                                                    @pct%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <form method="post" asp-action="UpdateBudget" asp-controller="CEO" class="d-flex gap-1">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@b.Id" />
+                                                <div class="input-group input-group-sm" style="width:160px;">
+                                                    <span class="input-group-text">₱</span>
+                                                    <input type="number" step="0.01" name="allocated" value="@b.Allocated" class="form-control form-control-sm" />
+                                                </div>
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card bg-primary bg-opacity-10 border-0">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Total Allocated</small>
+                                    <h4 class="fw-bold">₱@budgets.Sum(b => b.Allocated).ToString("N2")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning bg-opacity-10 border-0">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Total Spent</small>
+                                    <h4 class="fw-bold">₱@budgets.Sum(b => b.Spent).ToString("N2")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success bg-opacity-10 border-0">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Total Remaining</small>
+                                    <h4 class="fw-bold">₱@budgets.Sum(b => b.Allocated - b.Spent).ToString("N2")</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        No budgets created yet. Use the form to create your first budget.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

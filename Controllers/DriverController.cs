@@ -25,17 +25,33 @@ namespace CEMS.Controllers
             _userManager = userManager;
         }
         [HttpGet("Dashboard")]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
-            // Load recent driver expenses dynamically
             var userId = _userManager.GetUserId(User);
+
+            // Load recent driver expenses
             var expenses = _db.Expenses
                 .Where(e => e.UserId == userId)
                 .OrderByDescending(e => e.Date)
                 .Take(10)
                 .ToList();
-
             ViewBag.RecentExpenses = expenses;
+
+            // Load budgets so driver can see current limits
+            var budgets = await _db.Budgets.OrderBy(b => b.Category).ToListAsync();
+            ViewBag.Budgets = budgets;
+            ViewBag.TotalBudget = budgets.Sum(b => b.Allocated);
+            ViewBag.TotalSpent = budgets.Sum(b => b.Spent);
+            ViewBag.TotalRemaining = budgets.Sum(b => b.Allocated - b.Spent);
+
+            // Load driver's reports with statuses
+            var reports = await _db.ExpenseReports
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.SubmissionDate)
+                .Take(5)
+                .ToListAsync();
+            ViewBag.RecentReports = reports;
+
             return View("Dashboard/Index");
         }
 
@@ -49,7 +65,7 @@ namespace CEMS.Controllers
             var nowUtc = DateTime.UtcNow;
             var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1);
 
-            var pendingCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Submitted);
+            var pendingCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.PendingCEOApproval);
             var approvedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Approved);
             var rejectedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Rejected);
 
@@ -78,8 +94,12 @@ namespace CEMS.Controllers
                 amount = i.Amount,
                 description = i.Description,
                 reportStatus = i.Report != null ? i.Report.Status.ToString() : ReportStatus.Submitted.ToString(),
+                budgetCheck = i.Report != null ? i.Report.BudgetCheck.ToString() : "WithinBudget",
                 receiptUrl = (i.ReceiptData != null && i.ReceiptData.Length > 0) ? Url.Action("Receipt", "Driver", new { id = i.Id }) : (string.IsNullOrEmpty(i.ReceiptPath) ? null : i.ReceiptPath)
             }).ToList();
+
+            // Budget data so driver sees limits
+            var budgets = await _db.Budgets.Select(b => new { b.Category, b.Allocated, b.Spent }).ToListAsync();
 
             return Json(new
             {
@@ -88,8 +108,37 @@ namespace CEMS.Controllers
                 rejectedCount,
                 approvedTotal,
                 approvedThisMonthTotal,
-                recent
+                recent,
+                budgets
             });
+        }
+
+        [HttpGet("MyReports")]
+        public async Task<IActionResult> MyReports()
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var reports = await _db.ExpenseReports
+                .Include(r => r.Items)
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.SubmissionDate)
+                .ToListAsync();
+
+            ViewBag.Reports = reports;
+
+            // Load budgets for context
+            var budgets = await _db.Budgets.ToListAsync();
+            ViewBag.Budgets = budgets;
+
+            // Load approval remarks for rejected/approved reports
+            var reportIds = reports.Select(r => r.Id).ToList();
+            var approvals = await _db.Approvals
+                .Where(a => reportIds.Contains(a.ReportId))
+                .OrderBy(a => a.DecisionDate)
+                .ToListAsync();
+            ViewBag.Approvals = approvals;
+
+            return View("MyReports/Index");
         }
 
         [HttpGet("Expenses")]
@@ -339,14 +388,15 @@ namespace CEMS.Controllers
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<ReportStatus>(status, out var s))
                 q = q.Where(i => i.Report != null && i.Report.Status == s);
 
-            var items = await q
+            var itemsRaw = await q
                 .OrderByDescending(i => i.Date)
-                .Select(i => new ExpenseItemSummaryDto
-                {
-                    Item = i,
-                    ReportStatus = i.Report != null ? i.Report.Status : ReportStatus.Submitted
-                })
                 .ToListAsync();
+
+            var items = itemsRaw.Select(i => new ExpenseItemSummaryDto
+            {
+                Item = i,
+                ReportStatus = i.Report != null ? i.Report.Status : ReportStatus.Submitted
+            }).ToList();
 
             ViewBag.Items = items;
             return View("History/Index");
