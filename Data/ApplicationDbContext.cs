@@ -19,6 +19,12 @@ namespace CEMS.Data
         public DbSet<Approval> Approvals { get; set; }
         public DbSet<Budget> Budgets { get; set; }
 
+        // Account Management Tables
+        public DbSet<CEOProfile> CEOProfiles { get; set; }
+        public DbSet<ManagerProfile> ManagerProfiles { get; set; }
+        public DbSet<FinanceProfile> FinanceProfiles { get; set; }
+        public DbSet<DriverProfile> DriverProfiles { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -73,6 +79,47 @@ namespace CEMS.Data
             builder.Entity<Budget>()
                 .Property(b => b.Spent)
                 .HasPrecision(18, 2);
+
+            // Account Profile tables
+            builder.Entity<CEOProfile>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CEOProfile>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
+
+            builder.Entity<ManagerProfile>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ManagerProfile>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
+
+            builder.Entity<FinanceProfile>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<FinanceProfile>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
+
+            builder.Entity<DriverProfile>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<DriverProfile>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
         }
     }
 }

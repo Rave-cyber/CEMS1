@@ -400,22 +400,155 @@ namespace CEMS.Controllers
             return RedirectToAction("Analytics");
         }
 
-        // ───────────── User Management ─────────────
-        public async Task<IActionResult> Users()
+        // ───────────── Account Management ─────────────
+        public async Task<IActionResult> Users(string? tab)
         {
-            var allUsers = await _userManager.Users.ToListAsync();
-            var userList = new List<dynamic>();
-            foreach (var u in allUsers)
-            {
-                var roles = await _userManager.GetRolesAsync(u);
-                userList.Add(new { User = u, Roles = string.Join(", ", roles) });
-            }
-            ViewBag.Users = userList;
+            // CEO accounts
+            var ceoProfiles = await _db.CEOProfiles.Include(p => p.User).OrderByDescending(p => p.CreatedAt).ToListAsync();
+            ViewBag.CEOProfiles = ceoProfiles;
 
-            var roles2 = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
-            ViewBag.AvailableRoles = roles2;
+            // Manager accounts
+            var managerProfiles = await _db.ManagerProfiles.Include(p => p.User).OrderByDescending(p => p.CreatedAt).ToListAsync();
+            ViewBag.ManagerProfiles = managerProfiles;
+
+            // Finance accounts
+            var financeProfiles = await _db.FinanceProfiles.Include(p => p.User).OrderByDescending(p => p.CreatedAt).ToListAsync();
+            ViewBag.FinanceProfiles = financeProfiles;
+
+            // Driver accounts
+            var driverProfiles = await _db.DriverProfiles.Include(p => p.User).OrderByDescending(p => p.CreatedAt).ToListAsync();
+            ViewBag.DriverProfiles = driverProfiles;
+
+            ViewBag.ActiveTab = tab ?? "manager";
 
             return View("Users/Index");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateAccount(string email, string password, string fullName, string role, string? department, string? licenseNumber)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
+            {
+                TempData["Error"] = "Email, password, and full name are required.";
+                return RedirectToAction("Users", new { tab = role?.ToLower() });
+            }
+
+            // Only allow creating Manager, Finance, and Driver accounts
+            if (role != "Manager" && role != "Finance" && role != "Driver")
+            {
+                TempData["Error"] = "You can only create Manager, Finance, or Driver accounts.";
+                return RedirectToAction("Users");
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(email);
+            if (existingUser != null)
+            {
+                TempData["Error"] = $"A user with email '{email}' already exists.";
+                return RedirectToAction("Users", new { tab = role.ToLower() });
+            }
+
+            var user = new IdentityUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                LockoutEnabled = false
+            };
+
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
+            {
+                TempData["Error"] = "Failed to create account: " + string.Join(", ", result.Errors.Select(e => e.Description));
+                return RedirectToAction("Users", new { tab = role.ToLower() });
+            }
+
+            await _userManager.AddToRoleAsync(user, role);
+            var ceoUserId = _userManager.GetUserId(User);
+
+            switch (role)
+            {
+                case "Manager":
+                    _db.ManagerProfiles.Add(new ManagerProfile
+                    {
+                        UserId = user.Id,
+                        FullName = fullName,
+                        Department = department,
+                        IsActive = true,
+                        CreatedByUserId = ceoUserId
+                    });
+                    break;
+                case "Finance":
+                    _db.FinanceProfiles.Add(new FinanceProfile
+                    {
+                        UserId = user.Id,
+                        FullName = fullName,
+                        Department = department,
+                        IsActive = true,
+                        CreatedByUserId = ceoUserId
+                    });
+                    break;
+                case "Driver":
+                    _db.DriverProfiles.Add(new DriverProfile
+                    {
+                        UserId = user.Id,
+                        FullName = fullName,
+                        LicenseNumber = licenseNumber,
+                        IsActive = true,
+                        CreatedByUserId = ceoUserId
+                    });
+                    break;
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"{role} account for '{fullName}' created successfully.";
+            return RedirectToAction("Users", new { tab = role.ToLower() });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleAccountStatus(int profileId, string role)
+        {
+            switch (role)
+            {
+                case "Manager":
+                    var mp = await _db.ManagerProfiles.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == profileId);
+                    if (mp == null) return NotFound();
+                    mp.IsActive = !mp.IsActive;
+                    if (mp.User != null)
+                    {
+                        mp.User.LockoutEnd = mp.IsActive ? null : DateTimeOffset.MaxValue;
+                        mp.User.LockoutEnabled = !mp.IsActive;
+                    }
+                    break;
+                case "Finance":
+                    var fp = await _db.FinanceProfiles.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == profileId);
+                    if (fp == null) return NotFound();
+                    fp.IsActive = !fp.IsActive;
+                    if (fp.User != null)
+                    {
+                        fp.User.LockoutEnd = fp.IsActive ? null : DateTimeOffset.MaxValue;
+                        fp.User.LockoutEnabled = !fp.IsActive;
+                    }
+                    break;
+                case "Driver":
+                    var dp = await _db.DriverProfiles.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == profileId);
+                    if (dp == null) return NotFound();
+                    dp.IsActive = !dp.IsActive;
+                    if (dp.User != null)
+                    {
+                        dp.User.LockoutEnd = dp.IsActive ? null : DateTimeOffset.MaxValue;
+                        dp.User.LockoutEnabled = !dp.IsActive;
+                    }
+                    break;
+                default:
+                    TempData["Error"] = "Invalid role.";
+                    return RedirectToAction("Users");
+            }
+
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Account status updated successfully.";
+            return RedirectToAction("Users", new { tab = role.ToLower() });
         }
 
         public IActionResult Index()

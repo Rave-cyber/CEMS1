@@ -1,112 +1,444 @@
+@using CEMS.Models
 @{
-    ViewData["Title"] = "User Management";
+    ViewData["Title"] = "Account Management";
     Layout = "~/Views/Shared/_CEOLayout.cshtml";
-    var users = ViewBag.Users as List<dynamic> ?? new List<dynamic>();
-    var roles = ViewBag.AvailableRoles as List<string> ?? new List<string>();
+
+    var ceoProfiles = ViewBag.CEOProfiles as List<CEOProfile> ?? new List<CEOProfile>();
+    var managerProfiles = ViewBag.ManagerProfiles as List<ManagerProfile> ?? new List<ManagerProfile>();
+    var financeProfiles = ViewBag.FinanceProfiles as List<FinanceProfile> ?? new List<FinanceProfile>();
+    var driverProfiles = ViewBag.DriverProfiles as List<DriverProfile> ?? new List<DriverProfile>();
+    var activeTab = ViewBag.ActiveTab as string ?? "manager";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2><i class="bi bi-people text-primary"></i> User Management</h2>
-        <p class="text-muted mb-0">View user accounts and their assigned roles.</p>
+        <h2><i class="bi bi-people text-primary"></i> Account Management</h2>
+        <p class="text-muted mb-0">Create and manage accounts. Only the CEO can create Manager, Finance, and Driver accounts.</p>
     </div>
-    <span class="badge bg-primary fs-6 px-3 py-2">@users.Count Users</span>
+    <div>
+        <span class="badge bg-primary fs-6 px-3 py-2 me-1">@managerProfiles.Count Managers</span>
+        <span class="badge bg-success fs-6 px-3 py-2 me-1">@financeProfiles.Count Finance</span>
+        <span class="badge bg-info fs-6 px-3 py-2">@driverProfiles.Count Drivers</span>
+    </div>
 </div>
 
-<!-- Available Roles -->
-<div class="mb-4">
-    <strong>Available Roles:</strong>
-    @foreach (var role in roles)
-    {
-        <span class="badge bg-secondary ms-1">@role</span>
-    }
-</div>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-<!-- Users Table -->
-<div class="card shadow-sm">
-    <div class="card-body">
-        @if (users.Any())
-        {
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Username / Email</th>
-                            <th>Email Confirmed</th>
-                            <th>Roles</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in users)
-                        {
-                            var u = (Microsoft.AspNetCore.Identity.IdentityUser)item.User;
-                            string rolesStr = item.Roles;
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
-                                            <i class="bi bi-person text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <strong>@u.UserName</strong>
-                                            <br /><small class="text-muted">@u.Email</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if (u.EmailConfirmed)
-                                    {
-                                        <span class="badge bg-success"><i class="bi bi-check"></i> Confirmed</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">Unconfirmed</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(rolesStr))
-                                    {
-                                        @foreach (var r in rolesStr.Split(',', StringSplitOptions.TrimEntries))
-                                        {
-                                            var badgeColor = r switch
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="accountTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "manager" ? "active" : "")" id="manager-tab" data-bs-toggle="tab" data-bs-target="#manager" type="button" role="tab">
+            <i class="bi bi-person-badge"></i> Managers
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "finance" ? "active" : "")" id="finance-tab" data-bs-toggle="tab" data-bs-target="#finance" type="button" role="tab">
+            <i class="bi bi-cash-coin"></i> Finance
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "driver" ? "active" : "")" id="driver-tab" data-bs-toggle="tab" data-bs-target="#driver" type="button" role="tab">
+            <i class="bi bi-truck"></i> Drivers / Employees
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "ceo" ? "active" : "")" id="ceo-tab" data-bs-toggle="tab" data-bs-target="#ceo" type="button" role="tab">
+            <i class="bi bi-shield-lock"></i> CEO
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="accountTabContent">
+    <!-- ═══════ Manager Tab ═══════ -->
+    <div class="tab-pane fade @(activeTab == "manager" ? "show active" : "")" id="manager" role="tabpanel">
+        <!-- Create Manager Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-person-plus"></i> Create Manager Account
+            </div>
+            <div class="card-body">
+                <form asp-controller="CEO" asp-action="CreateAccount" method="post">
+                    <input type="hidden" name="role" value="Manager" />
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="fullName" class="form-control" required placeholder="e.g. Juan Dela Cruz" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="manager@expense.com" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="6" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Department</label>
+                            <input type="text" name="department" class="form-control" placeholder="e.g. Operations" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> Create</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manager List -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @if (managerProfiles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in managerProfiles)
+                                {
+                                    <tr class="@(!p.IsActive ? "table-secondary" : "")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+                                                    <i class="bi bi-person-badge text-primary"></i>
+                                                </div>
+                                                <strong>@p.FullName</strong>
+                                            </div>
+                                        </td>
+                                        <td>@p.User?.Email</td>
+                                        <td>@(p.Department ?? "—")</td>
+                                        <td>@p.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (p.IsActive)
                                             {
-                                                "CEO" => "bg-danger",
-                                                "Manager" => "bg-primary",
-                                                "Finance" => "bg-success",
-                                                "Driver" => "bg-info",
-                                                _ => "bg-secondary"
-                                            };
-                                            <span class="badge @badgeColor me-1">@r</span>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">No roles</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow)
-                                    {
-                                        <span class="badge bg-danger">Locked</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactive</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <form asp-controller="CEO" asp-action="ToggleAccountStatus" method="post" class="d-inline">
+                                                <input type="hidden" name="profileId" value="@p.Id" />
+                                                <input type="hidden" name="role" value="Manager" />
+                                                @if (p.IsActive)
+                                                {
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Deactivate">
+                                                        <i class="bi bi-person-x"></i> Deactivate
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Activate">
+                                                        <i class="bi bi-person-check"></i> Activate
+                                                    </button>
+                                                }
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-person-badge fs-1 d-block mb-2"></i>
+                        No manager accounts yet. Create one above.
+                    </div>
+                }
             </div>
-        }
-        else
-        {
-            <div class="text-center py-4 text-muted">
-                <i class="bi bi-people fs-1 d-block mb-2"></i>
-                No users found.
+        </div>
+    </div>
+
+    <!-- ═══════ Finance Tab ═══════ -->
+    <div class="tab-pane fade @(activeTab == "finance" ? "show active" : "")" id="finance" role="tabpanel">
+        <!-- Create Finance Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-person-plus"></i> Create Finance Account
             </div>
-        }
+            <div class="card-body">
+                <form asp-controller="CEO" asp-action="CreateAccount" method="post">
+                    <input type="hidden" name="role" value="Finance" />
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="fullName" class="form-control" required placeholder="e.g. Maria Santos" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="finance@expense.com" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="6" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Department</label>
+                            <input type="text" name="department" class="form-control" placeholder="e.g. Accounting" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> Create</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Finance List -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @if (financeProfiles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in financeProfiles)
+                                {
+                                    <tr class="@(!p.IsActive ? "table-secondary" : "")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+                                                    <i class="bi bi-cash-coin text-success"></i>
+                                                </div>
+                                                <strong>@p.FullName</strong>
+                                            </div>
+                                        </td>
+                                        <td>@p.User?.Email</td>
+                                        <td>@(p.Department ?? "—")</td>
+                                        <td>@p.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (p.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactive</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <form asp-controller="CEO" asp-action="ToggleAccountStatus" method="post" class="d-inline">
+                                                <input type="hidden" name="profileId" value="@p.Id" />
+                                                <input type="hidden" name="role" value="Finance" />
+                                                @if (p.IsActive)
+                                                {
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Deactivate">
+                                                        <i class="bi bi-person-x"></i> Deactivate
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Activate">
+                                                        <i class="bi bi-person-check"></i> Activate
+                                                    </button>
+                                                }
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-cash-coin fs-1 d-block mb-2"></i>
+                        No finance accounts yet. Create one above.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ Driver Tab ═══════ -->
+    <div class="tab-pane fade @(activeTab == "driver" ? "show active" : "")" id="driver" role="tabpanel">
+        <!-- Create Driver Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-person-plus"></i> Create Driver / Employee Account
+            </div>
+            <div class="card-body">
+                <form asp-controller="CEO" asp-action="CreateAccount" method="post">
+                    <input type="hidden" name="role" value="Driver" />
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="fullName" class="form-control" required placeholder="e.g. Pedro Garcia" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="driver@expense.com" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="6" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">License Number</label>
+                            <input type="text" name="licenseNumber" class="form-control" placeholder="e.g. N01-12-345678" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-info text-white w-100"><i class="bi bi-plus-circle"></i> Create</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Driver List -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @if (driverProfiles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>License Number</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in driverProfiles)
+                                {
+                                    <tr class="@(!p.IsActive ? "table-secondary" : "")">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+                                                    <i class="bi bi-truck text-info"></i>
+                                                </div>
+                                                <strong>@p.FullName</strong>
+                                            </div>
+                                        </td>
+                                        <td>@p.User?.Email</td>
+                                        <td>@(p.LicenseNumber ?? "—")</td>
+                                        <td>@p.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (p.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactive</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <form asp-controller="CEO" asp-action="ToggleAccountStatus" method="post" class="d-inline">
+                                                <input type="hidden" name="profileId" value="@p.Id" />
+                                                <input type="hidden" name="role" value="Driver" />
+                                                @if (p.IsActive)
+                                                {
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Deactivate">
+                                                        <i class="bi bi-person-x"></i> Deactivate
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit" class="btn btn-outline-success btn-sm" title="Activate">
+                                                        <i class="bi bi-person-check"></i> Activate
+                                                    </button>
+                                                }
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-truck fs-1 d-block mb-2"></i>
+                        No driver accounts yet. Create one above.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ CEO Tab (read-only) ═══════ -->
+    <div class="tab-pane fade @(activeTab == "ceo" ? "show active" : "")" id="ceo" role="tabpanel">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-shield-lock"></i> CEO Accounts
+            </div>
+            <div class="card-body">
+                @if (ceoProfiles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Created</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in ceoProfiles)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+                                                    <i class="bi bi-shield-lock text-danger"></i>
+                                                </div>
+                                                <strong>@p.FullName</strong>
+                                            </div>
+                                        </td>
+                                        <td>@p.User?.Email</td>
+                                        <td>@p.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                        <td><span class="badge bg-success">Active</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-shield-lock fs-1 d-block mb-2"></i>
+                        No CEO profile records found.
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 </div>

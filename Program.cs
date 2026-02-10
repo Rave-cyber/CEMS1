@@ -1,4 +1,5 @@
 ﻿using CEMS.Data;
+using CEMS.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -134,6 +135,48 @@ using (var scope = app.Services.CreateScope())
         }
 
         Console.WriteLine("=== User Seeding Complete ===");
+
+        // Seed profile records for existing users
+        foreach (var userInfo in users)
+        {
+            var u = await userManager.FindByEmailAsync(userInfo.Email);
+            if (u == null) continue;
+
+            switch (userInfo.Role)
+            {
+                case "CEO":
+                    if (!context.CEOProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.CEOProfiles.Add(new CEOProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        Console.WriteLine($"  -> Created CEO profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Manager":
+                    if (!context.ManagerProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.ManagerProfiles.Add(new ManagerProfile { UserId = u.Id, FullName = userInfo.Email, Department = "General", IsActive = true });
+                        Console.WriteLine($"  -> Created Manager profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Finance":
+                    if (!context.FinanceProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.FinanceProfiles.Add(new FinanceProfile { UserId = u.Id, FullName = userInfo.Email, Department = "Accounting", IsActive = true });
+                        Console.WriteLine($"  -> Created Finance profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Driver":
+                    if (!context.DriverProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.DriverProfiles.Add(new DriverProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        Console.WriteLine($"  -> Created Driver profile for {userInfo.Email}");
+                    }
+                    break;
+            }
+        }
+        await context.SaveChangesAsync();
+        Console.WriteLine("=== Profile Seeding Complete ===");
+
         Console.WriteLine("Test credentials:");
         Console.WriteLine("ceo@expense.com / Test@123");
         Console.WriteLine("manager@expense.com / Test@123");
