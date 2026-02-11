@@ -4,83 +4,280 @@
     var reports = ViewBag.Forwarded as List<CEMS.Models.OverBudgetReportDto> ?? new List<CEMS.Models.OverBudgetReportDto>();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="bi bi-exclamation-triangle text-warning"></i> Over-Budget Expense Reports</h2>
-        <p class="text-muted mb-0">Expense reports that exceed budget limits and require CEO approval.</p>
-    </div>
-    <span class="badge bg-warning fs-6 px-3 py-2">@reports.Count Pending</span>
-</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-@if (reports.Any())
-{
-    <div class="table-responsive">
-        <table class="table table-hover shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>Report #</th>
-                    <th>Driver</th>
-                    <th>Total Amount</th>
-                    <th>Exceeded By</th>
-                    <th>Submitted</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var dto in reports)
-                {
-                    var r = dto.Report;
-                    <tr>
-                        <td><strong>#@r.Id</strong></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width:32px;height:32px;">
-                                    <i class="bi bi-person text-primary"></i>
-                                </div>
-                                @(dto.UserName ?? "Unknown")
-                            </div>
-                        </td>
-                        <td class="fw-bold">₱@r.TotalAmount.ToString("N2")</td>
-                        <td>
-                            @if (dto.ExceedAmount > 0)
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: #f59e0b;
+        font-size: 1.8rem;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: .95rem;
+        margin-top: 4px;
+    }
+
+    .badge-pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--d-border);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn--view {
+        background: rgba(26, 107, 181, 0.1);
+        color: var(--d-primary);
+        border-color: transparent;
+    }
+
+    .action-btn--view:hover {
+        background: var(--d-primary);
+        color: #fff;
+    }
+
+    .action-btn--approve {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border-color: transparent;
+    }
+
+    .action-btn--approve:hover {
+        background: #10b981;
+        color: #fff;
+    }
+
+    .action-btn--reject {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border-color: transparent;
+    }
+
+    .action-btn--reject:hover {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #10b981;
+        margin-bottom: 16px;
+    }
+
+    .empty-state-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+    }
+
+    .empty-state-text {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+        .page-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        .badge-pending { align-self: flex-start; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Over-Budget Approvals
+                </h1>
+                <p class="page-subtitle">Expense reports that exceed budget limits require your approval.</p>
+            </div>
+            @if (reports.Any())
+            {
+                <div class="badge-pending">
+                    @reports.Count Pending
+                </div>
+            }
+        </div>
+
+        @if (reports.Any())
+        {
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report #</th>
+                                <th>Driver</th>
+                                <th>Total Amount</th>
+                                <th>Exceeded By</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var dto in reports)
                             {
-                                <span class="text-danger fw-bold">+₱@dto.ExceedAmount.ToString("N2")</span>
+                                var r = dto.Report;
+                                <tr>
+                                    <td><strong>#@r.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td>
+                                        @if (dto.ExceedAmount > 0)
+                                        {
+                                            <span style="color: #ef4444; font-weight: 600;">+₱@dto.ExceedAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: var(--d-muted);">—</span>
+                                        }
+                                    </td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td><span class="status-badge">Pending CEO</span></td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a class="action-btn action-btn--view" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn action-btn--approve">
+                                                    <i class="bi bi-check-lg"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn action-btn--reject">
+                                                    <i class="bi bi-x-lg"></i> Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
                             }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                        <td><span class="badge bg-warning text-dark">Pending CEO</span></td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a class="btn btn-info" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">
-                                    <i class="bi bi-eye"></i> Details
-                                </a>
-                                <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline-block;">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@r.Id" />
-                                    <button class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Approve</button>
-                                </form>
-                                <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline-block;">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@r.Id" />
-                                    <button class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-check-circle"></i>
+                <div class="empty-state-title">All Clear!</div>
+                <p class="empty-state-text">No over-budget expense reports awaiting your approval.</p>
+            </div>
+        }
     </div>
-}
-else
-{
-    <div class="alert alert-info text-center py-4">
-        <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
-        <strong>All clear!</strong> No over-budget expense reports awaiting your approval.
-    </div>
-}
+</div>

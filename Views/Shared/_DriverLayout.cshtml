@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CEMS Driver</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
@@ -22,36 +23,112 @@
             };
         }
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-3 driver-navbar">
-            <div class="container-fluid">
-                <a class="navbar-brand d-flex align-items-center" asp-controller="Driver" asp-action="Dashboard">
-                    <img src="~/images/logo.png" alt="CEMS Logo" height="32" class="me-2" />
-                   
+        <!-- Mobile Header with Hamburger Menu -->
+        <div class="mobile-header d-md-none">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+                ☰
+            </button>
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-controller="Driver" asp-action="Dashboard">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#driverNavbar" aria-controls="driverNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="driverNavbar">
-                    <ul class="navbar-nav me-auto mb- mb-sm-0">
-                        <li class="nav-item">
-                            <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard" data-navkey="Driver|Dashboard">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link driver-nav-link @(active("Driver","Expenses"))" asp-controller="Driver" asp-action="Expenses" data-navkey="Driver|Expenses">Submit Expenses</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link driver-nav-link @(active("Driver","MyReports"))" asp-controller="Driver" asp-action="MyReports" data-navkey="Driver|MyReports">My Reports</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link driver-nav-link @(active("Driver","History"))" asp-controller="Driver" asp-action="History" data-navkey="Driver|History">Expense History</a>
-                        </li>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar -->
+        <aside class="driver-sidebar d-none d-md-flex flex-column">
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-controller="Driver" asp-action="Dashboard">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+            <nav class="nav flex-column p-3">
+                <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("Driver","Expenses"))" asp-controller="Driver" asp-action="Expenses">
+                    <i class="bi bi-receipt"></i>
+                    <span>Submit Expenses</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("Driver","MyReports"))" asp-controller="Driver" asp-action="MyReports">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>My Reports</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("Driver","History"))" asp-controller="Driver" asp-action="History">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Expense History</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+            </nav>
+            <div class="mt-auto profile-section">
+                <div class="dropdown">
+                    <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">View Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><partial name="_LoginPartial" /></li>
                     </ul>
-                    <partial name="_LoginPartial" />
                 </div>
             </div>
-        </nav>
+        </aside>
+
+        <!-- Mobile Offcanvas Sidebar -->
+        <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS Driver</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("Driver","Expenses"))" asp-controller="Driver" asp-action="Expenses" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-receipt"></i>
+                        <span>Submit Expenses</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("Driver","MyReports"))" asp-controller="Driver" asp-action="MyReports" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>My Reports</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("Driver","History"))" asp-controller="Driver" asp-action="History" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Expense History</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                </nav>
+                <div class="mt-auto profile-section">
+                    <div class="dropdown">
+                        <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">View Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><partial name="_LoginPartial" /></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
-    <div class="container">
+    <div class="w-100">
         <main role="main" class="pb-3">
             @if (TempData["Success"] != null)
             {

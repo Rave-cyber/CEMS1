@@ -3,42 +3,196 @@
     Layout = "~/Views/Shared/_FinanceLayout.cshtml";
 }
 
-<h2>Approved Expense Reports</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-@if(ViewBag.ApprovedReports != null)
-{
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Report ID</th>
-                    <th>Driver</th>
-                    <th>Total</th>
-                    <th>Submitted</th>
-                    <th>Budget Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
-                {
-                    var r = dto.Report;
-                    <tr>
-                        <td>@r.Id</td>
-                        <td>@(dto.UserName ?? "Unknown")</td>
-                        <td>₱@r.TotalAmount.ToString("N2")</td>
-                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                        <td><span class="badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "bg-success" : "bg-danger")">@r.BudgetCheck</span></td>
-                        <td>
-                            <a class="btn btn-sm btn-info" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">Details</a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: .95rem;
+        margin-top: 4px;
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-badge--within { background: rgba(16,185,129,.1); color: #10b981; }
+    .status-badge--over { background: rgba(239,68,68,.1); color: #ef4444; }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        background: var(--d-primary);
+        color: #fff;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn:hover {
+        background: #154a8a;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-check2-circle"></i>
+                Approved Expense Reports
+            </h1>
+            <p class="page-subtitle">Reports ready for reimbursement processing.</p>
+        </div>
+
+        @if(ViewBag.ApprovedReports != null && ((List<CEMS.Models.PendingExpenseReportDto>)ViewBag.ApprovedReports).Count > 0)
+        {
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Driver</th>
+                                <th>Total Amount</th>
+                                <th>Submitted Date</th>
+                                <th>Budget Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
+                            {
+                                var r = dto.Report;
+                                <tr>
+                                    <td><strong>@r.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
+                                            @r.BudgetCheck
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a class="action-btn" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <p>No approved reports at this time.</p>
+            </div>
+        }
     </div>
-}
-else
-{
-    <div class="alert alert-info">No approved reports.</div>
-}
+</div>

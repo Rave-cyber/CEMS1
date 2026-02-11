@@ -4,80 +4,262 @@
     var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
 }
 
-<h2>Budget Monitoring</h2>
-<p class="text-muted">Budgets are set by the CEO. This view shows current allocations and spending.</p>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-<!-- Budget Summary Table -->
-@if (budgets.Any())
-{
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light"><strong>Budget Summary (Set by CEO)</strong></div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Category</th>
-                            <th>Allocated</th>
-                            <th>Spent</th>
-                            <th>Remaining</th>
-                            <th>Usage</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var b in budgets)
-                        {
-                            var remaining = b.Allocated - b.Spent;
-                            var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
-                            <tr class="@(remaining < 0 ? "table-danger" : "")">
-                                <td class="fw-bold">@b.Category</td>
-                                <td>₱@b.Allocated.ToString("N2")</td>
-                                <td>₱@b.Spent.ToString("N2")</td>
-                                <td class="@(remaining < 0 ? "text-danger fw-bold" : "text-success")">₱@remaining.ToString("N2")</td>
-                                <td style="min-width:150px;">
-                                    <div class="progress" style="height:20px;">
-                                        <div class="progress-bar @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")"
-                                             role="progressbar" style="width:@Math.Min(pct, 100)%">
-                                            @pct%
-                                        </div>
-                                    </div>
-                                </td>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: .95rem;
+        margin-top: 4px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .info-banner {
+        background: rgba(26, 107, 181, 0.05);
+        border: 1px solid rgba(26, 107, 181, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #164e63;
+    }
+
+    .info-banner i {
+        margin-right: 8px;
+        color: var(--d-primary);
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .table-card-head {
+        background: #f8fafc;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--d-border);
+        font-weight: 600;
+        color: var(--d-text);
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .dash-table tfoot tr {
+        background: #f8fafc;
+        border-top: 2px solid var(--d-border);
+    }
+
+    .budget-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+
+    .budget-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width .3s ease;
+    }
+
+    .budget-bar-fill--ok { background: var(--d-primary); }
+    .budget-bar-fill--warn { background: #f59e0b; }
+    .budget-bar-fill--danger { background: #ef4444; }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-calculator"></i>
+                Budget Monitoring
+            </h1>
+            <p class="page-subtitle">Budgets are set by the CEO. Track allocations and spending below.</p>
+        </div>
+
+        <!-- Info Banner -->
+        <div class="info-banner">
+            <i class="bi bi-info-circle"></i>
+            <strong>Note:</strong> Budget allocations are set by the CEO. Use this view to monitor your team's spending against limits.
+        </div>
+
+        <!-- Budget Summary Table -->
+        @if (budgets.Any())
+        {
+            <div class="table-card">
+                <div class="table-card-head">
+                    <i class="bi bi-list-check me-2"></i> Budget Summary
+                </div>
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Allocated</th>
+                                <th>Spent</th>
+                                <th>Remaining</th>
+                                <th>Usage %</th>
                             </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light">
-                        <tr class="fw-bold">
-                            <td>TOTAL</td>
-                            <td>₱@budgets.Sum(b => b.Allocated).ToString("N2")</td>
-                            <td>₱@budgets.Sum(b => b.Spent).ToString("N2")</td>
-                            <td class="@(budgets.Sum(b => b.Allocated - b.Spent) < 0 ? "text-danger" : "text-success")">₱@budgets.Sum(b => b.Allocated - b.Spent).ToString("N2")</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var b in budgets)
+                            {
+                                var remaining = b.Allocated - b.Spent;
+                                var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                                var barClass = pct >= 100 ? "budget-bar-fill--danger" : pct >= 75 ? "budget-bar-fill--warn" : "budget-bar-fill--ok";
+                                <tr>
+                                    <td class="fw-600">@b.Category</td>
+                                    <td>₱<strong>@b.Allocated.ToString("N2")</strong></td>
+                                    <td>₱<strong>@b.Spent.ToString("N2")</strong></td>
+                                    <td class="@(remaining < 0 ? "fw-bold" : "")">
+                                        <span style="color: @(remaining < 0 ? "#ef4444" : "#0d8b7d");">₱@remaining.ToString("N2")</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="budget-bar" style="flex: 1;">
+                                                <div class="budget-bar-fill @barClass" style="width:@Math.Min(pct, 100)%"></div>
+                                            </div>
+                                            <span class="badge @(pct >= 100 ? "bg-danger" : pct >= 75 ? "bg-warning" : "bg-success")">@pct%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="fw-bold">TOTAL</td>
+                                <td>₱<strong>@budgets.Sum(b => b.Allocated).ToString("N2")</strong></td>
+                                <td>₱<strong>@budgets.Sum(b => b.Spent).ToString("N2")</strong></td>
+                                <td style="color: @(budgets.Sum(b => b.Allocated - b.Spent) < 0 ? "#ef4444" : "#0d8b7d"); font-weight: 700;">₱@budgets.Sum(b => b.Allocated - b.Spent).ToString("N2")</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
-        </div>
-    </div>
-}
-else
-{
-    <div class="alert alert-info">No budgets have been set by the CEO yet.</div>
-}
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <p>No budgets have been set by the CEO yet.</p>
+            </div>
+        }
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">Budget Usage (from API)</div>
-            <div class="card-body">
-                <div id="budgetList">Loading...</div>
+        <!-- Budget Details Section -->
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <i class="bi bi-graph-up me-2"></i> Budget Details
+                    </div>
+                    <div style="padding: 18px;">
+                        <div id="budgetList">
+                            <p class="text-muted text-center py-4">Loading budget details...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-light">Budget Usage Chart</div>
-            <div class="card-body">
-                <canvas id="budgetChart" width="400" height="300"></canvas>
+            <div class="col-lg-4">
+                <div class="table-card">
+                    <div class="table-card-head">
+                        <i class="bi bi-bar-chart me-2"></i> Budget Chart
+                    </div>
+                    <div style="padding: 18px;">
+                        <canvas id="budgetChart" height="200"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -95,37 +277,61 @@ async function loadBudgets(){
         const labels = [];
         const used = [];
         const allocated = [];
+
         for(const b of data.budgets || []){
             labels.push(b.category);
             used.push(b.spent);
             allocated.push(b.allocated);
             const percent = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
-            const barColor = percent >= 100 ? 'bg-danger' : percent >= 75 ? 'bg-warning' : '';
+            const barClass = percent >= 100 ? 'budget-bar-fill--danger' : percent >= 75 ? 'budget-bar-fill--warn' : 'budget-bar-fill--ok';
+
             const div = document.createElement('div');
-            div.className = 'mb-3';
-            div.innerHTML = `<div class="d-flex justify-content-between"><div>${b.category}</div><div>₱${b.spent.toFixed(2)} / ₱${b.allocated.toFixed(2)}</div></div><div class="progress"><div class="progress-bar ${barColor}" role="progressbar" style="width:${percent}%" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div></div>`;
+            div.className = 'mb-4';
+            div.style.paddingBottom = '16px';
+            div.style.borderBottom = '1px solid #f1f5f9';
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="fw-600">${b.category}</div>
+                    <div class="text-muted small">₱${b.spent.toFixed(2)} / ₱${b.allocated.toFixed(2)}</div>
+                </div>
+                <div class="budget-bar">
+                    <div class="budget-bar-fill ${barClass}" style="width:${percent}%"></div>
+                </div>
+                <div class="text-muted small mt-2">${percent}% used</div>
+            `;
             container.appendChild(div);
         }
 
         // render chart
         const ctx = document.getElementById('budgetChart').getContext('2d');
         new Chart(ctx, {
-            type: 'bar',
+            type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Allocated',
-                    data: allocated,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
-                },{
-                    label: 'Spent',
                     data: used,
-                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                    backgroundColor: [
+                        '#1a6bb5',
+                        '#2ec4b6',
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
                 }]
             },
             options: {
-                scales: {
-                    y: { beginAtZero: true }
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { size: 12 },
+                            padding: 12
+                        }
+                    }
                 }
             }
         });

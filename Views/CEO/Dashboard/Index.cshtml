@@ -12,156 +12,329 @@
     var recentOB = ViewBag.RecentOverBudget as List<CEMS.Models.OverBudgetReportDto> ?? new List<CEMS.Models.OverBudgetReportDto>();
 }
 
-<div class="container-fluid px-4">
-    <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center py-4">
-        <div>
-            <h1 class="h2 fw-bold">🏢 CEO Dashboard</h1>
-            <p class="text-muted mb-0">Welcome back, @User.Identity?.Name</p>
-        </div>
-        <div>
-            <span class="badge bg-danger fs-6 px-3 py-2">CEO PRIVILEGES</span>
-        </div>
-    </div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-    <!-- Quick Stats Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Total Budget</h6>
-                            <h3 class="fw-bold">₱@totalBudget.ToString("N2")</h3>
-                            <p class="mb-0 text-muted">All Categories</p>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-cash-coin text-primary fs-3"></i>
-                        </div>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .greeting-section {
+        margin-bottom: 32px;
+    }
+
+    .greeting-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 8px;
+    }
+
+    .greeting-subtitle {
+        color: var(--d-muted);
+        font-size: 0.95rem;
+    }
+
+    .stat-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .stat-card:hover {
+        border-color: var(--d-primary);
+        box-shadow: 0 4px 12px rgba(26, 107, 181, 0.08);
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .stat-icon--primary { background: rgba(26, 107, 181, 0.1); color: var(--d-primary); }
+    .stat-icon--success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-icon--warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .stat-icon--info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+
+    .stat-label {
+        color: var(--d-muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+    }
+
+    .stat-sub {
+        color: var(--d-muted);
+        font-size: 0.85rem;
+    }
+
+    .action-section {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .action-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-card:hover {
+        border-color: var(--d-primary);
+        box-shadow: 0 4px 12px rgba(26, 107, 181, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .action-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin: 0 auto 12px;
+    }
+
+    .action-desc {
+        color: var(--d-muted);
+        font-size: 0.85rem;
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table-card-head {
+        background: #f8fafc;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--d-border);
+        font-weight: 600;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .status-badge--pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        color: var(--d-primary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn:hover {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        color: var(--d-border);
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .greeting-title { font-size: 1.4rem; }
+        .stat-card { gap: 12px; padding: 16px; }
+        .stat-value { font-size: 1.3rem; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="greeting-section">
+            <h1 class="greeting-title">
+                <i class="bi bi-building" style="color: var(--d-primary);"></i>
+                CEO Dashboard
+            </h1>
+            <p class="greeting-subtitle">Welcome back, <strong>@User.Identity?.Name</strong></p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--primary">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="stat-label">Total Budget</div>
+                        <div class="stat-value">₱@totalBudget.ToString("N2")</div>
+                        <div class="stat-sub">All Categories</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--success">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="stat-label">Utilized</div>
+                        <div class="stat-value">₱@totalSpent.ToString("N2")</div>
+                        <div class="stat-sub">@usagePct% of Budget</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="stat-label">Pending Review</div>
+                        <div class="stat-value">₱@pendingCEOTotal.ToString("N2")</div>
+                        <div class="stat-sub">@pendingCEOCount Over-Budget Requests</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--info">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="stat-label">Active Drivers</div>
+                        <div class="stat-value">@activeDrivers</div>
+                        <div class="stat-sub">Registered</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Utilized</h6>
-                            <h3 class="fw-bold">₱@totalSpent.ToString("N2")</h3>
-                            <p class="mb-0 text-muted">@usagePct% of Budget</p>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-graph-up-arrow text-success fs-3"></i>
-                        </div>
-                    </div>
-                </div>
+        <!-- Recent Over-Budget Requests -->
+        <div class="table-card">
+            <div class="table-card-head">
+                <i class="bi bi-list-check"></i>
+                Recent Over-Budget Requests
             </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Pending Review</h6>
-                            <h3 class="fw-bold">₱@pendingCEOTotal.ToString("N2")</h3>
-                            <p class="mb-0 text-muted">@pendingCEOCount Over-Budget Requests</p>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-clock text-warning fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-info border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Active Drivers</h6>
-                            <h3 class="fw-bold">@activeDrivers</h3>
-                            <p class="mb-0 text-muted">Registered</p>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-people text-info fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CEO Quick Actions -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">⚡ Quick Actions</h4>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <a asp-controller="CEO" asp-action="Budget" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-cash-stack text-primary fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Set Budget</h5>
-                            <p class="card-text text-muted small">Define monthly budgets</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a asp-controller="CEO" asp-action="Approvals" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-exclamation-triangle text-warning fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Over-Budget Review</h5>
-                            <p class="card-text text-muted small">@pendingCEOCount pending</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a asp-controller="CEO" asp-action="Analytics" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-bar-chart text-success fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Reports</h5>
-                            <p class="card-text text-muted small">View analytics</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a asp-controller="CEO" asp-action="Users" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-person-plus text-info fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Manage Users</h5>
-                            <p class="card-text text-muted small">Add/Edit users</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Over-Budget Requests Table -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">📋 Recent Over-Budget Requests</h5>
-        </div>
-        <div class="card-body">
             @if (recentOB.Any())
             {
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                    <table class="dash-table">
+                        <thead>
                             <tr>
                                 <th>Report #</th>
                                 <th>Driver</th>
@@ -169,41 +342,32 @@
                                 <th>Amount</th>
                                 <th>Exceeded</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var item in recentOB)
                             {
                                 <tr>
-                                    <td>@item.Report.Id</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                <i class="bi bi-person text-primary"></i>
-                                            </div>
-                                            <span>@item.UserName</span>
-                                        </div>
-                                    </td>
+                                    <td><strong>@item.Report.Id</strong></td>
+                                    <td>@item.UserName</td>
                                     <td>@item.Report.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                    <td><span class="fw-bold">₱@item.Report.TotalAmount.ToString("N2")</span></td>
+                                    <td><strong>₱@item.Report.TotalAmount.ToString("N2")</strong></td>
                                     <td>
                                         @if (item.ExceedAmount > 0)
                                         {
-                                            <small class="text-danger fw-bold">+₱@item.ExceedAmount.ToString("N2")</small>
+                                            <span style="color: #ef4444; font-weight: 600;">+₱@item.ExceedAmount.ToString("N2")</span>
                                         }
                                         else
                                         {
-                                            <small class="text-muted">—</small>
+                                            <span style="color: var(--d-muted);">—</span>
                                         }
                                     </td>
-                                    <td><span class="badge bg-warning">Needs Approval</span></td>
+                                    <td><span class="status-badge status-badge--pending">Needs Approval</span></td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a class="btn btn-outline-primary" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@item.Report.Id">
-                                                <i class="bi bi-eye"></i> View
-                                            </a>
-                                        </div>
+                                        <a class="action-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@item.Report.Id">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
                                     </td>
                                 </tr>
                             }
@@ -213,27 +377,11 @@
             }
             else
             {
-                <div class="text-center py-4 text-muted">
-                    <i class="bi bi-check-circle fs-1"></i>
-                    <p class="mt-2">No over-budget requests pending your review.</p>
+                <div class="empty-state">
+                    <i class="bi bi-check-circle"></i>
+                    <p>No over-budget requests pending your review.</p>
                 </div>
             }
         </div>
     </div>
 </div>
-
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-2px);
-        transition: all 0.3s ease;
-    }
-
-    .avatar-sm {
-        width: 32px;
-        height: 32px;
-    }
-
-    .border-start {
-        border-left-width: 4px !important;
-    }
-</style>

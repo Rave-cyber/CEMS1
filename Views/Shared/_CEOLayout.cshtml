@@ -9,57 +9,147 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    @{ 
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        Func<string, string, string> active = (c, a) =>
+        {
+            if (string.Equals(c, currentController, System.StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(a, currentAction, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return "active";
+            }
+            return string.Empty;
+        };
+    }
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-dark navbar-dark border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-controller="CEO" asp-action="Dashboard">
-                    🏢 <strong>CEMS</strong> <span class="badge bg-danger">CEO</span>
+        <!-- Mobile Header with Hamburger Menu -->
+        <div class="mobile-header d-md-none">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+                ☰
+            </button>
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-controller="CEO" asp-action="Dashboard">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#ceoNavbar" aria-controls="ceoNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="ceoNavbar">
-                    <ul class="navbar-nav me-auto mb-2 mb-sm-0">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="Dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="Approvals">
-                                <i class="bi bi-exclamation-triangle"></i> Over-Budget Reports
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="Budget">
-                                <i class="bi bi-cash-stack"></i> Budget Management
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="ExpenseOverview">
-                                <i class="bi bi-receipt"></i> Expense Overview
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="Analytics">
-                                <i class="bi bi-bar-chart"></i> Reports &amp; Analytics
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="CEO" asp-action="Users">
-                                <i class="bi bi-people"></i> Account Management
-                            </a>
-                        </li>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar -->
+        <aside class="driver-sidebar d-none d-md-flex flex-column">
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-controller="CEO" asp-action="Dashboard">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+            <nav class="nav flex-column p-3">
+                <a class="nav-link driver-nav-link @(active("CEO","Dashboard"))" asp-controller="CEO" asp-action="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("CEO","Approvals"))" asp-controller="CEO" asp-action="Approvals">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Over-Budget Reports</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("CEO","Budget"))" asp-controller="CEO" asp-action="Budget">
+                    <i class="bi bi-calculator"></i>
+                    <span>Budget Management</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("CEO","ExpenseOverview"))" asp-controller="CEO" asp-action="ExpenseOverview">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Expense Overview</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("CEO","Analytics"))" asp-controller="CEO" asp-action="Analytics">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Reports &amp; Analytics</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("CEO","Users"))" asp-controller="CEO" asp-action="Users">
+                    <i class="bi bi-people"></i>
+                    <span>Account Management</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+            </nav>
+            <div class="mt-auto profile-section">
+                <div class="dropdown">
+                    <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">View Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><partial name="_LoginPartial" /></li>
                     </ul>
-                    <partial name="_LoginPartial" />
-                    <form class="d-flex ms-2" asp-area="Identity" asp-page="/Account/Logout" method="post">
-                        <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
-                    </form>
                 </div>
             </div>
-        </nav>
+        </aside>
+
+        <!-- Mobile Offcanvas Sidebar -->
+        <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS CEO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link driver-nav-link @(active("CEO","Dashboard"))" asp-controller="CEO" asp-action="Dashboard" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("CEO","Approvals"))" asp-controller="CEO" asp-action="Approvals" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>Over-Budget Reports</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("CEO","Budget"))" asp-controller="CEO" asp-action="Budget" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-calculator"></i>
+                        <span>Budget Management</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("CEO","ExpenseOverview"))" asp-controller="CEO" asp-action="ExpenseOverview" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-graph-up"></i>
+                        <span>Expense Overview</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("CEO","Analytics"))" asp-controller="CEO" asp-action="Analytics" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>Reports &amp; Analytics</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("CEO","Users"))" asp-controller="CEO" asp-action="Users" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-people"></i>
+                        <span>Account Management</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                </nav>
+                <div class="mt-auto profile-section">
+                    <div class="dropdown">
+                        <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">View Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><partial name="_LoginPartial" /></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
-    <div class="container">
+    <div class="w-100">
         <main role="main" class="pb-3">
             @if (TempData["Success"] != null)
             {

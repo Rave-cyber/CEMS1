@@ -3,101 +3,297 @@
     Layout = "~/Views/Shared/_FinanceLayout.cshtml";
 }
 
-<div class="container-fluid px-4">
-    <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center py-4">
-        <div>
-            <h1 class="h2 fw-bold">💰 Finance Dashboard</h1>
-            <p class="text-muted mb-0">Welcome, @User.Identity?.Name</p>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+    }
+
+    .dash-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .dash-header {
+        margin-bottom: 36px;
+    }
+
+    .dash-greeting {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+    }
+
+    .dash-greeting span {
+        color: var(--d-primary);
+        font-weight: 700;
+    }
+
+    .dash-date {
+        color: var(--d-muted);
+        font-size: .92rem;
+        margin-top: 2px;
+    }
+
+    .stat-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 18px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform .12s ease;
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .stat-icon--pending { background: rgba(26,107,181,.06); color: #1a6bb5; }
+    .stat-icon--approved { background: rgba(16,185,129,.06); color: #10b981; }
+    .stat-icon--money { background: rgba(99,102,241,.06); color: #6366f1; }
+    .stat-icon--warning { background: rgba(245,158,11,.06); color: #f59e0b; }
+
+    .stat-label {
+        font-size: .78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--d-muted);
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--d-text);
+        line-height: 1.2;
+    }
+
+    .stat-sub {
+        font-size: .82rem;
+        color: var(--d-muted);
+        margin-top: 2px;
+    }
+
+    .dash-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .dash-card-head {
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--d-border);
+    }
+
+    .dash-card-title {
+        font-size: .98rem;
+        font-weight: 600;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dash-card-title i { color: var(--d-primary); font-size: 1.1rem; }
+    .dash-card-body { padding: 16px 18px; }
+
+    .action-btn {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        text-decoration: none !important;
+        color: var(--d-text) !important;
+        transition: all .2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .action-btn:hover {
+        border-color: var(--d-primary);
+        box-shadow: 0 4px 12px rgba(26, 107, 181, 0.15);
+        text-decoration: none !important;
+    }
+
+    .action-btn i {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(26, 107, 181, 0.08);
+        color: var(--d-primary);
+        font-size: 1.2rem;
+    }
+
+    .action-btn-title {
+        font-weight: 600;
+        font-size: .95rem;
+    }
+
+    .action-btn-desc {
+        font-size: .8rem;
+        color: var(--d-muted);
+    }
+
+    @@media (max-width: 768px) {
+        .dash-wrapper { padding: 20px 0 32px; }
+        .dash-greeting { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="dash-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Header -->
+        <div class="dash-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <h1 class="dash-greeting">Welcome back, <span>@User.Identity?.Name</span></h1>
+                <p class="dash-date mb-0">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
+                </p>
+            </div>
+            <a href="@Url.Action("Reimbursements", "Finance")" class="btn px-4 py-2 text-white" style="background:var(--d-primary);border:none;border-radius:6px;font-weight:600;">
+                <i class="bi bi-plus-lg me-1"></i> Process Reimbursement
+            </a>
         </div>
-        <div>
-            <span class="badge bg-success fs-6 px-3 py-2">FINANCE OFFICER</span>
+
+        <!-- Stats Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("ApprovedReports", "Finance")" class="stat-card">
+                    <div class="stat-icon stat-icon--pending">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">To Process</div>
+                        <div class="stat-value">₱<span id="toProcessVal">@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("0.00"))</span></div>
+                        <div class="stat-sub">@((int?)ViewBag.PendingCount ?? 0) approved</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("Payments", "Finance")" class="stat-card">
+                    <div class="stat-icon stat-icon--approved">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Processed Today</div>
+                        <div class="stat-value">₱<span id="processedVal">0.00</span></div>
+                        <div class="stat-sub"><span id="processedCount">0</span> reimbursements</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--money">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Monthly Total</div>
+                        <div class="stat-value">₱<span id="monthlyVal">0.00</span></div>
+                        <div class="stat-sub"><span id="monthlyCount">0</span> processed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--warning">
+                        <i class="bi bi-credit-card"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label">Payment Status</div>
+                        <div class="stat-value" style="color: #10b981;">✓ Ready</div>
+                        <div class="stat-sub">PayMongo connected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dash-card mb-4">
+            <div class="dash-card-head">
+                <div class="dash-card-title">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </div>
+            </div>
+            <div class="dash-card-body">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <a href="@Url.Action("ApprovedReports", "Finance")" class="action-btn">
+                            <i class="bi bi-check2-circle"></i>
+                            <div class="action-btn-title">Approved Reports</div>
+                            <div class="action-btn-desc">Review approved expenses</div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="@Url.Action("Reimbursements", "Finance")" class="action-btn">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <div class="action-btn-title">Process Reimbursement</div>
+                            <div class="action-btn-desc">Create reimbursement batches</div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="@Url.Action("Payments", "Finance")" class="action-btn">
+                            <i class="bi bi-credit-card"></i>
+                            <div class="action-btn-title">Payment History</div>
+                            <div class="action-btn-desc">View all transactions</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- Finance Quick Stats -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">To Process</h6>
-                            <h3 class="fw-bold">₱@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("N2"))</h3>
-                            <p class="mb-0 text-muted">@((int?)ViewBag.PendingCount ?? 0) Approved Expenses</p>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-clock text-primary fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<script>
+async function loadFinanceMetrics(){
+    try{
+        const res = await fetch('@Url.Action("Metrics","Finance")');
+        const data = await res.json();
+        document.getElementById('processedVal').textContent = ((data.processedToday ?? 0).toFixed(2));
+        document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
+        document.getElementById('monthlyVal').textContent = ((data.monthlyTotal ?? 0).toFixed(2));
+        document.getElementById('monthlyCount').textContent = (data.monthlyCount ?? 0);
+    }catch(e){
+        console.error('Failed to load metrics:', e);
+    }
+}
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Processed Today</h6>
-                            <h3 class="fw-bold">₱8,300</h3>
-                            <p class="mb-0 text-muted">5 Reimbursements</p>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-check-circle text-success fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Monthly Total</h6>
-                            <h3 class="fw-bold">₱45,200</h3>
-                            <p class="mb-0 text-muted">32 Reimbursements</p>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-cash-stack text-warning fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-info border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">PayMongo Ready</h6>
-                            <h3 class="fw-bold">✅</h3>
-                            <p class="mb-0 text-muted">API Connected</p>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-credit-card text-info fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Finance Quick Actions -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">⚡ Finance Actions</h4>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <a href="@Url.Action("Reimbursements", "Finance")" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-wallet2 text-primary fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Process Reimbursements</h5>
+document.addEventListener('DOMContentLoaded', loadFinanceMetrics);
+</script>
                             <p class="card-text text-muted small">Send payments via PayMongo</p>
                         </div>
                     </a>
