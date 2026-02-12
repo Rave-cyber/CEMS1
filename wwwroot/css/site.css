@@ -286,6 +286,102 @@ body {
   .offcanvas-backdrop {
     background-color: rgba(0, 0, 0, 0.5);
   }
+
+  .offcanvas {
+    width: 80%;
+    max-width: 320px;
+    border: none;
+    background: var(--d-card, #ffffff);
+  }
+
+  .offcanvas-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .offcanvas-body .nav-link {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #0a0a0a;
+    border-left: 3px solid transparent;
+    transition: all 0.25s ease;
+  }
+
+  .offcanvas-body .nav-link i {
+    font-size: 18px;
+    color: var(--d-primary, #1a6bb5);
+    flex-shrink: 0;
+  }
+
+  .offcanvas-body .nav-link span {
+    flex: 1;
+    margin: 0 8px;
+  }
+
+  .offcanvas-body .nav-link .nav-indicator {
+    display: none;
+    font-size: 16px;
+    color: #1a6bb5;
+    flex-shrink: 0;
+  }
+
+  .offcanvas-body .nav-link:hover {
+    color: #1a6bb5;
+    background-color: rgba(26, 107, 181, 0.08);
+    border-left-color: #1a6bb5;
+    text-decoration: none;
+  }
+
+  .offcanvas-body .nav-link.active {
+    color: #1a6bb5;
+    background: linear-gradient(135deg, rgba(26, 107, 181, 0.12) 0%, rgba(46, 196, 182, 0.12) 100%);
+    border-left-color: #1a6bb5;
+    font-weight: 600;
+  }
+
+  .offcanvas-body .nav-link.active .nav-indicator {
+    display: inline-block;
+  }
+
+  /* Mobile profile dropdown fixes */
+  .offcanvas .profile-section {
+    padding: 12px 12px;
+  }
+
+  .offcanvas .dropdown-menu {
+    position: static;
+    float: none;
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid #e9eef6;
+    box-shadow: none;
+    display: none;
+  }
+
+  .offcanvas .dropdown-menu.show {
+    display: block;
+  }
+
+  .offcanvas .profile-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .offcanvas .profile-btn::after {
+    margin-left: auto;
+  }
+
+  .offcanvas .dropdown-item {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
@@ -378,4 +474,12 @@ body {
 .dropdown-divider {
   margin: 6px 0;
   opacity: 0.5;
+}
+
+/* Desktop profile dropdown - align to right */
+@media (min-width: 768px) {
+  .dropdown-menu {
+    right: 0;
+    left: auto;
+  }
 }

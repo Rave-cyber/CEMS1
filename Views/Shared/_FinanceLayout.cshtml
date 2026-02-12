@@ -91,29 +91,40 @@
             </div>
             <div class="offcanvas-body p-0 d-flex flex-column">
                 <nav class="nav flex-column p-3">
-                    <a class="nav-link driver-nav-link @(active("Finance","Dashboard"))" asp-controller="Finance" asp-action="Dashboard" data-bs-dismiss="offcanvas">
+                    <a class="nav-link driver-nav-link @(active("Finance","Dashboard"))" asp-controller="Finance" asp-action="Dashboard">
                         <i class="bi bi-speedometer2"></i>
                         <span>Dashboard</span>
                         <i class="bi bi-check-circle nav-indicator"></i>
                     </a>
-                    <a class="nav-link driver-nav-link @(active("Finance","ApprovedReports"))" asp-controller="Finance" asp-action="ApprovedReports" data-bs-dismiss="offcanvas">
+                    <a class="nav-link driver-nav-link @(active("Finance","ApprovedReports"))" asp-controller="Finance" asp-action="ApprovedReports">
                         <i class="bi bi-check2-circle"></i>
                         <span>Approved Reports</span>
                         <i class="bi bi-check-circle nav-indicator"></i>
                     </a>
-                    <a class="nav-link driver-nav-link @(active("Finance","Reimbursements"))" asp-controller="Finance" asp-action="Reimbursements" data-bs-dismiss="offcanvas">
+                    <a class="nav-link driver-nav-link @(active("Finance","Reimbursements"))" asp-controller="Finance" asp-action="Reimbursements">
                         <i class="bi bi-arrow-left-right"></i>
                         <span>Reimbursements</span>
                         <i class="bi bi-check-circle nav-indicator"></i>
                     </a>
-                    <a class="nav-link driver-nav-link @(active("Finance","Payments"))" asp-controller="Finance" asp-action="Payments" data-bs-dismiss="offcanvas">
+                    <a class="nav-link driver-nav-link @(active("Finance","Payments"))" asp-controller="Finance" asp-action="Payments">
                         <i class="bi bi-credit-card"></i>
                         <span>Payment History</span>
                         <i class="bi bi-check-circle nav-indicator"></i>
                     </a>
                 </nav>
-                <div class="mt-auto p-3 border-top">
-                    <partial name="_LoginPartial" />
+                <div class="mt-auto profile-section">
+                    <div class="dropdown">
+                        <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">View Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><partial name="_LoginPartial" /></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
