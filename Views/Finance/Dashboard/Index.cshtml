@@ -168,6 +168,14 @@
         color: var(--d-muted);
     }
 
+    .chart-wrap {
+        height: 280px;
+    }
+    .chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
     @@media (max-width: 768px) {
         .dash-wrapper { padding: 20px 0 32px; }
         .dash-greeting { font-size: 1.4rem; }
@@ -227,6 +235,19 @@
                         <div class="stat-sub"><span id="monthlyCount">0</span> processed</div>
                     </div>
                 </div>
+
+        <div class="dash-card mb-4">
+            <div class="dash-card-head">
+                <div class="dash-card-title">
+                    <i class="bi bi-bar-chart"></i> Reimbursement Trend
+                </div>
+            </div>
+            <div class="dash-card-body">
+                <div class="chart-wrap">
+                    <canvas id="financeTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
             </div>
             <div class="col-xl-3 col-sm-6">
                 <div class="stat-card">
@@ -278,7 +299,43 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+let financeTrendChart;
+
+function renderFinanceTrendChart(toProcess, processedToday, monthlyTotal){
+    const canvas = document.getElementById('financeTrendChart');
+    if(!canvas || !window.Chart){
+        return;
+    }
+
+    if(financeTrendChart){
+        financeTrendChart.destroy();
+    }
+
+    financeTrendChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: ['To Process', 'Processed Today', 'Monthly Total'],
+            datasets: [
+                {
+                    label: 'Amount (₱)',
+                    data: [toProcess, processedToday, monthlyTotal],
+                    backgroundColor: ['rgba(26,107,181,0.25)', 'rgba(16,185,129,0.25)', 'rgba(99,102,241,0.25)'],
+                    borderColor: ['#1a6bb5', '#10b981', '#6366f1'],
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
 async function loadFinanceMetrics(){
     try{
         const res = await fetch('@Url.Action("Metrics","Finance")');
@@ -287,6 +344,9 @@ async function loadFinanceMetrics(){
         document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
         document.getElementById('monthlyVal').textContent = ((data.monthlyTotal ?? 0).toFixed(2));
         document.getElementById('monthlyCount').textContent = (data.monthlyCount ?? 0);
+
+        const toProcess = Number('@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))');
+        renderFinanceTrendChart(toProcess, data.processedToday ?? 0, data.monthlyTotal ?? 0);
     }catch(e){
         console.error('Failed to load metrics:', e);
     }

@@ -134,7 +134,36 @@
         font-weight: 700;
         color: var(--d-primary);
         font-size: 1.2rem;
+        text-align: right;
+    }
+
+    .report-card-actions {
         margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .edit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--d-radius-sm);
+        background: rgba(26, 107, 181, .1);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s;
+    }
+
+    .edit-btn:hover {
+        background: rgba(26, 107, 181, .18);
+        color: #155a9a;
+        text-decoration: none;
     }
 
     .report-card-body {
@@ -583,7 +612,15 @@
                                 </span>
                             }
                         </div>
-                        <div class="report-amount">₱@r.TotalAmount.ToString("N2")</div>
+                        <div class="report-card-actions">
+                            <div class="report-amount">₱@r.TotalAmount.ToString("N2")</div>
+                            @if (r.Status != CEMS.Models.ReportStatus.Approved)
+                            {
+                                <a class="edit-btn" href="@Url.Action("EditReport", "Driver", new { id = r.Id })">
+                                    <i class="bi bi-pencil-square"></i> Edit Report
+                                </a>
+                            }
+                        </div>
                     </div>
 
                     <!-- Items Table -->

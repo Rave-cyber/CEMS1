@@ -9,10 +9,71 @@
 }
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+let driverBudgetChart;
+
+function renderDriverBudgetChart(budgets){
+    const canvas = document.getElementById('driverBudgetChart');
+    if(!canvas || !window.Chart){
+        return;
+    }
+
+    const labels = (budgets || []).map(b => b.category);
+    const allocated = (budgets || []).map(b => b.allocated ?? 0);
+    const spent = (budgets || []).map(b => b.spent ?? 0);
+
+    if(driverBudgetChart){
+        driverBudgetChart.destroy();
+    }
+
+    driverBudgetChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Allocated',
+                    data: allocated,
+                    backgroundColor: 'rgba(26,107,181,0.25)',
+                    borderColor: '#1a6bb5',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Spent',
+                    data: spent,
+                    backgroundColor: 'rgba(239,68,68,0.25)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+function getDateFilters(){
+    const start = document.getElementById('metricsStart')?.value;
+    const end = document.getElementById('metricsEnd')?.value;
+    const params = new URLSearchParams();
+    if(start){ params.append('start', start); }
+    if(end){ params.append('end', end); }
+    const query = params.toString();
+    return query ? `?${query}` : '';
+}
+
 async function loadDriverMetrics(){
     try{
-        const res = await fetch('@Url.Action("Metrics","Driver")');
+        const res = await fetch('@Url.Action("Metrics","Driver")' + getDateFilters());
         if(!res.ok) throw new Error('Failed to load metrics');
         const data = await res.json();
 
@@ -45,6 +106,8 @@ async function loadDriverMetrics(){
             `;
             tbody.appendChild(tr);
         }
+
+        renderDriverBudgetChart(data.budgets || []);
     }catch(e){
         console.error(e);
     }
@@ -52,6 +115,14 @@ async function loadDriverMetrics(){
 
 document.addEventListener('DOMContentLoaded', ()=>{
     loadDriverMetrics();
+    document.getElementById('applyMetricsFilter')?.addEventListener('click', () => loadDriverMetrics());
+    document.getElementById('clearMetricsFilter')?.addEventListener('click', () => {
+        const start = document.getElementById('metricsStart');
+        const end = document.getElementById('metricsEnd');
+        if(start) start.value = '';
+        if(end) end.value = '';
+        loadDriverMetrics();
+    });
 });
 </script>
 }
@@ -306,6 +377,45 @@ document.addEventListener('DOMContentLoaded', ()=>{
         .stat-card { padding: 20px 18px; }
         .dash-card-body { padding: 18px 18px; }
     }
+
+    .chart-wrap {
+        height: 280px;
+    }
+    .chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .filter-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px 16px;
+    }
+    .filter-card label {
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        margin-bottom: 4px;
+    }
+    .filter-card input {
+        border: 1px solid var(--d-border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: .88rem;
+        color: var(--d-text);
+    }
+    .filter-actions .btn {
+        font-size: .86rem;
+        font-weight: 600;
+        border-radius: 6px;
+        padding: 6px 14px;
+    }
 </style>
 
 <div class="dash-wrapper">
@@ -320,9 +430,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
                     @DateTime.Now.ToString("dddd, MMMM d yyyy")
                 </p>
             </div>
-            <a href="@Url.Action("Expenses", "Driver")" class="btn px-4 py-2 text-white" style="background:var(--d-gradient);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
+           @*  <a href="@Url.Action("Expenses", "Driver")" class="btn px-4 py-2 text-white" style="background:var(--d-gradient);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
                 <i class="bi bi-plus-lg me-1"></i> New Expense
-            </a>
+            </a> *@
         </div>
 
         <!-- ── Stats Row ── -->
@@ -374,6 +484,32 @@ document.addEventListener('DOMContentLoaded', ()=>{
                         <div class="stat-sub">Need revision</div>
                     </div>
                 </a>
+            </div>
+        </div>
+
+        <div class="filter-card">
+            <div>
+                <label for="metricsStart">From</label>
+                <input id="metricsStart" type="date" />
+            </div>
+            <div>
+                <label for="metricsEnd">To</label>
+                <input id="metricsEnd" type="date" />
+            </div>
+            <div class="filter-actions ms-auto">
+                <button id="applyMetricsFilter" class="btn btn-primary" type="button">Apply</button>
+                <button id="clearMetricsFilter" class="btn btn-outline-secondary" type="button">Clear</button>
+            </div>
+        </div>
+
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div class="dash-card-title"><i class="bi bi-bar-chart"></i> Budget Trend</div>
+            </div>
+            <div class="dash-card-body">
+                <div class="chart-wrap">
+                    <canvas id="driverBudgetChart"></canvas>
+                </div>
             </div>
         </div>
 

@@ -6,237 +6,316 @@
     Layout = null;
 }
 
-<style>
-    :root {
-        --primary-green: #2ec4b6;
-        --secondary-green: #20c997;
-        --dark-green: #0d8b7d;
-        --accent-blue: #1a6bb5;
-        --light-bg: #f8fafc;
-        --white: #ffffff;
-        --gray-light: #e9ecef;
-        --gray: #6c757d;
-        --gray-dark: #343a40;
-    }
-
-    .login-page {
-        min-height: 100vh;
-        display: flex;
-        overflow: hidden;
-        position: relative;
-    }
-
-    /* Left Panel - Wave Pattern */
-    .wave-panel {
-        flex: 1;
-        background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-green) 100%);
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 0 60px;
-    }
-
-    .wave-pattern {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow: hidden;
-    }
-
-    .wave {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 45%;
-        animation: wave 15s infinite linear;
-    }
-
-    .wave-1 {
-        width: 600px;
-        height: 600px;
-        top: -100px;
-        left: -100px;
-        animation-delay: 0s;
-    }
-
-    .wave-2 {
-        width: 500px;
-        height: 500px;
-        bottom: -100px;
-        right: -50px;
-        animation-delay: 5s;
-        opacity: 0.7;
-    }
-
-    .wave-3 {
-        width: 400px;
-        height: 400px;
-        top: 50%;
-        left: 30%;
-        animation-delay: 10s;
-        opacity: 0.5;
-    }
-
-    @@keyframes wave {
-        0% {
-            transform: rotate(0deg);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CEMS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #2ec4b6;
+            --secondary-green: #20c997;
+            --dark-green: #0d8b7d;
+            --accent-blue: #1a6bb5;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+            --gray-light: #e9ecef;
+            --gray: #6c757d;
+            --gray-dark: #343a40;
         }
 
-        100% {
-            transform: rotate(360deg);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    }
 
-    .wave-content {
-        position: relative;
-        z-index: 2;
-        color: white;
-        max-width: 500px;
-    }
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
 
-    .wave-title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        margin-bottom: 25px;
-        line-height: 1.2;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            position: relative;
+        }
 
-    .wave-subtitle {
-        font-size: 1.4rem;
-        opacity: 0.95;
-        line-height: 1.6;
-        margin-bottom: 40px;
-        font-weight: 300;
-    }
+        /* Left Panel - Wave Pattern */
+        .wave-panel {
+            flex: 1;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-green) 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 60px;
+        }
 
-    .wave-divider {
-        width: 80px;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.3);
-        margin: 40px 0;
-        border-radius: 2px;
-    }
+        .wave-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
 
-    .wave-features {
-        margin-top: 50px;
-    }
+        .wave {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 45%;
+            animation: wave 15s infinite linear;
+        }
 
-    .wave-feature {
-        display: flex;
-        align-items: center;
-        margin-bottom: 25px;
-    }
+        .wave-1 {
+            width: 600px;
+            height: 600px;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
 
-    .wave-icon {
-        width: 40px;
-        height: 40px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-    }
+        .wave-2 {
+            width: 500px;
+            height: 500px;
+            bottom: -100px;
+            right: -50px;
+            animation-delay: 5s;
+            opacity: 0.7;
+        }
 
-    .wave-text {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
+        .wave-3 {
+            width: 400px;
+            height: 400px;
+            top: 50%;
+            left: 30%;
+            animation-delay: 10s;
+            opacity: 0.5;
+        }
 
-    /* Right Panel - Login Form */
-    .form-panel {
-        flex: 1;
-        padding: 80px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        background: var(--white);
-        position: relative;
-    }
+        @@keyframes wave {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
-    .form-header {
-        margin-bottom: 50px;
-    }
+        .wave-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+            max-width: 500px;
+            word-wrap: break-word;
+        }
 
-    .form-title {
-        font-size: 2.8rem;
-        font-weight: 700;
-        color: var(--gray-dark);
-        margin-bottom: 10px;
-    }
+        .wave-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            line-height: 1.2;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
 
-    .form-subtitle {
-        color: var(--gray);
-        font-size: 1.1rem;
-        font-weight: 400;
-    }
+        .wave-subtitle {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
 
-    /* Form Styling */
-    .form-container {
-        max-width: 400px;
-        width: 100%;
-    }
+        .wave-divider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 40px 0;
+            border-radius: 2px;
+        }
 
-    .form-group {
-        margin-bottom: 30px;
-    }
+        .wave-features {
+            margin-top: 50px;
+        }
 
-    .form-label {
-        display: block;
-        font-weight: 500;
-        color: var(--gray-dark);
-        margin-bottom: 10px;
-        font-size: 1rem;
-    }
+        .wave-feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
 
-    .form-input {
-        width: 100%;
-        padding: 16px 18px;
-        border: 2px solid var(--gray-light);
-        border-radius: 12px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        background: white;
-    }
+        .wave-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
 
-        .form-input:focus {
+        .wave-text {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            word-wrap: break-word;
+        }
+
+        /* Right Panel - Login Form */
+        .form-panel {
+            flex: 1;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: var(--white);
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .form-container {
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+            margin-bottom: 8px;
+        }
+
+        .form-subtitle {
+            color: var(--gray);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        /* Temporary credentials panel (remove before production) */
+        .temp-credentials {
+            background: linear-gradient(135deg, rgba(46, 196, 182, 0.08) 0%, rgba(26, 107, 181, 0.08) 100%);
+            border: 2px solid var(--gray-light);
+            border-left: 4px solid var(--primary-green);
+            padding: 14px 16px;
+            border-radius: 8px;
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 6px rgba(10,25,47,0.04);
+        }
+
+        .temp-credentials .cred-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .temp-credentials .cred-title::before {
+            content: "ℹ️";
+            font-size: 1rem;
+        }
+
+        .temp-credentials ul {
+            margin-bottom: 10px;
+        }
+
+        .temp-credentials li {
+            margin-bottom: 6px;
+            padding: 4px 0;
+        }
+
+        .temp-credentials code {
+            background: rgba(255,255,255,0.6);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--gray-dark);
+            font-family: 'Courier New', monospace;
+        }
+
+        .temp-credentials .cred-note {
+            font-size: 0.75rem;
+            color: var(--gray);
+            font-style: italic;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            margin-top: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: var(--gray-dark);
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid var(--gray-light);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus { 
             outline: none;
             border-color: var(--primary-green);
             box-shadow: 0 0 0 4px rgba(46, 196, 182, 0.1);
         }
 
-    .btn-signin {
-        background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-green) 100%);
-        color: white;
-        border: none;
-        padding: 18px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        width: 100%;
-        margin-top: 10px;
-        letter-spacing: 0.5px;
-    }
+        .btn-signin {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-green) 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+        }
 
         .btn-signin:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(26, 107, 181, 0.25);
         }
 
-    .form-divider {
-        height: 1px;
-        background: var(--gray-light);
-        margin: 40px 0;
-        position: relative;
-    }
+        .form-divider {
+            height: 1px;
+            background: var(--gray-light);
+            margin: 40px 0;
+            position: relative;
+        }
 
         .form-divider::before {
             content: 'Or continue with';
@@ -251,28 +330,30 @@
             font-weight: 500;
         }
 
-    .external-login {
-        display: flex;
-        gap: 15px;
-        margin-top: 20px;
-    }
+        .external-login {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
 
-    .external-btn {
-        flex: 1;
-        padding: 14px;
-        border: 2px solid var(--gray-light);
-        border-radius: 12px;
-        background: white;
-        color: var(--gray-dark);
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-size: 0.95rem;
-    }
+        .external-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px;
+            border: 2px solid var(--gray-light);
+            border-radius: 12px;
+            background: white;
+            color: var(--gray-dark);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
 
         .external-btn:hover {
             border-color: var(--primary-green);
@@ -280,278 +361,468 @@
             transform: translateY(-2px);
         }
 
-    .form-links {
-        margin-top: 40px;
-        text-align: center;
-    }
-
-    .form-link {
-        color: var(--accent-blue);
-        text-decoration: none;
-        font-size: 0.95rem;
-        display: inline-block;
-        margin: 0 12px;
-        transition: color 0.2s ease;
-        font-weight: 500;
-    }
-
-        .form-link:hover {
-            color: var(--primary-green);
-            text-decoration: underline;
-        }
-
-    .validation-summary-errors {
-        background: #fee;
-        color: #c00;
-        padding: 16px;
-        border-radius: 10px;
-        margin-bottom: 25px;
-        border: 1px solid #fcc;
-        font-size: 0.95rem;
-    }
-
-    .field-validation-error {
-        color: #c00;
-        font-size: 0.875rem;
-        margin-top: 6px;
-        display: block;
-    }
-
-    /* Responsive */
-    @@media (max-width: 1200px) {
-        .form-panel {
-            padding: 60px;
-        }
-
-        .wave-panel {
-            padding: 0 40px;
-        }
-    }
-
-    @@media (max-width: 992px) {
-        .login-page {
-            flex-direction: column;
-            min-height: auto;
-        }
-
-        .wave-panel {
-            padding: 60px 40px;
-            min-height: 400px;
-        }
-
-        .form-panel {
-            padding: 60px 40px;
-        }
-
-        .form-container {
-            max-width: 100%;
-        }
-
-        .wave-title {
-            font-size: 2.8rem;
-        }
-
-        .wave-subtitle {
-            font-size: 1.2rem;
-        }
-    }
-
-    @@media (max-width: 576px) {
-        .wave-panel {
-            padding: 40px 30px;
-            min-height: 350px;
-        }
-
-        .form-panel {
-            padding: 40px 30px;
-        }
-
-        .wave-title {
-            font-size: 2.2rem;
-        }
-
-        .form-title {
-            font-size: 2.2rem;
-        }
-
-        .form-subtitle {
-            font-size: 1rem;
-        }
-
-        .form-input {
-            padding: 14px 16px;
-        }
-
-        .external-login {
-            flex-direction: column;
-        }
-
         .form-links {
+            margin-top: 40px;
+            text-align: center;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
         .form-link {
-            margin: 0;
-        }
-    }
-
-    @@media (max-width: 400px) {
-        .wave-panel, .form-panel {
-            padding: 30px 20px;
-        }
-
-        .wave-title {
-            font-size: 1.8rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: inline-block;
+            transition: color 0.2s ease;
+            font-weight: 500;
+            word-wrap: break-word;
         }
 
-        .form-title {
-            font-size: 1.8rem;
+        .form-link:hover {
+            color: var(--primary-green);
+            text-decoration: underline;
         }
-    }
-</style>
 
-<div class="login-page">
-    <!-- Left Panel - Wave Pattern -->
-    <div class="wave-panel">
-        <div class="wave-pattern">
-            <div class="wave wave-1"></div>
-            <div class="wave wave-2"></div>
-            <div class="wave wave-3"></div>
-        </div>
+        .validation-summary-errors {
+            background: #fee;
+            color: #c00;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #fcc;
+            font-size: 0.95rem;
+        }
 
-        <div class="wave-content">
-            <h1 class="wave-title">Login Account</h1>
-            <p class="wave-subtitle">
-                "Welcome back! Log in to your dashboard to manage your projects, monitor your performance,
-                and access all the tools and resources you need to stay ahead."
-            </p>
+        .field-validation-error {
+            color: #c00;
+            font-size: 0.875rem;
+            margin-top: 6px;
+            display: block;
+        }
 
-            <div class="wave-divider"></div>
+        /* Responsive */
+        @@media (max-width: 1200px) {
+            .form-panel {
+                padding: 60px;
+            }
 
-            <div class="wave-features">
-                <div class="wave-feature">
-                    <div class="wave-icon">
-                        <i class="fas fa-rocket"></i>
+            .wave-panel {
+                padding: 0 40px;
+            }
+        }
+
+        @@media (max-width: 992px) {
+            .login-page {
+                flex-direction: column-reverse;
+                min-height: auto;
+            }
+
+            .wave-panel {
+                padding: 40px 30px;
+                min-height: 300px;
+                order: 2;
+            }
+
+            .form-panel {
+                padding: 40px 30px;
+                min-height: auto;
+                order: 1;
+            }
+
+            .form-container {
+                max-width: 100%;
+            }
+
+            .wave-title {
+                font-size: 2.4rem;
+            }
+
+            .wave-subtitle {
+                font-size: 1rem;
+            }
+
+            .form-title {
+                font-size: 2rem;
+            }
+
+            .form-subtitle {
+                font-size: 0.95rem;
+            }
+
+            .wave-divider {
+                margin: 25px 0;
+            }
+
+            .wave-features {
+                margin-top: 20px;
+            }
+
+            .wave-feature {
+                margin-bottom: 15px;
+            }
+
+            .external-login {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .external-btn {
+                min-width: 100%;
+            }
+
+            .form-divider::before {
+                font-size: 0.85rem;
+                padding: 0 15px;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .wave-panel {
+                padding: 30px 20px;
+                min-height: 280px;
+            }
+
+            .form-panel {
+                padding: 30px 20px;
+                min-height: auto;
+            }
+
+            .wave-title {
+                font-size: 1.8rem;
+                margin-bottom: 15px;
+            }
+
+            .wave-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 15px;
+            }
+
+            .form-title {
+                font-size: 1.6rem;
+                margin-bottom: 8px;
+            }
+
+            .form-subtitle {
+                font-size: 0.85rem;
+            }
+
+            .form-header {
+                margin-bottom: 25px;
+            }
+
+            /* Stack temp credentials under header on small screens */
+            .form-top {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+
+            .temp-credentials {
+                width: 100%;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-label {
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+            }
+
+            .form-input {
+                padding: 12px 14px;
+                font-size: 16px;
+            }
+
+            .btn-signin {
+                padding: 14px;
+                font-size: 1rem;
+                margin-top: 5px;
+            }
+
+            .form-divider {
+                margin: 25px 0;
+            }
+
+            .form-divider::before {
+                font-size: 0.75rem;
+                padding: 0 10px;
+            }
+
+            .wave-text {
+                font-size: 0.95rem;
+            }
+
+            .external-btn {
+                padding: 12px;
+                font-size: 0.85rem;
+                gap: 6px;
+                min-width: 100%;
+            }
+
+            .form-links {
+                margin-top: 20px;
+                gap: 8px;
+            }
+
+            .form-link {
+                font-size: 0.85rem;
+                margin: 0;
+            }
+
+            .wave-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+                margin-right: 12px;
+            }
+
+            .wave-divider {
+                width: 60px;
+                margin: 20px 0;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .wave-panel {
+                padding: 25px 16px;
+                min-height: 250px;
+            }
+
+            .form-panel {
+                padding: 25px 16px;
+            }
+
+            .wave-title {
+                font-size: 1.5rem;
+                margin-bottom: 12px;
+            }
+
+            .form-title {
+                font-size: 1.4rem;
+            }
+
+            .wave-subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 15px;
+            }
+
+            .form-header {
+                margin-bottom: 20px;
+            }
+
+            .form-input {
+                font-size: 16px;
+                padding: 12px 14px;
+            }
+
+            .btn-signin {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+
+            .wave-features {
+                display: none;
+            }
+
+            .external-login {
+                flex-direction: column;
+            }
+
+            .external-btn {
+                font-size: 0.8rem;
+            }
+        }
+
+        @@media (max-width: 400px) {
+            .wave-panel, .form-panel {
+                padding: 20px 12px;
+            }
+
+            .wave-title {
+                font-size: 1.3rem;
+            }
+
+            .form-title {
+                font-size: 1.2rem;
+            }
+
+            .wave-subtitle {
+                font-size: 0.8rem;
+            }
+
+            .form-subtitle {
+                font-size: 0.8rem;
+            }
+
+            .form-label {
+                font-size: 0.85rem;
+            }
+
+            .form-input {
+                padding: 10px 12px;
+                font-size: 16px;
+            }
+
+            .btn-signin {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <!-- Left Panel - Wave Pattern -->
+        <div class="wave-panel">
+            <div class="wave-pattern">
+                <div class="wave wave-1"></div>
+                <div class="wave wave-2"></div>
+                <div class="wave wave-3"></div>
+            </div>
+
+            <div class="wave-content">
+                <h1 class="wave-title">Login Account</h1>
+                <p class="wave-subtitle">
+                    Welcome back! Log in to your dashboard to manage your projects, monitor your performance, and access all the tools and resources you need to stay ahead.
+                </p>
+
+                <div class="wave-divider"></div>
+
+                <div class="wave-features">
+                    <div class="wave-feature">
+                        <div class="wave-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="wave-text">Real-time project management</div>
                     </div>
-                    <div class="wave-text">Real-time project management</div>
-                </div>
-                <div class="wave-feature">
-                    <div class="wave-icon">
-                        <i class="fas fa-chart-bar"></i>
+                    <div class="wave-feature">
+                        <div class="wave-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="wave-text">Performance analytics dashboard</div>
                     </div>
-                    <div class="wave-text">Performance analytics dashboard</div>
-                </div>
-                <div class="wave-feature">
-                    <div class="wave-icon">
-                        <i class="fas fa-toolbox"></i>
+                    <div class="wave-feature">
+                        <div class="wave-icon">
+                            <i class="fas fa-toolbox"></i>
+                        </div>
+                        <div class="wave-text">All tools and resources in one place</div>
                     </div>
-                    <div class="wave-text">All tools and resources in one place</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Right Panel - Login Form -->
-    <div class="form-panel">
-        <div class="form-container">
-            <div class="form-header">
-                <h2 class="form-title">Sign in to CEMS</h2>
-                <p class="form-subtitle">Enter your credentials to access your dashboard</p>
-            </div>
-
-            <form id="account" method="post">
-                <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
-
-                <div class="form-group">
-                    <label class="form-label" for="Input_Email">Enter Email:</label>
-                    <input asp-for="Input.Email" class="form-input" autocomplete="username"
-                           aria-required="true" placeholder="name@example.com" />
-                    <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+        <!-- Right Panel - Login Form -->
+        <div class="form-panel">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2 class="form-title">Sign in to CEMS</h2>
+                    <p class="form-subtitle">Enter your credentials to access your dashboard</p>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="Input_Password">Enter password:</label>
-                    <input asp-for="Input.Password" class="form-input" autocomplete="current-password"
-                           aria-required="true" placeholder="••••••••" />
-                    <span asp-validation-for="Input.Password" class="field-validation-error"></span>
+                <div class="temp-credentials" aria-hidden="false">
+                    <div class="cred-title">Temporary demo accounts</div>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>CEO</strong>: <code>ceo@expense.com</code> / <code>Test@123</code></li>
+                        <li><strong>Manager</strong>: <code>manager@expense.com</code> / <code>Test@123</code></li>
+                        <li><strong>Driver</strong>: <code>driver@expense.com</code> / <code>Test@123</code></li>
+                        <li><strong>Finance</strong>: <code>finance@expense.com</code> / <code>Test@123</code></li>
+                    </ul>
+                    <div class="cred-note">Visible for demo/testing only — remove before production.</div>
                 </div>
 
-                <button id="login-submit" type="submit" class="btn-signin">Sign in</button>
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
 
-                <div class="form-divider"></div>
+                    <div class="form-group">
+                        <label class="form-label" for="Input_Email">Enter Email:</label>
+                        <input asp-for="Input.Email" class="form-input" autocomplete="username"
+                               aria-required="true" placeholder="name@example.com" />
+                        <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="Input_Password">Enter password:</label>
+                        <input asp-for="Input.Password" class="form-input" autocomplete="current-password"
+                               aria-required="true" placeholder="••••••••" />
+                        <span asp-validation-for="Input.Password" class="field-validation-error"></span>
+                    </div>
+
+                    <button id="login-submit" type="submit" class="btn-signin">Sign in</button>
+
+                    <div class="form-divider"></div>
+
+                    @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+                    {
+                        <div class="external-login">
+                            @foreach (var provider in Model.ExternalLogins!)
+                            {
+                                <button type="submit" class="external-btn" name="provider"
+                                        value="@provider.Name" form="external-account"
+                                        title="Log in using your @provider.DisplayName account">
+                                    <i class="fab fa-@provider.Name.ToLower()"></i>
+                                    <span>@provider.DisplayName</span>
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    <div class="form-links">
+                        <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
+                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="form-link">Register as a new user</a>
+                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
+                    </div>
+                </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
-                    <div class="external-login">
-                        @foreach (var provider in Model.ExternalLogins!)
-                        {
-                            <button type="submit" class="external-btn" name="provider"
-                                    value="@provider.Name" form="external-account"
-                                    title="Log in using your @provider.DisplayName account">
-                                <i class="fab fa-@provider.Name.ToLower()"></i>
-                                @provider.DisplayName
-                            </button>
-                        }
-                    </div>
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" style="display: none;">
+                    </form>
                 }
-
-                <div class="form-links">
-                    <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
-                    <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="form-link">Register as a new user</a>
-                    <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
-                </div>
-            </form>
-
-            @if ((Model.ExternalLogins?.Count ?? 0) > 0)
-            {
-                <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" style="display: none;">
-                </form>
-            }
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Add Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Form input focus effects
+                const inputs = document.querySelectorAll('.form-input');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', function() {
+                        this.style.borderColor = 'var(--primary-green)';
+                    });
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Form input focus effects
-            const inputs = document.querySelectorAll('.form-input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.style.borderColor = 'var(--primary-green)';
+                    input.addEventListener('blur', function() {
+                        if (!this.value) {
+                            this.style.borderColor = 'var(--gray-light)';
+                        }
+                    });
                 });
 
-                input.addEventListener('blur', function() {
-                    if (!this.value) {
-                        this.style.borderColor = 'var(--gray-light)';
-                    }
+                // Button hover effects
+                const signinBtn = document.querySelector('.btn-signin');
+                if (signinBtn) {
+                    signinBtn.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-2px)';
+                    });
+
+                    signinBtn.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                    });
+                }
+
+                // Wave animation
+                const waves = document.querySelectorAll('.wave');
+                waves.forEach((wave, index) => {
+                    wave.style.animationDuration = `${15 + index * 2}s`;
                 });
             });
-
-            // Button hover effects
-            const signinBtn = document.querySelector('.btn-signin');
-            if (signinBtn) {
-                signinBtn.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-2px)';
-                });
-
-                signinBtn.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                });
-            }
-
-            // Wave animation
-            const waves = document.querySelectorAll('.wave');
-            waves.forEach((wave, index) => {
-                wave.style.animationDuration = `${15 + index * 2}s`;
-            });
-        });
-    </script>
-}
+        </script>
+    }
+</body>
+</html>

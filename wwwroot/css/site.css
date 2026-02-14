@@ -240,13 +240,13 @@ body {
     display: flex !important;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     background: none;
     border: none;
     cursor: pointer;
     color: #0a0a0a;
-    font-size: 24px;
+    font-size: 26px;
     padding: 0;
     margin-right: 12px;
   }
@@ -265,22 +265,27 @@ body {
     position: sticky;
     top: 0;
     z-index: 1025;
+    height: auto;
   }
 
   .mobile-header .brand {
     height: auto;
     border-bottom: none;
-    padding: 8px 0;
+    padding: 0;
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
   }
 
   .mobile-header .brand img {
-    height: 32px;
+    height: 72px;
     width: auto;
+    object-fit: contain;
   }
 
   .mobile-header .brand span {
-    font-size: 0.9rem;
+    display: none;
   }
 
   .offcanvas-backdrop {

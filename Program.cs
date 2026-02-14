@@ -10,7 +10,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sqlOptions =>
+        sqlOptions.CommandTimeout(120)));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ✅ PROPER Identity Configuration
@@ -51,6 +52,24 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
         Console.WriteLine("=== Starting User Seeding ===");
+
+        // ✅ Clean up broken accounts (e.g. inserted via SSMS without proper Identity fields)
+        var brokenUsers = context.Users
+            .Where(u => u.SecurityStamp == null || u.NormalizedEmail == null || u.PasswordHash == null)
+            .ToList();
+        if (brokenUsers.Count > 0)
+        {
+            Console.WriteLine($"🧹 Found {brokenUsers.Count} broken user(s) — removing so seeder can recreate them...");
+            foreach (var broken in brokenUsers)
+            {
+                // Remove role assignments first
+                var brokenRoles = await userManager.GetRolesAsync(broken);
+                if (brokenRoles.Count > 0)
+                    await userManager.RemoveFromRolesAsync(broken, brokenRoles);
+                await userManager.DeleteAsync(broken);
+                Console.WriteLine($"   🗑️ Removed broken user: {broken.Email}");
+            }
+        }
 
         // Create roles if they don't exist
         string[] roles = { "CEO", "Manager", "Driver", "Finance" };
@@ -111,6 +130,34 @@ using (var scope = app.Services.CreateScope())
             else
             {
                 Console.WriteLine($"User already exists: {userInfo.Email}");
+
+                // Fix any missing Identity fields (e.g. from manual SSMS inserts)
+                var needsUpdate = false;
+                if (string.IsNullOrEmpty(existingUser.SecurityStamp))
+                {
+                    existingUser.SecurityStamp = Guid.NewGuid().ToString();
+                    needsUpdate = true;
+                }
+                if (string.IsNullOrEmpty(existingUser.NormalizedEmail))
+                {
+                    existingUser.NormalizedEmail = userInfo.Email.ToUpperInvariant();
+                    needsUpdate = true;
+                }
+                if (string.IsNullOrEmpty(existingUser.NormalizedUserName))
+                {
+                    existingUser.NormalizedUserName = userInfo.Email.ToUpperInvariant();
+                    needsUpdate = true;
+                }
+                if (!existingUser.EmailConfirmed)
+                {
+                    existingUser.EmailConfirmed = true;
+                    needsUpdate = true;
+                }
+                if (needsUpdate)
+                {
+                    await userManager.UpdateAsync(existingUser);
+                    Console.WriteLine($"  -> Fixed missing Identity fields");
+                }
 
                 // Reset password to known value
                 var resetToken = await userManager.GeneratePasswordResetTokenAsync(existingUser);

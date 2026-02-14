@@ -56,11 +56,15 @@ namespace CEMS.Controllers
         }
 
         [HttpGet("Metrics")]
-        public async Task<IActionResult> Metrics()
+        public async Task<IActionResult> Metrics(DateTime? start, DateTime? end)
         {
             var userId = _userManager.GetUserId(User);
 
             var reportsQuery = _db.ExpenseReports.Where(r => r.UserId == userId);
+            if (start.HasValue)
+                reportsQuery = reportsQuery.Where(r => r.SubmissionDate >= start.Value);
+            if (end.HasValue)
+                reportsQuery = reportsQuery.Where(r => r.SubmissionDate <= end.Value);
 
             var nowUtc = DateTime.UtcNow;
             var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1);
@@ -69,19 +73,30 @@ namespace CEMS.Controllers
             var approvedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Approved);
             var rejectedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Rejected);
 
-            var approvedTotal = await _db.ExpenseItems
+            var approvedItemsQuery = _db.ExpenseItems
                 .Include(i => i.Report)
-                .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved)
-                .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+                .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved);
 
-            var approvedThisMonthTotal = await _db.ExpenseItems
-                .Include(i => i.Report)
-                .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved && i.Date >= monthStart)
-                .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+            if (start.HasValue)
+                approvedItemsQuery = approvedItemsQuery.Where(i => i.Date >= start.Value);
+            if (end.HasValue)
+                approvedItemsQuery = approvedItemsQuery.Where(i => i.Date <= end.Value);
 
-            var recentItems = await _db.ExpenseItems
+            var approvedTotal = await approvedItemsQuery.SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+            var approvedThisMonthQuery = approvedItemsQuery.Where(i => i.Date >= monthStart);
+            var approvedThisMonthTotal = await approvedThisMonthQuery.SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+            var recentItemsQuery = _db.ExpenseItems
                 .Include(i => i.Report)
-                .Where(i => i.Report != null && i.Report.UserId == userId)
+                .Where(i => i.Report != null && i.Report.UserId == userId);
+
+            if (start.HasValue)
+                recentItemsQuery = recentItemsQuery.Where(i => i.Date >= start.Value);
+            if (end.HasValue)
+                recentItemsQuery = recentItemsQuery.Where(i => i.Date <= end.Value);
+
+            var recentItems = await recentItemsQuery
                 .OrderByDescending(i => i.Date)
                 .Take(10)
                 .ToListAsync();
@@ -139,6 +154,139 @@ namespace CEMS.Controllers
             ViewBag.Approvals = approvals;
 
             return View("MyReports/Index");
+        }
+
+        [HttpGet("EditReport/{id:int}")]
+        public async Task<IActionResult> EditReport(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var report = await _db.ExpenseReports
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+            if (report == null)
+                return NotFound();
+
+            if (report.Status == ReportStatus.Approved)
+            {
+                TempData["Error"] = "Approved reports cannot be edited.";
+                return RedirectToAction("MyReports");
+            }
+
+            return View("EditReport/Index", report);
+        }
+
+        [HttpPost("EditReport/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditReport(int id, IFormFileCollection files)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var report = await _db.ExpenseReports
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
+            if (report == null)
+                return NotFound();
+
+            if (report.Status == ReportStatus.Approved)
+            {
+                TempData["Error"] = "Approved reports cannot be edited.";
+                return RedirectToAction("MyReports");
+            }
+
+            var form = Request.Form;
+            var updatedItems = new List<ExpenseItem>();
+
+            var index = 0;
+            while (true)
+            {
+                var prefix = $"items[{index}]";
+                if (!form.ContainsKey(prefix + ".Id"))
+                    break;
+
+                if (!int.TryParse(form[prefix + ".Id"], out var itemId))
+                {
+                    index++;
+                    continue;
+                }
+
+                var item = report.Items.FirstOrDefault(i => i.Id == itemId);
+                if (item == null)
+                {
+                    index++;
+                    continue;
+                }
+
+                if (DateTime.TryParse(form[prefix + ".Date"], out var dt))
+                    item.Date = dt;
+
+                item.Category = form[prefix + ".Category"];
+                if (decimal.TryParse(form[prefix + ".Amount"], out var amt))
+                    item.Amount = amt;
+                item.Description = form[prefix + ".Description"];
+
+                var file = Request.Form.Files.FirstOrDefault(f => f.Name == prefix + ".Receipt");
+                if (file != null && file.Length > 0)
+                {
+                    using var ms = new MemoryStream();
+                    await file.CopyToAsync(ms);
+                    item.ReceiptData = ms.ToArray();
+                    item.ReceiptContentType = file.ContentType;
+                    item.ReceiptPath = null;
+                }
+
+                updatedItems.Add(item);
+                index++;
+            }
+
+            if (!updatedItems.Any())
+            {
+                TempData["Error"] = "No expense items were updated.";
+                return View("EditReport/Index", report);
+            }
+
+            report.TotalAmount = updatedItems.Sum(i => i.Amount);
+            report.Status = ReportStatus.Submitted;
+            report.SubmissionDate = DateTime.UtcNow;
+            report.ForwardedToCEO = false;
+            report.CEOApproved = false;
+            report.Reimbursed = false;
+
+            var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var reportCategories = updatedItems.Select(i => i.Category).Distinct().ToList();
+            var overBudget = false;
+
+            foreach (var category in reportCategories)
+            {
+                var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
+                if (budget == null)
+                    continue;
+
+                var currentMonthSpent = await _db.ExpenseItems
+                    .Where(i => i.Category == category && i.Date >= monthStart && i.ReportId != report.Id)
+                    .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+                var reportCategoryTotal = updatedItems.Where(i => i.Category == category).Sum(i => i.Amount);
+
+                if (currentMonthSpent + reportCategoryTotal > budget.Allocated)
+                {
+                    overBudget = true;
+                    break;
+                }
+            }
+
+            report.BudgetCheck = overBudget ? BudgetCheckStatus.OverBudget : BudgetCheckStatus.WithinBudget;
+
+            var approvals = await _db.Approvals.Where(a => a.ReportId == report.Id).ToListAsync();
+            if (approvals.Any())
+                _db.Approvals.RemoveRange(approvals);
+
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "Report updated and resubmitted for review.";
+            return RedirectToAction("MyReports");
         }
 
         [HttpGet("Expenses")]

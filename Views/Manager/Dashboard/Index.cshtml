@@ -152,6 +152,14 @@
         margin-top: 4px;
     }
 
+    .chart-wrap {
+        height: 280px;
+    }
+    .chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
     @@media (max-width: 768px) {
         .dash-wrapper { padding: 20px 0 32px; }
         .stat-card { padding: 20px 18px; }
@@ -174,7 +182,58 @@
             </a>
         </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
+        let managerBudgetChart;
+
+        function renderManagerBudgetChart(budgets){
+            const canvas = document.getElementById('managerBudgetChart');
+            if(!canvas || !window.Chart){
+                return;
+            }
+
+            const labels = (budgets || []).map(b => b.category);
+            const allocated = (budgets || []).map(b => b.allocated ?? 0);
+            const spent = (budgets || []).map(b => b.spent ?? 0);
+
+            if(managerBudgetChart){
+                managerBudgetChart.destroy();
+            }
+
+            managerBudgetChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Allocated',
+                            data: allocated,
+                            backgroundColor: 'rgba(26,107,181,0.25)',
+                            borderColor: '#1a6bb5',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Spent',
+                            data: spent,
+                            backgroundColor: 'rgba(239,68,68,0.25)',
+                            borderColor: '#ef4444',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
         async function loadManagerMetrics(){
             try{
                 const res = await fetch('@Url.Action("Metrics","Manager")');
@@ -204,6 +263,8 @@
                         container.appendChild(div);
                     }
                 }
+
+                renderManagerBudgetChart(data.budgets || []);
             }catch(e){ console.error(e); }
         }
 
@@ -265,6 +326,18 @@
             <!-- Budget Overview Section -->
             <div class="row g-3 mb-4">
                 <div class="col-lg-8">
+                    <div class="dash-card mb-3">
+                        <div class="dash-card-head">
+                            <div class="dash-card-title">
+                                <i class="bi bi-bar-chart"></i> Budget Trend
+                            </div>
+                        </div>
+                        <div class="dash-card-body">
+                            <div class="chart-wrap">
+                                <canvas id="managerBudgetChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                     <div class="dash-card">
                         <div class="dash-card-head">
                             <div class="dash-card-title">
