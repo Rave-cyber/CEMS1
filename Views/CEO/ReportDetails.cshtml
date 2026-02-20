@@ -1,0 +1,158 @@
+@model CEMS.Models.ExpenseReport
+@{
+    ViewData["Title"] = "CEO Report Details";
+    Layout = "~/Views/Shared/_CEOLayout.cshtml";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-file-earmark-text"></i> Expense Report #@Model.Id</h2>
+        <a class="btn btn-outline-secondary" asp-controller="CEO" asp-action="Approvals">
+            <i class="bi bi-arrow-left"></i> Back to Approvals
+        </a>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Report Summary</strong></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>Driver:</strong> @ViewBag.ReportUserName</div>
+                <div class="col-md-3"><strong>Submitted:</strong> @Model.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</div>
+                <div class="col-md-2">
+                    <strong>Status:</strong>
+                    @if (Model.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
+                    {
+                        <span class="badge bg-warning text-dark">Pending CEO</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@Model.Status</span>
+                    }
+                </div>
+                <div class="col-md-2">
+                    <strong>Budget:</strong>
+                    @if (Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                    {
+                        <span class="badge bg-danger">Over Budget</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Within Budget</span>
+                    }
+                </div>
+                <div class="col-md-2"><strong>Total:</strong> <span class="fs-5 fw-bold text-primary">₱@Model.TotalAmount.ToString("N2")</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Items -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Expense Items</strong></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.Date.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td><span class="badge bg-primary bg-opacity-10 text-primary">@item.Category</span></td>
+                                <td>₱@item.Amount.ToString("N2")</td>
+                                <td>@item.Description</td>
+                                <td>
+                                    @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">
+                                            <i class="bi bi-file-earmark-image"></i> View
+                                        </a>
+                                    }
+                                    else if (!string.IsNullOrEmpty(item.ReceiptPath))
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" target="_blank" href="@item.ReceiptPath">
+                                            <i class="bi bi-file-earmark-image"></i> View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Details & Adjustment -->
+    @{
+        var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light"><strong>Budget Details &amp; Optional Adjustment</strong></div>
+        <div class="card-body">
+            <form method="post" asp-action="CEOApprove" asp-controller="CEO">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <p class="text-muted">You may optionally adjust allocated budgets to accommodate this report. Leave values unchanged to keep current allocations.</p>
+
+                <div class="row">
+                    @foreach (var b in budgets)
+                    {
+                        var remaining = b.Allocated - b.Spent;
+                        var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label"><strong>@b.Category</strong></label>
+                            <div class="input-group mb-1">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" step="0.01" name="budget_@b.Category" value="@b.Allocated" class="form-control" />
+                            </div>
+                            <small class="text-muted">Spent: ₱@b.Spent.ToString("N2") | Remaining: ₱@remaining.ToString("N2")</small>
+                            <div class="progress mt-1" style="height:6px;">
+                                <div class="progress-bar @(pct >= 100 ? "bg-danger" : "")" style="width:@Math.Min(pct,100)%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Remarks (optional)</strong></label>
+                    <textarea name="remarks" class="form-control" rows="3" placeholder="Add any notes about this approval..."></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Approve and Forward to Finance
+                    </button>
+                </div>
+            </form>
+
+            <hr />
+
+            <form method="post" asp-action="CEOReject" asp-controller="CEO">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="mb-3">
+                    <label class="form-label"><strong>Rejection Remarks</strong></label>
+                    <textarea name="remarks" class="form-control" rows="2" placeholder="Reason for rejection..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle"></i> Reject Report
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

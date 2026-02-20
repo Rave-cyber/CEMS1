@@ -21,6 +21,374 @@ body {
   margin-bottom: 60px;
 }
 
+/* Driver navbar: white background, black text; highlight with landing gradient on active/hover */
+.driver-navbar {
+  background: #ffffff;
+}
+
+.driver-navbar {
+  background: #ffffff;
+  overflow: visible; /* allow scaled logo to overflow without increasing navbar height */
+}
+
+.driver-navbar .navbar-brand {
+  line-height: 48px; /* keep brand vertically centered when image is scaled */
+}
+
+.driver-navbar .navbar-brand img {
+  object-fit: contain;
+  height: 48px; /* standard navbar logo size */
+  transform: none;
+  transform-origin: left center;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+/* add spacing so scaled logo doesn't overlap nav items */
+.driver-navbar .navbar-brand {
+  padding-right: 1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.driver-navbar .navbar-nav {
+  margin-left: 20.0rem;
+}
+
+.driver-navbar .nav-link {
+  color: #0a0a0a;
+  font-weight: 500;
+}
+
+.driver-navbar .nav-link:hover,
+.driver-navbar .nav-link:focus,
+.driver-navbar .nav-link.active {
+  /* gradient text only (no box) */
+  color: transparent !important;
+  background-image: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: all 0.25s ease;
+}
+
+/* keep highlight when clicked (JS will add 'active' class) */
+
+.driver-navbar .btn-outline-secondary {
+  border-color: rgba(10,25,47,0.08);
+}
+
+/* content card shadow and spacing */
+.driver-content-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(10, 25, 47, 0.12);
+}
+
+/* Sidebar layout for driver */
+.driver-sidebar {
+  width: 240px;
+  background: #ffffff;
+  border-right: 1px solid #eef2f7;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding-top: 4px; /* bring logo closer to very top */
+  z-index: 1020;
+}
+
+.driver-sidebar .driver-logo {
+  /* larger visual logo while keeping sidebar width unchanged */
+  height: 120px; /* increase visual height */
+  max-height: 120px;
+  width: auto;
+  display: block;
+  margin: 0;
+  padding: 0;
+  object-fit: contain;
+}
+
+.driver-sidebar .brand {
+  border-bottom: 1px solid #eef2f7;
+  padding: 8px 12px; /* tighten spacing around logo */
+  height: 120px; /* reserve fixed space for the logo so nav doesn't shift */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center; /* vertically center logo inside the reserved brand area */
+}
+
+.driver-sidebar .nav-link {
+  color: #0a0a0a;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  border-left: 3px solid transparent;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.driver-sidebar .nav-link i {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.driver-sidebar .nav-link span {
+  flex: 1;
+  margin: 0 8px;
+}
+
+.driver-sidebar .nav-link .nav-indicator {
+  display: none;
+  font-size: 16px;
+  color: #1a6bb5;
+  flex-shrink: 0;
+}
+
+/* ensure nav list sits below fixed brand area and doesn't shift when logo changes */
+.driver-sidebar nav.nav {
+  margin-top: 0;
+  padding-top: 0.5rem;
+  overflow: auto;
+}
+
+.driver-sidebar .nav-link:hover {
+  color: #1a6bb5;
+  background-color: rgba(26, 107, 181, 0.08);
+  border-left-color: #1a6bb5;
+  padding-left: 16px;
+}
+
+.driver-sidebar .nav-link.active {
+  color: #1a6bb5;
+  background: linear-gradient(135deg, rgba(26, 107, 181, 0.12) 0%, rgba(46, 196, 182, 0.12) 100%);
+  border-left-color: #1a6bb5;
+  padding-left: 16px;
+  font-weight: 600;
+}
+
+.driver-sidebar .nav-link.active i {
+  color: #1a6bb5;
+}
+
+.driver-sidebar .nav-link.active .nav-indicator {
+  display: inline-block;
+}
+
+/* style LoginPartial nav items in sidebar */
+.driver-sidebar .navbar-nav {
+  flex-direction: column;
+}
+
+.driver-sidebar .navbar-nav .nav-link {
+  color: #0a0a0a;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  display: block;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.driver-sidebar .navbar-nav .nav-link:hover {
+  color: #1a6bb5 !important;
+  text-decoration: none;
+}
+
+.driver-sidebar .navbar-nav .btn-link.nav-link {
+  text-align: left;
+}
+
+/* push page content to the right when sidebar is present on desktop */
+@media (min-width: 768px) {
+  body {
+    padding-left: 240px;
+  }
+
+  /* header shouldn't be fixed when using a left sidebar */
+  header {
+    position: static;
+    width: auto;
+  }
+
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}
+
+/* Mobile responsiveness: hide sidebar, show hamburger menu */
+@media (max-width: 767px) {
+  body {
+    padding-left: 0;
+  }
+
+  .driver-sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    transition: left 0.3s ease;
+    z-index: 1030;
+  }
+
+  .driver-sidebar.show {
+    left: 0;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #0a0a0a;
+    font-size: 26px;
+    padding: 0;
+    margin-right: 12px;
+  }
+
+  .mobile-menu-btn:focus {
+    outline: 2px solid #1a6bb5;
+    outline-offset: 2px;
+  }
+
+  .mobile-header {
+    background: #ffffff;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1025;
+    height: auto;
+  }
+
+  .mobile-header .brand {
+    height: auto;
+    border-bottom: none;
+    padding: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .mobile-header .brand img {
+    height: 72px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .mobile-header .brand span {
+    display: none;
+  }
+
+  .offcanvas-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .offcanvas {
+    width: 80%;
+    max-width: 320px;
+    border: none;
+    background: var(--d-card, #ffffff);
+  }
+
+  .offcanvas-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .offcanvas-body .nav-link {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #0a0a0a;
+    border-left: 3px solid transparent;
+    transition: all 0.25s ease;
+  }
+
+  .offcanvas-body .nav-link i {
+    font-size: 18px;
+    color: var(--d-primary, #1a6bb5);
+    flex-shrink: 0;
+  }
+
+  .offcanvas-body .nav-link span {
+    flex: 1;
+    margin: 0 8px;
+  }
+
+  .offcanvas-body .nav-link .nav-indicator {
+    display: none;
+    font-size: 16px;
+    color: #1a6bb5;
+    flex-shrink: 0;
+  }
+
+  .offcanvas-body .nav-link:hover {
+    color: #1a6bb5;
+    background-color: rgba(26, 107, 181, 0.08);
+    border-left-color: #1a6bb5;
+    text-decoration: none;
+  }
+
+  .offcanvas-body .nav-link.active {
+    color: #1a6bb5;
+    background: linear-gradient(135deg, rgba(26, 107, 181, 0.12) 0%, rgba(46, 196, 182, 0.12) 100%);
+    border-left-color: #1a6bb5;
+    font-weight: 600;
+  }
+
+  .offcanvas-body .nav-link.active .nav-indicator {
+    display: inline-block;
+  }
+
+  /* Mobile profile dropdown fixes */
+  .offcanvas .profile-section {
+    padding: 12px 12px;
+  }
+
+  .offcanvas .dropdown-menu {
+    position: static;
+    float: none;
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid #e9eef6;
+    box-shadow: none;
+    display: none;
+  }
+
+  .offcanvas .dropdown-menu.show {
+    display: block;
+  }
+
+  .offcanvas .profile-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .offcanvas .profile-btn::after {
+    margin-left: auto;
+  }
+
+  .offcanvas .dropdown-item {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -28,4 +396,95 @@ body {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* Profile Section Styling */
+.profile-section {
+  padding: 12px 16px;
+  border-top: 1px solid #eef2f7;
+}
+
+.profile-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  color: #0a0a0a;
+  padding: 8px 0;
+  font-size: 0.95rem;
+  text-align: left;
+  border: none;
+  position: relative;
+  padding-right: 20px;
+}
+
+.profile-btn:hover,
+.profile-btn:focus {
+  color: #1a6bb5;
+  text-decoration: none;
+}
+
+.profile-btn::after {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.profile-btn i {
+  font-size: 20px;
+  color: #1a6bb5;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.profile-btn .dropdown-toggle::after {
+  border: none;
+  margin-left: auto;
+}
+
+.dropdown-menu {
+  border: 1px solid #e9eef6;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(15, 23, 36, 0.1);
+  min-width: 180px;
+}
+
+.dropdown-item {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: #0f1724;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: rgba(26, 107, 181, 0.08);
+  color: #1a6bb5;
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: rgba(26, 107, 181, 0.1);
+  color: #1a6bb5;
+}
+
+.dropdown-divider {
+  margin: 6px 0;
+  opacity: 0.5;
+}
+
+/* Desktop profile dropdown - align to right */
+@media (min-width: 768px) {
+  .dropdown-menu {
+    right: 0;
+    left: auto;
+  }
 }

@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CEMS</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CEMS.styles.css" asp-append-version="true" />
+</head>
+<body>
+    @{ 
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        Func<string, string, string> active = (c, a) =>
+        {
+            if (string.Equals(c, currentController, System.StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(a, currentAction, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return "active";
+            }
+            return string.Empty;
+        };
+    }
+
+    <header>
+        <!-- Mobile Header with Hamburger Menu -->
+        <div class="mobile-header d-md-none">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+                ☰
+            </button>
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar -->
+        <aside class="driver-sidebar d-none d-md-flex flex-column">
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+            <nav class="nav flex-column p-3">
+                <a class="nav-link driver-nav-link @(active("Home","Index"))" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-house-door"></i>
+                    <span>Home</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("Home","Privacy"))" asp-area="" asp-controller="Home" asp-action="Privacy">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Privacy</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+            </nav>
+            <div class="mt-auto p-3 border-top">
+                <partial name="_LoginPartial" />
+            </div>
+        </aside>
+
+        <!-- Mobile Offcanvas Sidebar -->
+        <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link driver-nav-link @(active("Home","Index"))" asp-area="" asp-controller="Home" asp-action="Index" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-house-door"></i>
+                        <span>Home</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("Home","Privacy"))" asp-area="" asp-controller="Home" asp-action="Privacy" data-bs-dismiss="offcanvas">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Privacy</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                </nav>
+                <div class="mt-auto p-3 border-top">
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="w-100">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - CEMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

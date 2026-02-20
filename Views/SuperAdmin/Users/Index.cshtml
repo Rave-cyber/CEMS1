@@ -1,0 +1,622 @@
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+
+    var users = (List<CEMS.Controllers.UserWithRolesDto>)ViewBag.Users;
+    var allRoles = (List<string?>)ViewBag.AllRoles;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-lg: 10px;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 32px;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: 0.95rem;
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-lg);
+        overflow: hidden;
+        margin-bottom: 28px;
+    }
+
+    .table-card-header {
+        background: #f8fafc;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--d-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .table-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--d-text);
+    }
+
+    .create-btn {
+        background: var(--d-primary);
+        color: #fff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: var(--d-radius);
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .create-btn:hover {
+        background: #155297;
+        box-shadow: 0 4px 12px rgba(26, 107, 181, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: 0.9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .user-email {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(26, 107, 181, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--d-primary);
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .user-email-text {
+        font-weight: 600;
+        color: var(--d-text);
+    }
+
+    .role-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .badge-role {
+        font-size: 0.75rem;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-superadmin { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+    .badge-ceo { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .badge-manager { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .badge-finance { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .badge-driver { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .badge-norole { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .status-locked { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+    .actions-group {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        padding: 0;
+        text-decoration: none;
+    }
+
+    .action-btn:hover {
+        border-color: var(--d-primary);
+        background: var(--d-primary);
+        color: #fff;
+    }
+
+    .action-btn-primary { color: var(--d-primary); }
+    .action-btn-warning { color: #f59e0b; }
+    .action-btn-danger { color: #dc2626; }
+
+    .action-btn-warning:hover,
+    .action-btn-danger:hover {
+        background: #f59e0b;
+        border-color: #f59e0b;
+        color: #fff;
+    }
+
+    .action-btn-danger:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+        .table-card-header { flex-direction: column; align-items: flex-start; }
+        .actions-group { justify-content: flex-start; }
+        .dash-table thead { display: none; }
+        .dash-table tbody td { display: block; padding: 12px 16px; border: none; }
+        .dash-table tbody tr { border: 1px solid var(--d-border); border-radius: var(--d-radius-lg); margin-bottom: 12px; display: block; }
+        .dash-table tbody td::before { content: attr(data-label); font-weight: 600; color: var(--d-muted); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-people"></i>
+                User Management
+            </h1>
+            <p class="page-subtitle">Manage system users and their roles</p>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <div class="table-card-title">
+                    <i class="bi bi-table"></i>
+                    All Users
+                </div>
+                <button class="create-btn" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+                    <i class="bi bi-person-plus"></i> Create Account
+                </button>
+            </div>
+            <div class="table-responsive">
+                @if (users.Count == 0)
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-people"></i>
+                        <p>No users found.</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="table dash-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Email</th>
+                                <th style="width: 25%;">Roles</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 30%;" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in users)
+                            {
+                                <tr>
+                                    <td data-label="Email">
+                                        <div class="user-email">
+                                            <div class="user-avatar">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                            <span class="user-email-text">@user.Email</span>
+                                        </div>
+                                    </td>
+                                    <td data-label="Roles">
+                                        <div class="role-badges">
+                                            @if (user.Roles.Count == 0)
+                                            {
+                                                <span class="badge-role badge-norole">No Role</span>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var role in user.Roles)
+                                                {
+                                                    var badgeClass = role switch
+                                                    {
+                                                        "SuperAdmin" => "badge-superadmin",
+                                                        "CEO" => "badge-ceo",
+                                                        "Manager" => "badge-manager",
+                                                        "Finance" => "badge-finance",
+                                                        "Driver" => "badge-driver",
+                                                        _ => "badge-norole"
+                                                    };
+                                                    <span class="badge-role @badgeClass">@role</span>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                    <td data-label="Status">
+                                        @if (user.IsLockedOut)
+                                        {
+                                            <span class="status-badge status-locked">
+                                                <i class="bi bi-lock"></i> Locked
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-active">
+                                                <i class="bi bi-check-circle"></i> Active
+                                            </span>
+                                        }
+                                    </td>
+                                    <td data-label="Actions" class="text-end">
+                                        <div class="actions-group">
+                                            <!-- Assign Role -->
+                                            <button class="action-btn action-btn-primary" data-bs-toggle="modal" data-bs-target="#assignRoleModal"
+                                                    onclick="document.getElementById('assignRoleUserId').value='@user.UserId'; document.getElementById('assignRoleUserLabel').textContent='@user.Email';"
+                                                    title="Assign Role">
+                                                <i class="bi bi-person-plus"></i>
+                                            </button>
+                                            <!-- Remove Role -->
+                                            @if (user.Roles.Count > 0)
+                                            {
+                                                <button class="action-btn action-btn-warning" data-bs-toggle="modal" data-bs-target="#removeRoleModal"
+                                                        onclick="loadRemoveRoles('@user.UserId', '@user.Email', '@string.Join(",", user.Roles)');"
+                                                        title="Remove Role">
+                                                    <i class="bi bi-person-dash"></i>
+                                                </button>
+                                            }
+                                            <!-- Toggle Lock -->
+                                            <form method="post" asp-action="ToggleLockout" style="display:inline;">
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+                                                <button type="submit" class="action-btn @(user.IsLockedOut ? "action-btn-primary" : "action-btn-danger")"
+                                                        title="@(user.IsLockedOut ? "Unlock" : "Lock")">
+                                                    <i class="bi @(user.IsLockedOut ? "bi-unlock" : "bi-lock")"></i>
+                                                </button>
+                                            </form>
+                                            <!-- Delete -->
+                                            <form method="post" asp-action="DeleteAccount" style="display:inline;"
+                                                  onsubmit="return confirm('Are you sure you want to delete this account? This cannot be undone.');">
+                                                <input type="hidden" name="userId" value="@user.UserId" />
+                                                <button type="submit" class="action-btn action-btn-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-content {
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-lg);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        background: #f8fafc;
+        border-bottom: 1px solid var(--d-border);
+        padding: 16px 20px;
+    }
+
+    .modal-header .modal-title {
+        color: var(--d-text);
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-header .modal-title i {
+        color: var(--d-primary);
+        font-size: 1rem;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-body .form-label {
+        color: var(--d-text);
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+    }
+
+    .modal-body .form-control,
+    .modal-body .form-select {
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        color: var(--d-text);
+    }
+
+    .modal-body .form-control:focus,
+    .modal-body .form-select:focus {
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+    }
+
+    .modal-footer {
+        background: #f8fafc;
+        border-top: 1px solid var(--d-border);
+        padding: 14px 20px;
+    }
+
+    .modal-footer .btn {
+        border-radius: var(--d-radius);
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 10px 16px;
+    }
+
+    .modal-footer .btn-primary {
+        background: var(--d-primary);
+        border-color: var(--d-primary);
+    }
+
+    .modal-footer .btn-primary:hover {
+        background: #155297;
+        border-color: #155297;
+    }
+
+    .modal-footer .btn-secondary {
+        background: #e5e7eb;
+        border-color: #e5e7eb;
+        color: var(--d-text);
+    }
+
+    .modal-footer .btn-secondary:hover {
+        background: #d1d5db;
+        border-color: #d1d5db;
+    }
+
+    .modal-footer .btn-warning {
+        background: #f59e0b;
+        border-color: #f59e0b;
+        color: #fff;
+    }
+
+    .modal-footer .btn-warning:hover {
+        background: #d97706;
+        border-color: #d97706;
+    }
+</style>
+
+<!-- Create Account Modal -->
+<div class="modal fade" id="createAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="CreateAccount">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Create New Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="fullName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required minlength="6" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" class="form-select" required>
+                            <option value="">-- Select Role --</option>
+                            @foreach (var role in allRoles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Role Modal -->
+<div class="modal fade" id="assignRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="AssignRole">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Assign Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="userId" id="assignRoleUserId" />
+                    <p>Assign a role to <strong id="assignRoleUserLabel"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" class="form-select" required>
+                            <option value="">-- Select Role --</option>
+                            @foreach (var role in allRoles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Role Modal -->
+<div class="modal fade" id="removeRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="RemoveRole">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-dash"></i> Remove Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="userId" id="removeRoleUserId" />
+                    <p>Remove a role from <strong id="removeRoleUserLabel"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" id="removeRoleSelect" class="form-select" required>
+                            <option value="">-- Select Role --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-x-lg"></i> Remove</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function loadRemoveRoles(userId, email, rolesStr) {
+        document.getElementById('removeRoleUserId').value = userId;
+        document.getElementById('removeRoleUserLabel').textContent = email;
+        var select = document.getElementById('removeRoleSelect');
+        select.innerHTML = '<option value="">-- Select Role --</option>';
+        var roles = rolesStr.split(',');
+        roles.forEach(function (r) {
+            if (r.trim()) {
+                var opt = document.createElement('option');
+                opt.value = r.trim();
+                opt.textContent = r.trim();
+                select.appendChild(opt);
+            }
+        });
+    }
+</script>
+}

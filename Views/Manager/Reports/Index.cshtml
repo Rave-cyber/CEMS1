@@ -1,0 +1,479 @@
+@{
+    ViewData["Title"] = "Expense Reports";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .filter-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-card .form-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        margin-bottom: 6px;
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select {
+        border-color: var(--d-border);
+        border-radius: 6px;
+        font-size: .9rem;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus {
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-badge--pending { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+    .status-badge--approved { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .status-badge--rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .status-badge--within { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .status-badge--over { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn--primary {
+        background: var(--d-primary);
+        color: #fff;
+    }
+
+    .action-btn--primary:hover {
+        background: #154a8a;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .action-btn--secondary {
+        background: var(--d-accent);
+        color: #fff;
+    }
+
+    .action-btn--secondary:hover {
+        background: #27a89e;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+    }
+
+    /* Toast notification */
+    .action-toast {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        padding: 14px 20px;
+        border-radius: 9px;
+        font-size: .9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-8px);
+        transition: opacity .25s ease, transform .25s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
+        max-width: 360px;
+    }
+    .action-toast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .action-toast--success { background: #10b981; color: #fff; }
+    .action-toast--error   { background: #ef4444; color: #fff; }
+
+    /* Confirmation overlay */
+    .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 36, .5);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .22s ease;
+    }
+    .confirm-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .confirm-box {
+        background: #fff;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, .18);
+        text-align: center;
+        transform: translateY(-10px);
+        transition: transform .22s ease;
+    }
+    .confirm-overlay.show .confirm-box { transform: translateY(0); }
+
+    .confirm-icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .confirm-box h5 { font-weight: 700; color: var(--d-text); margin-bottom: 8px; font-size: 1.05rem; }
+    .confirm-box p  { color: var(--d-muted); font-size: .88rem; margin-bottom: 22px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    .confirm-cancel-btn {
+        padding: 8px 20px;
+        border-radius: 7px;
+        background: #f1f5f9;
+        color: var(--d-text);
+        font-weight: 600;
+        font-size: .88rem;
+        border: none;
+        cursor: pointer;
+    }
+    .confirm-ok-btn {
+        padding: 8px 20px;
+        border-radius: 7px;
+        color: #fff;
+        font-weight: 600;
+        font-size: .88rem;
+        border: none;
+        cursor: pointer;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-file-earmark-check"></i>
+                Expense Reports
+            </h1>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div id="toastMsg" data-msg="@TempData["Success"]" data-type="success"></div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div id="toastMsg" data-msg="@TempData["Error"]" data-type="error"></div>
+        }
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <form id="filters" class="row g-3" method="get" action="@Context.Request.Path">
+                <div class="col-md-3">
+                    <label class="form-label">Driver Name</label>
+                    <input type="text" name="driver" class="form-control" value="@Context.Request.Query["driver"]" placeholder="Search driver..." />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start" class="form-control" value="@Context.Request.Query["start"]" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end" class="form-control" value="@Context.Request.Query["end"]" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Pending</option>
+                        <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"]=="PendingCEOApproval")">Forwarded to CEO</option>
+                        <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
+                        <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn w-100" type="submit" style="background: var(--d-primary); color: white; border: none; border-radius: 6px; font-weight: 600;">
+                        <i class="bi bi-search me-2"></i> Filter Reports
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Reports Table -->
+        <div class="table-card">
+            @if (ViewBag.Reports != null && ((List<CEMS.Models.PendingExpenseReportDto>)ViewBag.Reports).Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Driver</th>
+                                <th>Total Amount</th>
+                                <th>Submitted Date</th>
+                                <th>Budget Status</th>
+                                <th>Report Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
+                            {
+                                var r = dto.Report;
+                                <tr>
+                                    <td><strong>@r.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
+                                            @r.BudgetCheck
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (r.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
+                                        {
+                                            <span class="status-badge" style="background:rgba(139,92,246,.1);color:#7c3aed;">Forwarded to CEO</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge @(r.Status == CEMS.Models.ReportStatus.Submitted ? "status-badge--pending" : r.Status == CEMS.Models.ReportStatus.Approved ? "status-badge--approved" : "status-badge--rejected")">
+                                                @r.Status
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a class="action-btn action-btn--primary" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        @if (r.Status == CEMS.Models.ReportStatus.Submitted)
+                                        {
+                                            <form method="post" asp-action="ApproveReport" asp-controller="Manager" class="approve-form" style="display:inline-block; margin-left:6px;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button class="action-btn" type="submit" style="background:#10b981;color:#fff;border:none;cursor:pointer;">
+                                                    <i class="bi bi-check-lg"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" asp-action="RejectReport" asp-controller="Manager" class="reject-form" style="display:inline-block; margin-left:6px;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button class="action-btn" type="submit" style="background:#ef4444;color:#fff;border:none;cursor:pointer;">
+                                                    <i class="bi bi-x-lg"></i> Reject
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No expense reports found. Adjust your filters and try again.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="action-toast" id="actionToast">
+    <i class="bi" id="toastIcon"></i>
+    <span id="toastText"></span>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">✓</div>
+        <h5 id="confirmTitle">Confirm Action</h5>
+        <p id="confirmMsg">Are you sure?</p>
+        <div class="confirm-actions">
+            <button class="confirm-cancel-btn" id="confirmCancel">Cancel</button>
+            <button class="confirm-ok-btn" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // Toast
+    var toast = document.getElementById('actionToast');
+    var toastIcon = document.getElementById('toastIcon');
+    var toastText = document.getElementById('toastText');
+
+    function showToast(msg, isError) {
+        toastText.textContent = msg;
+        toastIcon.className = isError ? 'bi bi-exclamation-circle-fill' : 'bi bi-check-circle-fill';
+        toast.className = 'action-toast ' + (isError ? 'action-toast--error' : 'action-toast--success') + ' show';
+        setTimeout(function () { toast.classList.remove('show'); }, 3000);
+    }
+
+    var msgEl = document.getElementById('toastMsg');
+    if (msgEl) {
+        showToast(msgEl.dataset.msg, msgEl.dataset.type === 'error');
+    }
+
+    // Confirmation modal
+    var overlay = document.getElementById('confirmOverlay');
+    var confirmOk = document.getElementById('confirmOk');
+    var confirmCancel = document.getElementById('confirmCancel');
+    var pendingForm = null;
+
+    function showConfirm(title, msg, icon, okColor) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMsg').textContent = msg;
+        document.getElementById('confirmIcon').textContent = icon;
+        confirmOk.style.background = okColor;
+        overlay.classList.add('show');
+    }
+
+    function hideConfirm() {
+        overlay.classList.remove('show');
+        pendingForm = null;
+    }
+
+    document.querySelectorAll('.approve-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            pendingForm = form;
+            showConfirm('Approve Report', 'Are you sure you want to approve this expense report?', '✓', '#10b981');
+        });
+    });
+
+    document.querySelectorAll('.reject-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            pendingForm = form;
+            showConfirm('Reject Report', 'Are you sure you want to reject this expense report?', '✕', '#ef4444');
+        });
+    });
+
+    confirmOk.addEventListener('click', function () {
+        if (pendingForm) {
+            overlay.classList.remove('show');
+            pendingForm.submit();
+        }
+    });
+
+    confirmCancel.addEventListener('click', hideConfirm);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) hideConfirm();
+    });
+})();
+</script>

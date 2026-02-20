@@ -1,195 +1,434 @@
 ﻿@{
     ViewData["Title"] = "Manager Dashboard";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+
+    decimal totalBudget = ViewBag.TotalBudget ?? 0m;
+    decimal totalSpent = ViewBag.TotalSpent ?? 0m;
+    decimal totalRemaining = ViewBag.TotalRemaining ?? 0m;
+    int approvedTodayCount = ViewBag.ApprovedTodayCount ?? 0;
+    decimal approvedTodayTotal = ViewBag.ApprovedTodayTotal ?? 0m;
+    int activeDrivers = ViewBag.ActiveDrivers ?? 0;
+    var pendingReports = ViewBag.PendingReports as List<CEMS.Models.PendingExpenseReportDto> ?? new List<CEMS.Models.PendingExpenseReportDto>();
 }
 
-<div class="container-fluid px-4">
-    <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center py-4">
-        <div>
-            <h1 class="h2 fw-bold">👔 Manager Dashboard</h1>
-            <p class="text-muted mb-0">Welcome, @User.Identity?.Name</p>
-        </div>
-        <div>
-            <span class="badge bg-warning fs-6 px-3 py-2">MANAGER</span>
-        </div>
-    </div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-    <!-- Manager Quick Stats -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Pending Review</h6>
-                            <h3 class="fw-bold">5</h3>
-                            <p class="mb-0 text-muted">Expense Requests</p>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-clock text-primary fs-3"></i>
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-sm: 6px;
+    }
+
+    .dash-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .dash-header { margin-bottom: 32px; }
+    .dash-greeting { font-size: 1.65rem; font-weight: 700; color: var(--d-text); }
+    .dash-greeting span { color: var(--d-primary); }
+    .dash-date { color: var(--d-muted); font-size: .92rem; margin-top: 2px; }
+
+    .stat-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform .12s ease;
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-icon {
+        width: 44px; height: 44px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; flex-shrink: 0;
+    }
+    .stat-icon--pending  { background: rgba(26,107,181,.08);  color: #1a6bb5; }
+    .stat-icon--approved { background: rgba(16,185,129,.08);  color: #10b981; }
+    .stat-icon--warning  { background: rgba(245,158,11,.08);  color: #f59e0b; }
+    .stat-icon--budget   { background: rgba(139,92,246,.08);  color: #8b5cf6; }
+
+    .stat-label {
+        font-size: .76rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .5px;
+        color: var(--d-muted); margin-bottom: 4px;
+    }
+    .stat-value { font-size: 1.55rem; font-weight: 700; color: var(--d-text); line-height: 1.2; }
+    .stat-sub   { font-size: .8rem; color: var(--d-muted); margin-top: 2px; }
+
+    .dash-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .dash-card-head {
+        padding: 14px 18px;
+        display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 1px solid var(--d-border);
+    }
+    .dash-card-title {
+        font-size: .95rem; font-weight: 600; color: var(--d-text);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .dash-card-title i { color: var(--d-primary); font-size: 1rem; }
+    .dash-card-body { padding: 16px 18px; }
+
+    .budget-item { padding: 14px 0; }
+    .budget-item + .budget-item { border-top: 1px solid var(--d-border); }
+    .budget-label { font-weight: 600; color: var(--d-text); font-size: .9rem; }
+    .budget-remain { font-size: .8rem; font-weight: 500; }
+    .budget-remain--ok   { color: #0d8b7d; }
+    .budget-remain--over { color: #dc2626; }
+    .budget-bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top: 8px; overflow: hidden; }
+    .budget-bar-fill { height: 100%; border-radius: 3px; }
+    .budget-bar-fill--ok     { background: var(--d-primary); }
+    .budget-bar-fill--warn   { background: #f59e0b; }
+    .budget-bar-fill--danger { background: #ef4444; }
+    .budget-amounts { font-size: .76rem; color: var(--d-muted); margin-top: 4px; }
+
+    .chart-wrap { height: 260px; }
+    .chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+    .dash-table { width: 100%; margin-bottom: 0; }
+    .dash-table thead th {
+        background: #f8fafc; color: var(--d-muted);
+        font-weight: 600; font-size: .76rem; text-transform: uppercase;
+        letter-spacing: .5px; padding: 11px 16px; border: none;
+    }
+    .dash-table tbody td {
+        padding: 13px 16px; border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle; color: var(--d-text); font-size: .88rem;
+    }
+    .dash-table tbody tr:last-child td { border-bottom: none; }
+    .dash-table tbody tr:hover { background: #f8fafc; }
+
+    .status-badge {
+        display: inline-block; padding: 3px 9px; border-radius: 5px;
+        font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    }
+    .status-badge--pending { background: rgba(245,158,11,.1); color: #d97706; }
+    .status-badge--over    { background: rgba(239,68,68,.1);  color: #ef4444; }
+    .status-badge--within  { background: rgba(16,185,129,.1); color: #10b981; }
+
+    .action-btn {
+        font-size: .82rem; padding: 5px 12px; border-radius: 5px;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        background: var(--d-primary); color: #fff; transition: background .15s;
+    }
+    .action-btn:hover { background: #154a8a; color: #fff; text-decoration: none; }
+
+    .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--d-border); }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .label { font-size: .85rem; color: var(--d-muted); font-weight: 500; }
+    .summary-row .val   { font-size: .95rem; font-weight: 700; color: var(--d-text); }
+
+    @@media (max-width: 768px) {
+        .dash-wrapper { padding: 20px 0 32px; }
+    }
+</style>
+
+<div class="dash-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- Header -->
+        <div class="dash-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <h1 class="dash-greeting">Welcome back, <span>@User.Identity?.Name</span></h1>
+                <p class="dash-date mb-0">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
+                </p>
+            </div>
+            <a href="@Url.Action("Reports", "Manager")" class="btn px-4 py-2 text-white"
+               style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
+                <i class="bi bi-file-earmark-check me-1"></i> Review Reports
+            </a>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("Reports", "Manager")" class="stat-card">
+                    <div class="stat-icon stat-icon--pending"><i class="bi bi-hourglass-split"></i></div>
+                    <div>
+                        <div class="stat-label">Pending Review</div>
+                        <div class="stat-value"><span id="mgrPendingCount">—</span></div>
+                        <div class="stat-sub">Expense requests</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("Reports", "Manager")" class="stat-card">
+                    <div class="stat-icon stat-icon--approved"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <div class="stat-label">Approved Today</div>
+                        <div class="stat-value">₱@approvedTodayTotal.ToString("N2")</div>
+                        <div class="stat-sub">@approvedTodayCount report(s)</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <a href="@Url.Action("OverBudget", "Manager")" class="stat-card">
+                    <div class="stat-icon stat-icon--warning"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div>
+                        <div class="stat-label">Over Budget</div>
+                        <div class="stat-value"><span id="mgrOverBudget">—</span></div>
+                        <div class="stat-sub">Reports flagged</div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--budget"><i class="bi bi-cash-coin"></i></div>
+                    <div>
+                        <div class="stat-label">Team Budget</div>
+                        <div class="stat-value">₱@totalBudget.ToString("N2")</div>
+                        <div class="stat-sub">
+                            @Math.Round((totalBudget > 0 ? totalSpent / totalBudget : 0) * 100)% utilized
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Approved Today</h6>
-                            <h3 class="fw-bold">₱3,200</h3>
-                            <p class="mb-0 text-muted">3 Expenses</p>
+        <!-- Charts + Summary Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-8">
+                <!-- Budget Trend Chart -->
+                <div class="dash-card mb-3" style="margin-bottom:20px!important;">
+                    <div class="dash-card-head">
+                        <div class="dash-card-title"><i class="bi bi-bar-chart"></i> Budget by Category</div>
+                    </div>
+                    <div class="dash-card-body">
+                        <div class="chart-wrap"><canvas id="managerBudgetChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Budget Usage Bars -->
+                <div class="dash-card">
+                    <div class="dash-card-head">
+                        <div class="dash-card-title"><i class="bi bi-graph-up"></i> Category Usage</div>
+                    </div>
+                    <div class="dash-card-body">
+                        <div id="budgetOverview">
+                            <p class="text-center py-3" style="color:var(--d-muted);">Loading...</p>
                         </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-check-circle text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Budget Summary -->
+                <div class="dash-card mb-3" style="margin-bottom:20px!important;">
+                    <div class="dash-card-head">
+                        <div class="dash-card-title"><i class="bi bi-calculator"></i> Budget Summary</div>
+                    </div>
+                    <div class="dash-card-body">
+                        <div class="summary-row">
+                            <span class="label">Total Allocated</span>
+                            <span class="val">₱@totalBudget.ToString("N2")</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="label">Total Spent</span>
+                            <span class="val">₱@totalSpent.ToString("N2")</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="label">Remaining</span>
+                            <span class="val" style="color:@(totalRemaining < 0 ? "#dc2626" : "#0d8b7d");">
+                                ₱@totalRemaining.ToString("N2")
+                            </span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="label">Active Drivers</span>
+                            <span class="val">@activeDrivers</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dash-card">
+                    <div class="dash-card-head">
+                        <div class="dash-card-title"><i class="bi bi-lightning"></i> Quick Actions</div>
+                    </div>
+                    <div class="dash-card-body" style="padding:12px 14px;">
+                        <div class="d-flex flex-column gap-2">
+                            <a href="@Url.Action("Reports", "Manager")" class="btn btn-outline-primary btn-sm w-100 text-start">
+                                <i class="bi bi-file-earmark-check me-2"></i> Review All Reports
+                            </a>
+                            <a href="@Url.Action("OverBudget", "Manager")" class="btn btn-sm w-100 text-start" style="border:1px solid #f59e0b;color:#92400e;background:rgba(245,158,11,.06);">
+                                <i class="bi bi-exclamation-triangle me-2"></i> Over-Budget Reports
+                            </a>
+                            <a href="@Url.Action("Budget", "Manager")" class="btn btn-outline-primary btn-sm w-100 text-start">
+                                <i class="bi bi-graph-up me-2"></i> Budget Details
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">Team Budget</h6>
-                            <h3 class="fw-bold">₱15,000</h3>
-                            <p class="mb-0 text-muted">Monthly Limit</p>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-cash text-warning fs-3"></i>
-                        </div>
-                    </div>
-                </div>
+        <!-- Pending Reports Table -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div class="dash-card-title"><i class="bi bi-hourglass-split"></i> Pending Reports</div>
+                <a href="@Url.Action("Reports", "Manager")" style="font-size:.82rem;color:var(--d-primary);text-decoration:none;font-weight:600;">
+                    View all <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
+            @if (pendingReports.Any())
+            {
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Driver</th>
+                                <th>Amount</th>
+                                <th>Submitted</th>
+                                <th>Budget Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var dto in pendingReports)
+                            {
+                                var r = dto.Report;
+                                <tr>
+                                    <td><strong>#@r.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
+                                            @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "Within Budget" : "Over Budget")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a class="action-btn" href="@Url.Action("ReportDetails", "Manager", new { id = r.Id })">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="dash-card-body" style="text-align:center;padding:32px;color:var(--d-muted);">
+                    <i class="bi bi-check2-all" style="font-size:2rem;display:block;margin-bottom:8px;color:var(--d-border);"></i>
+                    No pending reports — all caught up!
+                </div>
+            }
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-info border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase text-muted mb-1">My Drivers</h6>
-                            <h3 class="fw-bold">6</h3>
-                            <p class="mb-0 text-muted">Active Drivers</p>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="bi bi-people text-info fs-3"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Manager Quick Actions -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">⚡ Manager Actions</h4>
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <a href="@Url.Action("Expenses", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-list-check text-primary fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Review Expenses</h5>
-                            <p class="card-text text-muted small">Approve/Reject submissions</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a href="@Url.Action("Team", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-truck text-success fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Team Monitoring</h5>
-                            <p class="card-text text-muted small">View driver expenses</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a href="@Url.Action("Budget", "Manager")" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-pie-chart text-warning fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Budget Overview</h5>
-                            <p class="card-text text-muted small">Track spending</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-3">
-                    <a href="#" class="card text-decoration-none shadow-sm hover-shadow">
-                        <div class="card-body text-center py-4">
-                            <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
-                                <i class="bi bi-flag text-info fs-2"></i>
-                            </div>
-                            <h5 class="card-title">Escalate</h5>
-                            <p class="card-text text-muted small">Flag over-budget to CEO</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pending Expenses Table -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">📋 Expenses Pending Your Approval</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Driver</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Juan Dela Cruz</td>
-                            <td><span class="badge bg-primary">Fuel</span></td>
-                            <td>₱1,200</td>
-                            <td>Today</td>
-                            <td><span class="badge bg-warning">Within Budget</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-success">✓ Approve</button>
-                                <button class="btn btn-sm btn-danger">✗ Reject</button>
-                                <button class="btn btn-sm btn-info">👁 View</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Maria Santos</td>
-                            <td><span class="badge bg-danger">Maintenance</span></td>
-                            <td>₱3,200 <small class="text-danger">(Over Budget)</small></td>
-                            <td>Yesterday</td>
-                            <td><span class="badge bg-danger">Over Budget</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-warning">⚠ Flag to CEO</button>
-                                <button class="btn btn-sm btn-danger">✗ Reject</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 </div>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<style>.hover-shadow:hover { transform: translateY(-2px); transition: all 0.3s ease; }</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var managerBudgetChart;
+
+    function renderManagerBudgetChart(budgets) {
+        var canvas = document.getElementById('managerBudgetChart');
+        if (!canvas || !window.Chart) return;
+
+        var labels    = (budgets || []).map(function (b) { return b.category; });
+        var allocated = (budgets || []).map(function (b) { return b.allocated || 0; });
+        var spent     = (budgets || []).map(function (b) { return b.spent || 0; });
+
+        if (managerBudgetChart) managerBudgetChart.destroy();
+
+        managerBudgetChart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Allocated',
+                        data: allocated,
+                        backgroundColor: 'rgba(26,107,181,0.2)',
+                        borderColor: '#1a6bb5',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Spent',
+                        data: spent,
+                        backgroundColor: 'rgba(239,68,68,0.2)',
+                        borderColor: '#ef4444',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    async function loadManagerMetrics() {
+        try {
+            var res = await fetch('@Url.Action("Metrics","Manager")');
+            var data = await res.json();
+
+            var pendingEl = document.getElementById('mgrPendingCount');
+            if (pendingEl) pendingEl.textContent = data.totalPending ?? 0;
+
+            var overEl = document.getElementById('mgrOverBudget');
+            if (overEl) overEl.textContent = data.overBudgetCount ?? 0;
+
+            var container = document.getElementById('budgetOverview');
+            if (container && data.budgets && data.budgets.length > 0) {
+                container.innerHTML = '';
+                data.budgets.forEach(function (b) {
+                    var pct = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
+                    var fillClass = pct >= 100 ? 'budget-bar-fill--danger' : pct >= 75 ? 'budget-bar-fill--warn' : 'budget-bar-fill--ok';
+                    var remainClass = pct >= 100 ? 'budget-remain--over' : 'budget-remain--ok';
+                    var div = document.createElement('div');
+                    div.className = 'budget-item';
+                    div.innerHTML =
+                        '<div class="d-flex justify-content-between">' +
+                            '<div class="budget-label">' + b.category + '</div>' +
+                            '<div class="budget-remain ' + remainClass + '">₱' + b.spent.toFixed(2) + ' / ₱' + b.allocated.toFixed(2) + '</div>' +
+                        '</div>' +
+                        '<div class="budget-bar"><div class="budget-bar-fill ' + fillClass + '" style="width:' + pct + '%"></div></div>' +
+                        '<div class="budget-amounts">' + pct + '% used</div>';
+                    container.appendChild(div);
+                });
+            } else if (container) {
+                container.innerHTML = '<p class="text-center py-3" style="color:var(--d-muted);">No budget categories found.</p>';
+            }
+
+            renderManagerBudgetChart(data.budgets || []);
+        } catch (e) {
+            console.error('Manager metrics error:', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadManagerMetrics);
+})();
+</script>
+

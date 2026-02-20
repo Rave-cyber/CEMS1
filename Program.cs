@@ -1,4 +1,6 @@
 ﻿using CEMS.Data;
+using CEMS.Models;
+using CEMS.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +11,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sqlOptions =>
+        sqlOptions.CommandTimeout(120)));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ✅ PROPER Identity Configuration
@@ -31,18 +34,43 @@ builder.Services.AddScoped<SignInManager<IdentityUser>>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// PayMongo configuration
+builder.Services.Configure<PayMongoOptions>(builder.Configuration.GetSection("PayMongo"));
+var paymongoKey = builder.Configuration["PayMongo:SecretKey"] ?? "";
+
+// If a PayMongo secret is configured, register the real HTTP client. Otherwise register a noop
+// implementation that surfaces a clear error when used. This prevents confusing errors like
+// "Missing authorization header" when deployed without secrets.
+if (!string.IsNullOrWhiteSpace(paymongoKey))
+{
+    builder.Services.AddHttpClient<IPayMongoService, PayMongoService>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.paymongo.com/v1/");
+        var token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{paymongoKey}:"));
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+        client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+    });
+}
+else
+{
+    // Register a no-op implementation that throws a helpful error message when used.
+    builder.Services.AddSingleton<IPayMongoService, NoopPayMongoService>();
+    Console.WriteLine("WARNING: PayMongo:SecretKey is not configured. Payments are disabled. Set PayMongo:SecretKey in configuration or use environment variable PayMongo__SecretKey.");
+}
+
 var app = builder.Build();
 
-// ✅ ADD THIS: Create test user on startup
+// ✅ APPLY MIGRATIONS ON STARTUP (replaces EnsureCreated)
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var services = scope.ServiceProvider;
 
-        // Ensure database is created
+        // Apply any pending EF Core migrations. This ensures the database schema
+        // is up-to-date with the model (creates tables like Expenses when missing).
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
 
         // Get UserManager and RoleManager
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
@@ -50,8 +78,26 @@ using (var scope = app.Services.CreateScope())
 
         Console.WriteLine("=== Starting User Seeding ===");
 
+        // ✅ Clean up broken accounts (e.g. inserted via SSMS without proper Identity fields)
+        var brokenUsers = context.Users
+            .Where(u => u.SecurityStamp == null || u.NormalizedEmail == null || u.PasswordHash == null)
+            .ToList();
+        if (brokenUsers.Count > 0)
+        {
+            Console.WriteLine($"🧹 Found {brokenUsers.Count} broken user(s) — removing so seeder can recreate them...");
+            foreach (var broken in brokenUsers)
+            {
+                // Remove role assignments first
+                var brokenRoles = await userManager.GetRolesAsync(broken);
+                if (brokenRoles.Count > 0)
+                    await userManager.RemoveFromRolesAsync(broken, brokenRoles);
+                await userManager.DeleteAsync(broken);
+                Console.WriteLine($"   🗑️ Removed broken user: {broken.Email}");
+            }
+        }
+
         // Create roles if they don't exist
-        string[] roles = { "CEO", "Manager", "Driver", "Finance" };
+        string[] roles = { "SuperAdmin", "CEO", "Manager", "Driver", "Finance" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -64,6 +110,7 @@ using (var scope = app.Services.CreateScope())
         // Create test users with different roles
         var users = new[]
         {
+            new { Email = "superadmin@expense.com", Role = "SuperAdmin", Password = "Test@123" },
             new { Email = "ceo@expense.com", Role = "CEO", Password = "Test@123" },
             new { Email = "manager@expense.com", Role = "Manager", Password = "Test@123" },
             new { Email = "driver@expense.com", Role = "Driver", Password = "Test@123" },
@@ -110,6 +157,34 @@ using (var scope = app.Services.CreateScope())
             {
                 Console.WriteLine($"User already exists: {userInfo.Email}");
 
+                // Fix any missing Identity fields (e.g. from manual SSMS inserts)
+                var needsUpdate = false;
+                if (string.IsNullOrEmpty(existingUser.SecurityStamp))
+                {
+                    existingUser.SecurityStamp = Guid.NewGuid().ToString();
+                    needsUpdate = true;
+                }
+                if (string.IsNullOrEmpty(existingUser.NormalizedEmail))
+                {
+                    existingUser.NormalizedEmail = userInfo.Email.ToUpperInvariant();
+                    needsUpdate = true;
+                }
+                if (string.IsNullOrEmpty(existingUser.NormalizedUserName))
+                {
+                    existingUser.NormalizedUserName = userInfo.Email.ToUpperInvariant();
+                    needsUpdate = true;
+                }
+                if (!existingUser.EmailConfirmed)
+                {
+                    existingUser.EmailConfirmed = true;
+                    needsUpdate = true;
+                }
+                if (needsUpdate)
+                {
+                    await userManager.UpdateAsync(existingUser);
+                    Console.WriteLine($"  -> Fixed missing Identity fields");
+                }
+
                 // Reset password to known value
                 var resetToken = await userManager.GeneratePasswordResetTokenAsync(existingUser);
                 var resetResult = await userManager.ResetPasswordAsync(existingUser, resetToken, userInfo.Password);
@@ -133,7 +208,50 @@ using (var scope = app.Services.CreateScope())
         }
 
         Console.WriteLine("=== User Seeding Complete ===");
+
+        // Seed profile records for existing users
+        foreach (var userInfo in users)
+        {
+            var u = await userManager.FindByEmailAsync(userInfo.Email);
+            if (u == null) continue;
+
+            switch (userInfo.Role)
+            {
+                case "CEO":
+                    if (!context.CEOProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.CEOProfiles.Add(new CEOProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        Console.WriteLine($"  -> Created CEO profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Manager":
+                    if (!context.ManagerProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.ManagerProfiles.Add(new ManagerProfile { UserId = u.Id, FullName = userInfo.Email, Department = "General", IsActive = true });
+                        Console.WriteLine($"  -> Created Manager profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Finance":
+                    if (!context.FinanceProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.FinanceProfiles.Add(new FinanceProfile { UserId = u.Id, FullName = userInfo.Email, Department = "Accounting", IsActive = true });
+                        Console.WriteLine($"  -> Created Finance profile for {userInfo.Email}");
+                    }
+                    break;
+                case "Driver":
+                    if (!context.DriverProfiles.Any(p => p.UserId == u.Id))
+                    {
+                        context.DriverProfiles.Add(new DriverProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        Console.WriteLine($"  -> Created Driver profile for {userInfo.Email}");
+                    }
+                    break;
+            }
+        }
+        await context.SaveChangesAsync();
+        Console.WriteLine("=== Profile Seeding Complete ===");
+
         Console.WriteLine("Test credentials:");
+        Console.WriteLine("superadmin@expense.com / Test@123");
         Console.WriteLine("ceo@expense.com / Test@123");
         Console.WriteLine("manager@expense.com / Test@123");
         Console.WriteLine("driver@expense.com / Test@123");
@@ -142,7 +260,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error during seeding: {ex.Message}");
+        Console.WriteLine($"Error during seeding/migration: {ex.Message}");
         Console.WriteLine($"Stack trace: {ex.StackTrace}");
     }
 }

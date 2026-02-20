@@ -1,0 +1,1015 @@
+@model CEMS.Models.DriverExpenseFormViewModel
+@{
+    ViewData["Title"] = "Submit Expenses";
+    Layout = "~/Views/Shared/_DriverLayout.cshtml";
+}
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+        --d-radius-sm: 6px;
+        --d-danger: #ef4444;
+    }
+
+    .expense-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    /* Header */
+    .expense-header {
+        margin-bottom: 28px;
+    }
+
+    .expense-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+    }
+
+    .expense-subtitle {
+        color: var(--d-muted);
+        font-size: .92rem;
+    }
+
+    /* Main Card */
+    .expense-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .expense-card-head {
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--d-border);
+    }
+
+    .expense-card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .expense-card-title i {
+            color: var(--d-primary);
+            font-size: 1.1rem;
+        }
+
+    .expense-card-body {
+        padding: 24px;
+    }
+
+    .expense-card-info {
+        color: var(--d-muted);
+        font-size: .9rem;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    /* Action Buttons */
+    .expense-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .add-row-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--d-primary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: .9rem;
+        padding: 8px 16px;
+        border-radius: var(--d-radius-sm);
+        background: rgba(26, 107, 181, .08);
+        border: 1px solid rgba(26, 107, 181, .2);
+        transition: all .2s;
+    }
+
+        .add-row-btn:hover {
+            background: rgba(26, 107, 181, .12);
+            color: #155a9a;
+            text-decoration: none;
+        }
+
+    .submit-all-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--d-primary);
+        color: white;
+        border: none;
+        border-radius: var(--d-radius-sm);
+        padding: 10px 24px;
+        font-size: .9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+        .submit-all-btn:hover {
+            background: #155a9a;
+        }
+
+        .submit-all-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .submit-all-btn:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+    /* Expense Rows */
+    .expense-rows-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .expense-row {
+        background: #f8fafc;
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        position: relative;
+        transition: border-color .2s;
+    }
+
+        .expense-row:hover {
+            border-color: var(--d-primary);
+        }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .field-label {
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--d-text);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .field-label .required {
+            color: var(--d-danger);
+        }
+
+    .field-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-sm);
+        background: #fff;
+        font-size: .9rem;
+        color: var(--d-text);
+        transition: border-color .2s;
+    }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--d-primary);
+            box-shadow: 0 0 0 3px rgba(26, 107, 181, .1);
+        }
+
+        .field-input[type="file"] {
+            padding: 8px;
+            font-size: .85rem;
+        }
+
+            .field-input[type="file"]::-webkit-file-upload-button {
+                background: rgba(26, 107, 181, .08);
+                color: var(--d-primary);
+                border: 1px solid rgba(26, 107, 181, .2);
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: .85rem;
+                cursor: pointer;
+                transition: background .2s;
+            }
+
+                .field-input[type="file"]::-webkit-file-upload-button:hover {
+                    background: rgba(26, 107, 181, .12);
+                }
+
+    /* Remove Button */
+    .remove-row-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: none;
+        border: none;
+        color: var(--d-danger);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background .2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .remove-row-btn:hover {
+            background: rgba(239, 68, 68, .1);
+        }
+
+    /* Result Messages */
+    .result-container {
+        margin-top: 20px;
+        padding: 16px;
+        border-radius: var(--d-radius);
+        font-size: .9rem;
+        font-weight: 500;
+    }
+
+    .result-success {
+        background: rgba(16, 185, 129, .1);
+        color: #065f46;
+        border: 1px solid rgba(16, 185, 129, .2);
+    }
+
+    .result-error {
+        background: rgba(239, 68, 68, .1);
+        color: #991b1b;
+        border: 1px solid rgba(239, 68, 68, .2);
+    }
+
+    /* Category Select Styling */
+    select.field-input option {
+        padding: 8px;
+        background: white;
+    }
+
+        select.field-input option:hover {
+            background: rgba(26, 107, 181, .1);
+        }
+
+    /* Mobile Responsive */
+    @@media (max-width: 992px) {
+        .expense-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @@media (max-width: 768px) {
+        .expense-row {
+            grid-template-columns: 1fr;
+        }
+
+        .expense-card-head {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .expense-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .expense-wrapper {
+            padding: 20px 0 32px;
+        }
+
+        .expense-card-body {
+            padding: 20px;
+        }
+
+        .trip-context-fields {
+            flex-direction: column;
+        }
+    }
+
+    /* Trip Context */
+    .trip-context-card {
+        background: rgba(26, 107, 181, .04);
+        border: 1px solid rgba(26, 107, 181, .15);
+        border-radius: var(--d-radius);
+        padding: 18px 24px;
+        margin-bottom: 20px;
+    }
+    .trip-context-title {
+        font-size: .92rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .trip-context-sub {
+        font-size: .8rem;
+        color: var(--d-muted);
+        margin-bottom: 14px;
+    }
+    .trip-context-fields {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+    .trip-context-fields .field-group {
+        flex: 1;
+        min-width: 160px;
+    }
+    .trip-days-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(46, 196, 182, .12);
+        color: #0d8b7d;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: .85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        margin-bottom: 6px;
+    }
+
+    /* ── Receipt Summary Panel ── */
+    .receipt-sticky {
+        position: sticky;
+        top: 20px;
+    }
+    .receipt-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    }
+    .receipt-head {
+        background: var(--d-primary);
+        color: #fff;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .receipt-head-title { font-size: 1rem; font-weight: 700; letter-spacing: .3px; }
+    .receipt-head-sub   { font-size: .75rem; opacity: .75; margin-top: 1px; }
+    .receipt-count-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255,255,255,.2);
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: .75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .receipt-body {
+        padding: 18px 20px;
+        font-size: .88rem;
+    }
+    .receipt-store {
+        text-align: center;
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+        border-bottom: 2px dashed var(--d-border);
+    }
+    .receipt-store-name {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--d-text);
+        letter-spacing: .5px;
+        text-transform: uppercase;
+    }
+    .receipt-store-sub { font-size: .75rem; color: var(--d-muted); margin-top: 2px; }
+    .receipt-items     { min-height: 40px; margin-bottom: 4px; }
+    .receipt-item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px dotted #e5e7eb;
+    }
+    .receipt-item-row:last-child { border-bottom: none; }
+    .receipt-item-left   { flex: 1; min-width: 0; }
+    .receipt-item-cat    { font-weight: 600; color: var(--d-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .receipt-item-desc   { font-size: .75rem; color: var(--d-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .receipt-item-amount { font-weight: 700; color: var(--d-text); white-space: nowrap; }
+    .receipt-empty {
+        text-align: center;
+        color: var(--d-muted);
+        padding: 24px 0 8px;
+    }
+    .receipt-empty i { font-size: 2rem; opacity: .25; display: block; }
+    .receipt-empty p { font-size: .82rem; margin-top: 8px; }
+    .receipt-divider { border: none; border-top: 2px dashed var(--d-border); margin: 14px 0 10px; }
+    .receipt-subtotals { margin-bottom: 4px; }
+    .receipt-subtotal-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: .82rem;
+        color: var(--d-muted);
+        padding: 3px 0;
+    }
+    .receipt-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(26,107,181,.06);
+        border: 1px solid rgba(26,107,181,.12);
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-top: 10px;
+    }
+    .receipt-total-label  { font-size: .88rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--d-text); }
+    .receipt-total-amount { font-size: 1.25rem; font-weight: 800; color: var(--d-primary); }
+    .receipt-footer {
+        text-align: center;
+        padding-top: 14px;
+        margin-top: 12px;
+        border-top: 2px dashed var(--d-border);
+        font-size: .74rem;
+        color: var(--d-muted);
+        line-height: 1.7;
+    }
+    @@media (max-width: 991px) {
+        .receipt-sticky { position: static; margin-top: 4px; }
+    }
+    /* Small auto-dismiss confirmation toast */
+    .submit-modal {
+        position: fixed;
+        right: 28px;
+        bottom: 28px;
+        background: #10b981;
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(16,185,129,.22);
+        z-index: 1060;
+        pointer-events: none;   /* invisible but in DOM so transition works */
+        opacity: 0;
+        transform: translateY(12px) scale(.96);
+        transition: opacity .22s ease, transform .22s ease;
+        font-size: .92rem;
+        font-weight: 600;
+        max-width: 320px;
+    }
+    .submit-modal.show {
+        pointer-events: auto;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    .submit-modal-body { display: flex; align-items: center; gap: 10px; }
+    .submit-modal-icon { font-size: 1.3rem; flex-shrink: 0; }
+</style>
+
+<div class="expense-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- Header -->
+        <div class="expense-header">
+            <h1 class="expense-title">Submit Expenses</h1>
+            <p class="expense-subtitle">Add multiple expense items and submit them together</p>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-8">
+
+        <!-- Main Form Card -->
+        <div class="expense-card">
+            <div class="expense-card-head">
+                <div class="expense-card-title">
+                    <i class="bi bi-plus-circle"></i>
+                    Multiple Expense Items
+                </div>
+                <div class="expense-actions">
+                    <a id="addRowBtn" class="add-row-btn">
+                        <i class="bi bi-plus-lg"></i> Add Row
+                    </a>
+                    <button id="submitAllBtn" class="submit-all-btn">
+                        <i class="bi bi-send-check"></i> Submit All
+                    </button>
+                </div>
+            </div>
+            <div class="expense-card-body">
+                <p class="expense-card-info">
+                    Fill in the details for each expense item below. You can add multiple rows for different expenses.
+                    Receipts are optional but recommended for better tracking.
+                </p>
+
+                <form id="multiExpenseForm" enctype="multipart/form-data">
+                    <!-- Trip Context -->
+                    <div class="trip-context-card">
+                        <div class="trip-context-title">
+                            <i class="bi bi-signpost-2"></i> Trip Details
+                        </div>
+                        <div class="trip-context-sub">
+                            Provide the trip start and end dates. Budget limits are prorated based on trip duration for fair evaluation.
+                        </div>
+                        <div class="trip-context-fields">
+                            <div class="field-group">
+                                <label class="field-label">
+                                    <i class="bi bi-calendar-event"></i> Trip Start
+                                    <span class="required">*</span>
+                                </label>
+                                <input type="date" id="tripStartInput" name="TripStart" class="field-input" required />
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">
+                                    <i class="bi bi-calendar-check"></i> Trip End
+                                    <span class="required">*</span>
+                                </label>
+                                <input type="date" id="tripEndInput" name="TripEnd" class="field-input" required />
+                            </div>
+                            <div class="field-group" style="flex:0 0 auto;">
+                                <label class="field-label">&nbsp;</label>
+                                <span id="tripDaysBadge" class="trip-days-badge">
+                                    <i class="bi bi-clock-history"></i> <span id="tripDaysCount">1</span> day(s)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="expenseRows" class="expense-rows-container">
+                        <!-- Rows will be added here dynamically -->
+                    </div>
+
+                    <div id="submitResult" class="result-container" style="display: none;"></div>
+                    <!-- Auto-dismiss confirmation toast -->
+                    <div id="submitModal" class="submit-modal">
+                        <div class="submit-modal-body">
+                            <div class="submit-modal-icon"><i class="bi bi-check2-circle"></i></div>
+                            <div id="submitModalText">Submitted successfully!</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+            </div><!-- /col-lg-8 -->
+
+            <div class="col-lg-4">
+                <div class="receipt-sticky">
+                    <div class="receipt-card">
+                        <div class="receipt-head">
+                            <i class="bi bi-receipt" style="font-size:1.35rem;"></i>
+                            <div>
+                                <div class="receipt-head-title">Expense Summary</div>
+                                <div class="receipt-head-sub">Live preview</div>
+                            </div>
+                            <span id="receiptCount" class="receipt-count-badge ms-auto">0 items</span>
+                        </div>
+                        <div class="receipt-body">
+                            <div class="receipt-store">
+                                <div class="receipt-store-name">CEMS</div>
+                                <div class="receipt-store-sub">Expense Report Draft</div>
+                                <div class="receipt-store-sub" id="receiptDate"></div>
+                            </div>
+
+                            <div id="receiptItems" class="receipt-items"></div>
+
+                            <div id="receiptEmpty" class="receipt-empty">
+                                <i class="bi bi-receipt"></i>
+                                <p>Fill in expense details<br>to see a summary</p>
+                            </div>
+
+                            <hr class="receipt-divider" />
+
+                            <div class="receipt-subtotals">
+                                <div class="receipt-subtotal-row">
+                                    <span>Rows</span>
+                                    <span id="receiptItemCount">0</span>
+                                </div>
+                                <div class="receipt-subtotal-row">
+                                    <span>Subtotal</span>
+                                    <span>&#8369;<span id="receiptSubtotal">0.00</span></span>
+                                </div>
+                            </div>
+
+                            <div class="receipt-total-row">
+                                <span class="receipt-total-label">Total</span>
+                                <span class="receipt-total-amount">&#8369;<span id="receiptTotal">0.00</span></span>
+                            </div>
+
+                            <div class="receipt-footer">
+                                <i class="bi bi-shield-check"></i> Pending submission<br>
+                                Subject to management review
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /col-lg-4 -->
+
+        </div><!-- /row -->
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+            const rows = document.getElementById('expenseRows');
+            const addBtn = document.getElementById('addRowBtn');
+            const form = document.getElementById('multiExpenseForm');
+            const submitBtn = document.getElementById('submitAllBtn');
+            const resultDiv = document.getElementById('submitResult');
+            const serverCategories = @Html.Raw(Model?.CategoriesJson ?? "[]");
+
+            const tripStartInput = document.getElementById('tripStartInput');
+            const tripEndInput   = document.getElementById('tripEndInput');
+            const tripDaysCount  = document.getElementById('tripDaysCount');
+
+            function getTodayDate() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Initialize trip dates to today
+            tripStartInput.value = getTodayDate();
+            tripEndInput.value   = getTodayDate();
+
+            function updateTripDays() {
+                const s = tripStartInput.valueAsDate;
+                const e = tripEndInput.valueAsDate;
+                if (s && e && e >= s) {
+                    const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+                    tripDaysCount.textContent = days;
+                } else {
+                    tripDaysCount.textContent = '1';
+                }
+            }
+
+            tripStartInput.addEventListener('change', () => {
+                if (tripEndInput.value && tripEndInput.value < tripStartInput.value)
+                    tripEndInput.value = tripStartInput.value;
+                updateTripDays();
+            });
+            tripEndInput.addEventListener('change', () => {
+                if (tripStartInput.value && tripEndInput.value < tripStartInput.value)
+                    tripStartInput.value = tripEndInput.value;
+                updateTripDays();
+            });
+
+            function populateCategories(select){
+                if(!select) return;
+                select.innerHTML = '<option value="">Select category</option>';
+                serverCategories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    select.appendChild(opt);
+                });
+            }
+
+            function addRow() {
+                const idx = rows.children.length;
+                const row = document.createElement('div');
+                row.className = 'expense-row';
+
+                const today = getTodayDate();
+
+                row.innerHTML = `
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="bi bi-calendar3"></i> Date
+                            <span class="required">*</span>
+                        </label>
+                        <input type="date" name="items[${idx}].Date" class="field-input" value="${today}" required />
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="bi bi-tag"></i> Category
+                            <span class="required">*</span>
+                        </label>
+                        <select name="items[${idx}].Category" class="field-input" required>
+                            <option value="">Select category</option>
+                            <!-- categories populated from server -->
+                        </select>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="bi bi-currency-dollar"></i> Amount
+                            <span class="required">*</span>
+                        </label>
+                        <input type="number" step="0.01" min="0" name="items[${idx}].Amount"
+                               class="field-input" placeholder="0.00" required />
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="bi bi-card-text"></i> Description
+                        </label>
+                        <input type="text" name="items[${idx}].Description"
+                               class="field-input" placeholder="Brief description or note" />
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <i class="bi bi-paperclip"></i> Receipt (Optional)
+                        </label>
+                        <input type="file" name="items[${idx}].Receipt"
+                               class="field-input" accept="image/*,.pdf,.doc,.docx" />
+                        <small style="font-size: .75rem; color: var(--d-muted); margin-top: 4px;">
+                            Images, PDF, or Word docs
+                        </small>
+                    </div>
+
+                    <button type="button" class="remove-row-btn" title="Remove this row">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                `;
+
+                rows.appendChild(row);
+
+                const categorySelect = row.querySelector('select[name$=".Category"]');
+                populateCategories(categorySelect);
+
+                // Attach remove handler
+                const removeBtn = row.querySelector('.remove-row-btn');
+                removeBtn.addEventListener('click', () => {
+                    if (rows.children.length > 1) {
+                        row.remove();
+                        reorderIndexes();
+                        updateSummary();
+                    } else {
+                        alert('You need at least one expense item');
+                    }
+                });
+
+                // Add focus styling
+                const inputs = row.querySelectorAll('.field-input');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', () => {
+                        row.style.borderColor = 'var(--d-primary)';
+                        row.style.boxShadow = '0 0 0 3px rgba(26, 107, 181, 0.1)';
+                    });
+
+                    input.addEventListener('blur', () => {
+                        row.style.borderColor = 'var(--d-border)';
+                        row.style.boxShadow = 'none';
+                    });
+
+                    input.addEventListener('input', updateSummary);
+                    input.addEventListener('change', updateSummary);
+                });
+
+                updateSummary();
+            }
+
+            function reorderIndexes() {
+                // Reindex names so model binding works when rows removed
+                Array.from(rows.children).forEach((row, index) => {
+                    const inputs = row.querySelectorAll('input, select');
+                    inputs.forEach(input => {
+                        if (input.name) {
+                            input.name = input.name.replace(/items\[\d+\]/, `items[${index}]`);
+                        }
+                    });
+                });
+            }
+
+            function updateSummary() {
+                const allRows     = Array.from(rows.children);
+                const itemsListEl = document.getElementById('receiptItems');
+                const emptyEl     = document.getElementById('receiptEmpty');
+                const totalEl     = document.getElementById('receiptTotal');
+                const subtotalEl  = document.getElementById('receiptSubtotal');
+                const countBadge  = document.getElementById('receiptCount');
+                const itemCountEl = document.getElementById('receiptItemCount');
+                const dateEl      = document.getElementById('receiptDate');
+
+                if (dateEl) {
+                    dateEl.textContent = new Date().toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                }
+
+                const items = allRows.map((row, i) => ({
+                    index : i + 1,
+                    cat   : row.querySelector('select[name$=".Category"]')?.value || '',
+                    amt   : parseFloat(row.querySelector('input[name$=".Amount"]')?.value) || 0,
+                    desc  : (row.querySelector('input[name$=".Description"]')?.value || '').trim()
+                }));
+
+                const rowCount   = allRows.length;
+                const total      = items.reduce((s, i) => s + i.amt, 0);
+                const hasContent = items.some(i => i.cat || i.amt > 0);
+
+                if (countBadge)  countBadge.textContent  = rowCount + ' item' + (rowCount !== 1 ? 's' : '');
+                if (itemCountEl) itemCountEl.textContent = rowCount;
+
+                if (!hasContent) {
+                    if (itemsListEl) itemsListEl.innerHTML  = '';
+                    if (emptyEl)     emptyEl.style.display  = 'block';
+                    if (totalEl)     totalEl.textContent    = '0.00';
+                    if (subtotalEl)  subtotalEl.textContent = '0.00';
+                    return;
+                }
+
+                if (emptyEl) emptyEl.style.display = 'none';
+
+                if (itemsListEl) {
+                    itemsListEl.innerHTML = items.map(function(item) {
+                        return '<div class="receipt-item-row">' +
+                            '<div class="receipt-item-left">' +
+                                '<div class="receipt-item-cat">' + (item.cat || 'Item ' + item.index) + '</div>' +
+                                (item.desc ? '<div class="receipt-item-desc">' + item.desc + '</div>' : '') +
+                            '</div>' +
+                            '<div class="receipt-item-amount">\u20b1' + item.amt.toFixed(2) + '</div>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                if (totalEl)    totalEl.textContent    = total.toFixed(2);
+                if (subtotalEl) subtotalEl.textContent = total.toFixed(2);
+            }
+
+            function validateForm() {
+                const rows = document.querySelectorAll('.expense-row');
+                let isValid = true;
+                const errors = [];
+
+                // Validate trip dates
+                if (!tripStartInput.value) {
+                    errors.push('Trip Start date is required');
+                    isValid = false;
+                    tripStartInput.style.borderColor = 'var(--d-danger)';
+                } else {
+                    tripStartInput.style.borderColor = '';
+                }
+                if (!tripEndInput.value) {
+                    errors.push('Trip End date is required');
+                    isValid = false;
+                    tripEndInput.style.borderColor = 'var(--d-danger)';
+                } else {
+                    tripEndInput.style.borderColor = '';
+                }
+                if (tripStartInput.value && tripEndInput.value && tripEndInput.value < tripStartInput.value) {
+                    errors.push('Trip End must be on or after Trip Start');
+                    isValid = false;
+                    tripEndInput.style.borderColor = 'var(--d-danger)';
+                }
+
+                rows.forEach((row, index) => {
+                    const dateInput = row.querySelector('input[name$=".Date"]');
+                    const categorySelect = row.querySelector('select[name$=".Category"]');
+                    const amountInput = row.querySelector('input[name$=".Amount"]');
+
+                    if (!dateInput.value) {
+                        errors.push(`Row ${index + 1}: Date is required`);
+                        isValid = false;
+                        dateInput.style.borderColor = 'var(--d-danger)';
+                    } else {
+                        dateInput.style.borderColor = '';
+                    }
+
+                    if (!categorySelect.value) {
+                        errors.push(`Row ${index + 1}: Category is required`);
+                        isValid = false;
+                        categorySelect.style.borderColor = 'var(--d-danger)';
+                    } else {
+                        categorySelect.style.borderColor = '';
+                    }
+
+                    if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+                        errors.push(`Row ${index + 1}: Amount must be greater than 0`);
+                        isValid = false;
+                        amountInput.style.borderColor = 'var(--d-danger)';
+                    } else {
+                        amountInput.style.borderColor = '';
+                    }
+                });
+
+                return { isValid, errors };
+            }
+
+            // Event Listeners
+            addBtn.addEventListener('click', addRow);
+
+            // Submit form
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Validate form
+                const validation = validateForm();
+                if (!validation.isValid) {
+                    resultDiv.innerHTML = `
+                        <div class="result-error">
+                            <strong>Please fix the following errors:</strong>
+                            <ul style="margin: 8px 0 0 20px;">
+                                ${validation.errors.map(err => `<li>${err}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                    return;
+                }
+
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+
+                try {
+                    const formData = new FormData(form);
+
+                    const response = await fetch('/Driver/SubmitMultiple', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Show the toast popup
+                        const modal     = document.getElementById('submitModal');
+                        const modalText = document.getElementById('submitModalText');
+                        if (modalText) modalText.textContent = data.message || 'Submitted successfully!';
+                        if (modal) modal.classList.add('show');
+
+                        // Clear form and add one fresh row
+                        rows.innerHTML = '';
+                        addRow();
+
+                        // Auto-dismiss after 1.5 s
+                        setTimeout(() => {
+                            if (modal) modal.classList.remove('show');
+                        }, 1500);
+                    } else {
+                        // Show error message
+                        resultDiv.innerHTML = `
+                            <div class="result-error">
+                                <strong>Error:</strong> ${data.errors || data.message || 'Submission failed. Please try again.'}
+                            </div>
+                        `;
+                        resultDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    resultDiv.innerHTML = `
+                        <div class="result-error">
+                            <strong>Network Error:</strong> Unable to submit expenses. Please check your connection and try again.
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                } finally {
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-send-check"></i> Submit All';
+                }
+            });
+
+            // Also handle click on submit button
+            submitBtn.addEventListener('click', () => {
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            });
+
+            // Initialize with one row
+            addRow();
+
+            // Populate category options from server-provided list
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    submitBtn.click();
+                }
+
+                if (e.ctrlKey && e.key === '+') {
+                    e.preventDefault();
+                    addBtn.click();
+                }
+            });
+        })();
+    </script>
+}
+
+@* Bootstrap Icons *@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">

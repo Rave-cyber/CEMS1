@@ -1,0 +1,310 @@
+@{
+    ViewData["Title"] = "Reimbursements";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: .95rem;
+        margin-top: 4px;
+    }
+
+    .info-banner {
+        background: rgba(26, 107, 181, 0.05);
+        border: 1px solid rgba(26, 107, 181, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #164e63;
+    }
+
+    .info-banner i {
+        margin-right: 8px;
+        color: var(--d-primary);
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        background: #10b981;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .action-btn:hover {
+        background: #059669;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .action-btn--pay {
+        background: #6366f1;
+    }
+    .action-btn--pay:hover {
+        background: #4f46e5;
+    }
+
+    .action-btn--check {
+        background: #f59e0b;
+    }
+    .action-btn--check:hover {
+        background: #d97706;
+    }
+
+    .action-btn--manual {
+        background: #6b7280;
+    }
+    .action-btn--manual:hover {
+        background: #4b5563;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .status-badge--unpaid { background: rgba(245,158,11,.1); color: #d97706; }
+    .status-badge--paid { background: rgba(16,185,129,.1); color: #10b981; }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-arrow-left-right"></i>
+                Reimbursements
+            </h1>
+            <p class="page-subtitle">Process approved expense reimbursements via PayMongo.</p>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-circle-fill me-2"></i> @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="info-banner">
+            <i class="bi bi-info-circle"></i>
+            <strong>How it works:</strong> Click <strong>"Pay via GCash/Card"</strong> to open a PayMongo checkout page.
+            Complete the payment there and you'll be redirected back automatically.
+            Use <strong>"Check Status"</strong> to verify pending payments, or <strong>"Manual"</strong> to mark as reimbursed without PayMongo.
+        </div>
+
+        @if(ViewBag.Reports != null && ((List<CEMS.Models.PendingExpenseReportDto>)ViewBag.Reports).Count > 0)
+        {
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Driver</th>
+                                <th>Total Amount</th>
+                                <th>Submitted Date</th>
+                                <th>Payment Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
+                            {
+                                var r = dto.Report;
+                                var payment = ViewBag.Payments as Dictionary<int, CEMS.Models.ReimbursementPayment>;
+                                var hasPayment = payment != null && payment.ContainsKey(r.Id);
+                                var paymentRecord = hasPayment ? payment![r.Id] : null;
+                                <tr>
+                                    <td><strong>@r.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td>
+                                        @if (hasPayment)
+                                        {
+                                            <span class="status-badge @(paymentRecord!.Status == "paid" ? "status-badge--paid" : "status-badge--unpaid")">
+                                                @paymentRecord.Status
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (hasPayment && paymentRecord!.Status == "paid")
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Paid</span>
+                                        }
+                                        else if (hasPayment)
+                                        {
+                                            <!-- Check Status -->
+                                            <form method="post" asp-action="CheckPaymentStatus" asp-controller="Finance" style="display:inline-block;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@paymentRecord!.Id" />
+                                                <button type="submit" class="action-btn action-btn--check">
+                                                    <i class="bi bi-arrow-clockwise"></i> Check Status
+                                                </button>
+                                            </form>
+                                            <!-- Retry payment -->
+                                            <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block; margin-left:6px;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn action-btn--pay">
+                                                    <i class="bi bi-arrow-repeat"></i> Retry Payment
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <!-- Pay via PayMongo -->
+                                            <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn">
+                                                    <i class="bi bi-credit-card"></i> Pay via GCash/Card
+                                                </button>
+                                            </form>
+                                            <!-- Manual fallback -->
+                                            <form method="post" asp-action="MarkReimbursedManual" asp-controller="Finance" style="display:inline-block; margin-left:6px;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn action-btn--manual" onclick="return confirm('Mark as reimbursed without PayMongo?');">
+                                                    <i class="bi bi-check2"></i> Manual
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <p>No reimbursements pending.</p>
+            </div>
+        }
+    </div>
+</div>

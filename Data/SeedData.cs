@@ -19,7 +19,7 @@ namespace CEMS.Data
 
             // 1. Create roles
             Console.WriteLine("📝 Creating roles...");
-            string[] roles = { "CEO", "Manager", "Driver", "Finance" };
+            string[] roles = { "SuperAdmin", "CEO", "Manager", "Driver", "Finance" };
 
             foreach (var role in roles)
             {
@@ -45,6 +45,7 @@ namespace CEMS.Data
             Console.WriteLine("\n👤 Creating users...");
             var users = new[]
             {
+        new { Email = "superadmin@expense.com", Role = "SuperAdmin" },
         new { Email = "ceo@expense.com", Role = "CEO" },
         new { Email = "manager@expense.com", Role = "Manager" },
         new { Email = "driver@expense.com", Role = "Driver" },

@@ -1,0 +1,237 @@
+@{
+    ViewData["Title"] = "Over-Budget Reports";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: #ef4444;
+        font-size: 1.8rem;
+    }
+
+    .alert-over-budget {
+        background: rgba(239, 68, 68, 0.05);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #991b1b;
+    }
+
+    .alert-over-budget i {
+        margin-right: 8px;
+        color: #ef4444;
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .exceed-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .action-btn {
+        font-size: .85rem;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .action-btn--primary {
+        background: var(--d-primary);
+        color: #fff;
+    }
+
+    .action-btn--primary:hover {
+        background: #154a8a;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .action-btn--danger {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .action-btn--danger:hover {
+        background: #dc2626;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #10b981;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-exclamation-triangle"></i>
+                Over-Budget Reports
+            </h1>
+        </div>
+
+        <!-- Alert -->
+        <div class="alert-over-budget">
+            <i class="bi bi-info-circle"></i>
+            <strong>Attention:</strong> These expense reports exceed the approved budget. Review and forward to CEO for final approval.
+        </div>
+
+        <!-- Reports Table -->
+        @if(ViewBag.OverBudget != null && ((List<CEMS.Models.OverBudgetReportDto>)ViewBag.OverBudget).Count > 0)
+        {
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Driver</th>
+                                <th>Total Amount</th>
+                                <th>Exceed Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var dto in ViewBag.OverBudget as List<CEMS.Models.OverBudgetReportDto>)
+                            {
+                                <tr>
+                                    <td><strong>@dto.Report.Id</strong></td>
+                                    <td>@(dto.UserName ?? "Unknown")</td>
+                                    <td><strong>₱@dto.Report.TotalAmount.ToString("N2")</strong></td>
+                                    <td>
+                                        <span class="exceed-badge">
+                                            <i class="bi bi-arrow-up-right"></i> ₱@dto.ExceedAmount.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a class="action-btn action-btn--primary" href="@Url.Action("ReportDetails","Manager", new { id = dto.Report.Id })">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        <form method="post" asp-action="ForwardToCEO" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@dto.Report.Id" />
+                                            <button class="action-btn action-btn--danger" type="submit">
+                                                <i class="bi bi-arrow-up"></i> Forward
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-check-circle"></i>
+                <p>Great! No over-budget reports at this time.</p>
+            </div>
+        }
+    </div>
+</div>

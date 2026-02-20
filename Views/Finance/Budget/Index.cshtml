@@ -1,0 +1,238 @@
+@{
+    ViewData["Title"] = "Budget Summary";
+    Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-radius: 8px;
+    }
+
+    .page-wrapper {
+        background: var(--d-bg);
+        min-height: calc(100vh - 80px);
+        padding: 28px 0 40px;
+    }
+
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .page-title i {
+        color: var(--d-primary);
+        font-size: 1.8rem;
+    }
+
+    .page-subtitle {
+        color: var(--d-muted);
+        font-size: .95rem;
+        margin-top: 4px;
+    }
+
+    .info-banner {
+        background: rgba(26, 107, 181, 0.05);
+        border: 1px solid rgba(26, 107, 181, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+        color: #164e63;
+    }
+
+    .info-banner i {
+        margin-right: 8px;
+        color: var(--d-primary);
+    }
+
+    .table-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .dash-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 12px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .9rem;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .dash-table tfoot tr {
+        background: #f8fafc;
+        border-top: 2px solid var(--d-border);
+    }
+
+    .budget-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+
+    .budget-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width .3s ease;
+    }
+
+    .budget-bar-fill--ok { background: var(--d-primary); }
+    .budget-bar-fill--warn { background: #f59e0b; }
+    .budget-bar-fill--danger { background: #ef4444; }
+
+    .budget-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .budget-badge--ok { background: rgba(26,107,181,.1); color: var(--d-primary); }
+    .budget-badge--warn { background: rgba(245,158,11,.1); color: #f59e0b; }
+    .budget-badge--danger { background: rgba(239,68,68,.1); color: #ef4444; }
+
+    .empty-state {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--d-border);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        color: var(--d-muted);
+        margin: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrapper { padding: 20px 0 32px; }
+        .page-title { font-size: 1.4rem; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-pie-chart"></i>
+                Budget Summary
+            </h1>
+            <p class="page-subtitle">Budget allocation and spending overview (read-only).</p>
+        </div>
+
+        <div class="info-banner">
+            <i class="bi bi-info-circle"></i>
+            <strong>Note:</strong> This is a read-only view of all budget categories. Modify budgets through the CEO interface.
+        </div>
+
+        @if(ViewBag.Budgets != null && ((List<CEMS.Models.Budget>)ViewBag.Budgets).Count > 0)
+        {
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Allocated</th>
+                                <th>Spent</th>
+                                <th>Remaining</th>
+                                <th>Usage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(var b in ViewBag.Budgets as List<CEMS.Models.Budget>)
+                            {
+                                var remaining = b.Allocated - b.Spent;
+                                var pct = b.Allocated == 0 ? 0 : Math.Min(100, (int)Math.Round((double)(b.Spent / b.Allocated * 100)));
+                                var barClass = pct >= 100 ? "budget-bar-fill--danger" : pct >= 75 ? "budget-bar-fill--warn" : "budget-bar-fill--ok";
+                                var badgeClass = pct >= 100 ? "budget-badge--danger" : pct >= 75 ? "budget-badge--warn" : "budget-badge--ok";
+                                <tr>
+                                    <td class="fw-600">@b.Category</td>
+                                    <td>₱<strong>@b.Allocated.ToString("N2")</strong></td>
+                                    <td>₱<strong>@b.Spent.ToString("N2")</strong></td>
+                                    <td class="@(remaining < 0 ? "fw-bold" : "")">
+                                        <span style="color: @(remaining < 0 ? "#ef4444" : "#0d8b7d");">₱@remaining.ToString("N2")</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="budget-bar" style="flex: 1;">
+                                                <div class="budget-bar-fill @barClass" style="width:@pct%"></div>
+                                            </div>
+                                            <span class="budget-badge @badgeClass">@pct%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td class="fw-bold">TOTAL</td>
+                                <td>₱<strong>@((List<CEMS.Models.Budget>)ViewBag.Budgets).Sum(b => b.Allocated).ToString("N2")</strong></td>
+                                <td>₱<strong>@((List<CEMS.Models.Budget>)ViewBag.Budgets).Sum(b => b.Spent).ToString("N2")</strong></td>
+                                <td style="color: @(((List<CEMS.Models.Budget>)ViewBag.Budgets).Sum(b => b.Allocated - b.Spent) < 0 ? "#ef4444" : "#0d8b7d"); font-weight: 700;">₱@((List<CEMS.Models.Budget>)ViewBag.Budgets).Sum(b => b.Allocated - b.Spent).ToString("N2")</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <p>No budgets found.</p>
+            </div>
+        }
+    </div>
+</div>

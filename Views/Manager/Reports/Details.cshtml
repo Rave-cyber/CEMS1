@@ -1,0 +1,663 @@
+@model CEMS.Models.ExpenseReport
+@{
+    ViewData["Title"] = "Report Details";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+    var budgets = ViewBag.Budgets as List<CEMS.Models.Budget> ?? new List<CEMS.Models.Budget>();
+    var approvals = ViewBag.Approvals as List<CEMS.Models.Approval> ?? new List<CEMS.Models.Approval>();
+    var reportCategories = Model.Items.Select(i => i.Category).Distinct().ToList();
+    var relevantBudgets = budgets.Where(b => reportCategories.Contains(b.Category)).ToList();
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+    }
+
+    .page-wrapper { background: var(--d-bg); min-height: calc(100vh - 80px); padding: 28px 0 48px; }
+
+    .detail-title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: var(--d-text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .detail-title i { color: var(--d-primary); font-size: 1.55rem; }
+
+    .back-btn {
+        font-size: .875rem;
+        padding: 7px 16px;
+        border-radius: 7px;
+        background: #f1f5f9;
+        color: var(--d-text);
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background .15s;
+    }
+    .back-btn:hover { background: #e2e8f0; color: var(--d-text); text-decoration: none; }
+
+    /* Summary header */
+    .summary-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 22px 24px;
+        margin-bottom: 20px;
+    }
+
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+    }
+
+    .meta-item label {
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--d-muted);
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .meta-value { font-size: .92rem; color: var(--d-text); font-weight: 500; }
+    .meta-amount { font-size: 1.35rem; font-weight: 700; color: var(--d-primary); }
+
+    /* Section cards */
+    .section-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .section-header {
+        background: #f8fafc;
+        padding: 13px 20px;
+        border-bottom: 1px solid var(--d-border);
+        font-size: .78rem;
+        font-weight: 700;
+        color: var(--d-muted);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-header i { font-size: .9rem; }
+
+    /* Table */
+    .dash-table { width: 100%; margin-bottom: 0; }
+
+    .dash-table thead th {
+        background: #f8fafc;
+        color: var(--d-muted);
+        font-weight: 600;
+        font-size: .76rem;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 11px 16px;
+        border: none;
+    }
+
+    .dash-table tbody td {
+        padding: 13px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        color: var(--d-text);
+        font-size: .88rem;
+    }
+
+    .dash-table tbody tr:last-child td { border-bottom: none; }
+    .dash-table tbody tr:hover { background: #fafbfc; }
+    .dash-table tbody tr.row-over { background: rgba(239, 68, 68, .04); }
+
+    /* Tags & badges */
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: .73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+
+    .status-badge--pending  { background: rgba(245,158,11,.1);  color: #d97706; }
+    .status-badge--approved { background: rgba(16,185,129,.1);  color: #10b981; }
+    .status-badge--rejected { background: rgba(239,68,68,.1);   color: #ef4444; }
+    .status-badge--ceo      { background: rgba(139,92,246,.1);  color: #7c3aed; }
+    .status-badge--within   { background: rgba(16,185,129,.1);  color: #10b981; }
+    .status-badge--over     { background: rgba(239,68,68,.1);   color: #ef4444; }
+
+    .cat-tag {
+        display: inline-block;
+        padding: 3px 9px;
+        background: rgba(26,107,181,.08);
+        color: var(--d-primary);
+        border-radius: 5px;
+        font-size: .78rem;
+        font-weight: 600;
+    }
+
+    .over-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        background: #ef4444;
+        border-radius: 50%;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+
+    /* Budget progress */
+    .budget-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .budget-item strong { font-size: .88rem; color: var(--d-text); display: block; margin-bottom: 7px; }
+    .budget-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .budget-meta small { font-size: .76rem; color: var(--d-muted); }
+    .budget-bar { height: 6px; background: #e9eef6; border-radius: 4px; overflow: hidden; }
+    .budget-bar-fill { height: 100%; border-radius: 4px; }
+    .budget-bar-fill--ok   { background: #10b981; }
+    .budget-bar-fill--warn { background: #f59e0b; }
+    .budget-bar-fill--over { background: #ef4444; }
+
+    /* Approval trail */
+    .trail-item {
+        display: flex;
+        gap: 14px;
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        align-items: flex-start;
+    }
+    .trail-item:last-child { border-bottom: none; }
+
+    .trail-dot {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .85rem;
+        flex-shrink: 0;
+    }
+    .trail-dot--approved { background: rgba(16,185,129,.12); color: #10b981; }
+    .trail-dot--rejected { background: rgba(239,68,68,.12);  color: #ef4444; }
+    .trail-dot--pending  { background: rgba(245,158,11,.12); color: #d97706; }
+
+    .trail-info { flex: 1; }
+    .trail-stage  { font-weight: 700; color: var(--d-text); font-size: .88rem; }
+    .trail-date   { font-size: .78rem; color: var(--d-muted); margin-top: 2px; }
+    .trail-remark { font-size: .8rem; color: var(--d-muted); margin-top: 4px; font-style: italic; }
+
+    /* Action section */
+    .action-section {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+    }
+
+    .status-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        padding: 13px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: .88rem;
+        line-height: 1.5;
+    }
+    .status-notice i { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+    .status-notice--warning  { background: rgba(245,158,11,.08);  color: #92400e; border: 1px solid rgba(245,158,11,.2); }
+    .status-notice--info     { background: rgba(26,107,181,.06);  color: #1e4e8c; border: 1px solid rgba(26,107,181,.15); }
+    .status-notice--success  { background: rgba(16,185,129,.08);  color: #065f46; border: 1px solid rgba(16,185,129,.2); }
+    .status-notice--danger   { background: rgba(239,68,68,.08);   color: #991b1b; border: 1px solid rgba(239,68,68,.2); }
+    .status-notice--secondary{ background: rgba(107,114,128,.07); color: #374151; border: 1px solid rgba(107,114,128,.18); }
+
+    .action-btn {
+        font-size: .88rem;
+        padding: 8px 20px;
+        border-radius: 7px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: filter .15s ease;
+        text-decoration: none;
+    }
+    .action-btn:hover { filter: brightness(.9); }
+    .action-btn--approve { background: #10b981; color: #fff; }
+    .action-btn--reject  { background: #ef4444; color: #fff; }
+
+    .receipt-link {
+        font-size: .82rem;
+        color: var(--d-primary);
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .receipt-link:hover { color: #154a8a; }
+
+    /* Confirmation overlay */
+    .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 36, .5);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .22s ease;
+    }
+    .confirm-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .confirm-box {
+        background: #fff;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, .18);
+        text-align: center;
+        transform: translateY(-10px);
+        transition: transform .22s ease;
+    }
+    .confirm-overlay.show .confirm-box { transform: translateY(0); }
+    .confirm-icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .confirm-box h5 { font-weight: 700; color: var(--d-text); margin-bottom: 8px; font-size: 1.05rem; }
+    .confirm-box p  { color: var(--d-muted); font-size: .88rem; margin-bottom: 22px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    .confirm-cancel-btn {
+        padding: 8px 20px;
+        border-radius: 7px;
+        background: #f1f5f9;
+        color: var(--d-text);
+        font-weight: 600;
+        font-size: .88rem;
+        border: none;
+        cursor: pointer;
+    }
+    .confirm-ok-btn {
+        padding: 8px 20px;
+        border-radius: 7px;
+        color: #fff;
+        font-weight: 600;
+        font-size: .88rem;
+        border: none;
+        cursor: pointer;
+    }
+
+    @@media (max-width: 768px) {
+        .meta-grid { grid-template-columns: repeat(2, 1fr); }
+        .budget-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="detail-title">
+                <i class="bi bi-file-earmark-text"></i>
+                Report #@Model.Id
+            </div>
+            <a class="back-btn" href="@Url.Action("Reports", "Manager")">
+                <i class="bi bi-arrow-left"></i> Back to Reports
+            </a>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="summary-card">
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <label>Driver</label>
+                    <span class="meta-value">@ViewBag.ReportUserName</span>
+                </div>
+                <div class="meta-item">
+                    <label>Submitted</label>
+                    <span class="meta-value">@Model.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</span>
+                </div>
+                <div class="meta-item">
+                    <label>Report Status</label>
+                    @switch (Model.Status)
+                    {
+                        case CEMS.Models.ReportStatus.Submitted:
+                            <span class="status-badge status-badge--pending">Pending</span>
+                            break;
+                        case CEMS.Models.ReportStatus.Approved:
+                            <span class="status-badge status-badge--approved">Approved</span>
+                            break;
+                        case CEMS.Models.ReportStatus.Rejected:
+                            <span class="status-badge status-badge--rejected">Rejected</span>
+                            break;
+                        case CEMS.Models.ReportStatus.PendingCEOApproval:
+                            <span class="status-badge status-badge--ceo">Forwarded to CEO</span>
+                            break;
+                    }
+                </div>
+                <div class="meta-item">
+                    <label>Budget Check</label>
+                    <span class="status-badge @(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "status-badge--over" : "status-badge--within")">
+                        @(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "Over Budget" : "Within Budget")
+                    </span>
+                </div>
+                <div class="meta-item">
+                    <label>Total Amount</label>
+                    <span class="meta-amount">₱@Model.TotalAmount.ToString("N2")</span>
+                </div>
+                @if (Model.TripStart.HasValue && Model.TripEnd.HasValue)
+                {
+                    <div class="meta-item">
+                        <label>Trip Period</label>
+                        <span class="meta-value">
+                            @Model.TripStart.Value.ToString("MMM d") – @Model.TripEnd.Value.ToString("MMM d, yyyy")
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <label>Trip Duration</label>
+                        <span class="meta-value">@Model.TripDays day@(Model.TripDays != 1 ? "s" : "")</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Manager Actions -->
+        @if (Model.Status == CEMS.Models.ReportStatus.Submitted)
+        {
+            <div class="action-section">
+                @if (Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                {
+                    <div class="status-notice status-notice--warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>This report is <strong>over budget</strong>. Approving will automatically forward it to the CEO for final approval.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="status-notice status-notice--info">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>This report is <strong>within budget</strong>. Approving will send it directly to Finance for reimbursement.</span>
+                    </div>
+                }
+                <div class="d-flex gap-2">
+                    <form method="post" asp-action="ApproveReport" asp-controller="Manager" class="approve-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button class="action-btn action-btn--approve" type="submit">
+                            <i class="bi bi-check-lg"></i> Approve
+                        </button>
+                    </form>
+                    <form method="post" asp-action="RejectReport" asp-controller="Manager" class="reject-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button class="action-btn action-btn--reject" type="submit">
+                            <i class="bi bi-x-lg"></i> Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="action-section" style="padding:16px 24px;">
+                @if (Model.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
+                {
+                    <div class="status-notice status-notice--secondary" style="margin-bottom:0;">
+                        <i class="bi bi-hourglass-split"></i>
+                        <span>This report has been <strong>forwarded to the CEO</strong> for final approval (over budget).</span>
+                    </div>
+                }
+                else if (Model.Status == CEMS.Models.ReportStatus.Approved)
+                {
+                    <div class="status-notice status-notice--success" style="margin-bottom:0;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>This report has been <strong>approved</strong> and sent to Finance for reimbursement.</span>
+                    </div>
+                }
+                else if (Model.Status == CEMS.Models.ReportStatus.Rejected)
+                {
+                    <div class="status-notice status-notice--danger" style="margin-bottom:0;">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>This report has been <strong>rejected</strong>.</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Expense Items -->
+        <div class="section-card">
+            <div class="section-header">
+                <i class="bi bi-receipt"></i> Expense Items
+            </div>
+            <div class="table-responsive">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Budget Limit</th>
+                            <th>Budget Spent</th>
+                            <th>Description</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var catBudget = budgets.FirstOrDefault(b => b.Category == item.Category);
+                            var isOverCategory = catBudget != null && catBudget.Spent > catBudget.Allocated;
+                            <tr class="@(isOverCategory ? "row-over" : "")">
+                                <td>@item.Date.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td>
+                                    <span class="cat-tag">@item.Category</span>
+                                    @if (isOverCategory) { <span class="over-dot" title="Over budget"></span> }
+                                </td>
+                                <td><strong>₱@item.Amount.ToString("N2")</strong></td>
+                                <td>
+                                    @if (catBudget != null)
+                                    {
+                                        <span>₱@catBudget.Allocated.ToString("N2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--d-muted)">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (catBudget != null)
+                                    {
+                                        <span style="color:@(catBudget.Spent > catBudget.Allocated ? "#ef4444" : "inherit");font-weight:@(catBudget.Spent > catBudget.Allocated ? "700" : "400")">
+                                            ₱@catBudget.Spent.ToString("N2")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--d-muted)">—</span>
+                                    }
+                                </td>
+                                <td style="color:var(--d-muted)">@item.Description</td>
+                                <td>
+                                    @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
+                                    {
+                                        <a class="receipt-link" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">
+                                            <i class="bi bi-image"></i> View
+                                        </a>
+                                    }
+                                    else if (!string.IsNullOrEmpty(item.ReceiptPath))
+                                    {
+                                        <a class="receipt-link" target="_blank" href="@item.ReceiptPath">
+                                            <i class="bi bi-image"></i> View
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--d-muted);font-size:.82rem">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Budget Status -->
+        @if (relevantBudgets.Any())
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="bi bi-pie-chart"></i> Budget Status
+                </div>
+                <div class="budget-grid">
+                    @foreach (var b in relevantBudgets)
+                    {
+                        var remaining = b.Allocated - b.Spent;
+                        var pct = b.Allocated == 0 ? 0 : (int)Math.Round((double)(b.Spent / b.Allocated * 100));
+                        var barClass = pct >= 100 ? "budget-bar-fill--over" : pct >= 75 ? "budget-bar-fill--warn" : "budget-bar-fill--ok";
+                        <div class="budget-item">
+                            <strong>@b.Category</strong>
+                            <div class="budget-meta">
+                                <small>₱@b.Spent.ToString("N2") of ₱@b.Allocated.ToString("N2")</small>
+                                <small style="color:@(remaining < 0 ? "#ef4444" : "#10b981");font-weight:600;">
+                                    @(remaining >= 0 ? $"₱{remaining:N2} left" : $"₱{Math.Abs(remaining):N2} over")
+                                </small>
+                            </div>
+                            <div class="budget-bar">
+                                <div class="budget-bar-fill @barClass" style="width:@(Math.Min(pct, 100))%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Approval Trail -->
+        @if (approvals.Any())
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="bi bi-clock-history"></i> Approval Trail
+                </div>
+                @foreach (var a in approvals)
+                {
+                    var dotClass = a.Status == CEMS.Models.ApprovalStatus.Approved ? "trail-dot--approved"
+                                 : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "trail-dot--rejected"
+                                 : "trail-dot--pending";
+                    var icon = a.Status == CEMS.Models.ApprovalStatus.Approved ? "bi-check-lg"
+                             : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "bi-x-lg"
+                             : "bi-hourglass-split";
+                    var badgeClass = a.Status == CEMS.Models.ApprovalStatus.Approved ? "status-badge--approved"
+                                   : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "status-badge--rejected"
+                                   : "status-badge--pending";
+                    <div class="trail-item">
+                        <div class="trail-dot @dotClass"><i class="bi @icon"></i></div>
+                        <div class="trail-info">
+                            <div class="trail-stage">@a.Stage</div>
+                            <div class="trail-date">@(a.DecisionDate.HasValue ? a.DecisionDate.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "Pending")</div>
+                            @if (!string.IsNullOrEmpty(a.Remarks))
+                            {
+                                <div class="trail-remark">@a.Remarks</div>
+                            }
+                        </div>
+                        <div><span class="status-badge @badgeClass">@a.Status</span></div>
+                    </div>
+                }
+            </div>
+        }
+
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirmIcon">✓</div>
+        <h5 id="confirmTitle">Confirm Action</h5>
+        <p id="confirmMsg">Are you sure?</p>
+        <div class="confirm-actions">
+            <button class="confirm-cancel-btn" id="confirmCancel">Cancel</button>
+            <button class="confirm-ok-btn" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const overlay = document.getElementById('confirmOverlay');
+    const confirmOk = document.getElementById('confirmOk');
+    const confirmCancel = document.getElementById('confirmCancel');
+    let pendingForm = null;
+
+    function showConfirm(title, msg, icon, okColor) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMsg').textContent = msg;
+        document.getElementById('confirmIcon').textContent = icon;
+        confirmOk.style.background = okColor;
+        overlay.classList.add('show');
+    }
+
+    function hideConfirm() {
+        overlay.classList.remove('show');
+        pendingForm = null;
+    }
+
+    document.querySelectorAll('.approve-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            pendingForm = form;
+            showConfirm('Approve Report', 'Are you sure you want to approve this expense report?', '✓', '#10b981');
+        });
+    });
+
+    document.querySelectorAll('.reject-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            pendingForm = form;
+            showConfirm('Reject Report', 'Are you sure you want to reject this expense report?', '✕', '#ef4444');
+        });
+    });
+
+    confirmOk.addEventListener('click', function () {
+        if (pendingForm) {
+            overlay.classList.remove('show');
+            pendingForm.submit();
+        }
+    });
+
+    confirmCancel.addEventListener('click', hideConfirm);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) hideConfirm();
+    });
+})();
+</script>

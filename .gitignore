@@ -5,3 +5,12 @@ obj/
 *.user
 *.suo
 *.db
+
+# Local configuration and secrets (do NOT commit)
+appsettings.Development.json
+secrets.json
+*.usersecrets
+
+# PayMongo or other service credential files (local)
+# any file that might contain API keys for third-party services
+paymongo.*

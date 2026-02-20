@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Audit Logs";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+
+    var logs = (List<CEMS.Models.AuditLog>)ViewBag.Logs;
+    var logUsers = (Dictionary<string, string?>)ViewBag.LogUsers;
+    var actions = (List<string>)ViewBag.Actions;
+    var filterAction = ViewBag.FilterAction as string;
+    var filterStart = ViewBag.FilterStart as DateTime?;
+    var filterEnd = ViewBag.FilterEnd as DateTime?;
+}
+
+<div class="container-fluid p-4">
+    <h2 class="mb-4"><i class="bi bi-journal-text"></i> Audit Logs</h2>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="AuditLogs" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Action</label>
+                    <select name="action" class="form-select">
+                        <option value="">All Actions</option>
+                        @foreach (var a in actions)
+                        {
+                            <option value="@a" selected="@(filterAction == a)">@a</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start" class="form-control" value="@(filterStart?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end" class="form-control" value="@(filterEnd?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            @if (logs.Count == 0)
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-journal-x" style="font-size:3rem;"></i>
+                    <p class="mt-2">No audit logs found.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Action</th>
+                                <th>Performed By</th>
+                                <th>Target User</th>
+                                <th>Details</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in logs)
+                            {
+                                var actionBadge = log.Action switch
+                                {
+                                    "CreateAccount" => "bg-success",
+                                    "DeleteAccount" => "bg-danger",
+                                    "AssignRole" => "bg-primary",
+                                    "RemoveRole" => "bg-warning text-dark",
+                                    "LockAccount" => "bg-danger",
+                                    "UnlockAccount" => "bg-info text-dark",
+                                    _ => "bg-secondary"
+                                };
+
+                                <tr>
+                                    <td>@log.Id</td>
+                                    <td><span class="badge @actionBadge">@log.Action</span></td>
+                                    <td>
+                                        @if (log.PerformedByUserId != null && logUsers.ContainsKey(log.PerformedByUserId))
+                                        {
+                                            @logUsers[log.PerformedByUserId]
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">System</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (log.TargetUserId != null && logUsers.ContainsKey(log.TargetUserId))
+                                        {
+                                            @logUsers[log.TargetUserId]
+                                        }
+                                        else if (log.TargetUserId != null)
+                                        {
+                                            <span class="text-muted">@log.TargetUserId</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>@log.Details</td>
+                                    <td>@log.Timestamp.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

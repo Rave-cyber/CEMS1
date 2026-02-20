@@ -6,33 +6,101 @@
     <title>@ViewData["Title"] - CEMS</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/CEMS.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{ 
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        Func<string, string, string> active = (c, a) =>
+        {
+            if (string.Equals(c, currentController, System.StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(a, currentAction, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return "active";
+            }
+            return string.Empty;
+        };
+    }
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">CEMS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+        <!-- Mobile Header with Hamburger Menu -->
+        <div class="mobile-header d-md-none">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+                ☰
+            </button>
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar -->
+        <aside class="driver-sidebar d-none d-md-flex flex-column">
+            <div class="brand p-3 d-flex align-items-center">
+                <a class="d-flex align-items-center text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                    <span class="fw-bold">CEMS</span>
+                </a>
+            </div>
+            <nav class="nav flex-column p-3">
+                <a class="nav-link driver-nav-link @(active("Home","Index"))" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-house-door"></i>
+                    <span>Home</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("Home","Privacy"))" asp-area="" asp-controller="Home" asp-action="Privacy">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Privacy</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+            </nav>
+            <div class="mt-auto profile-section">
+                <div class="dropdown">
+                    <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">View Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><partial name="_LoginPartial" /></li>
                     </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Offcanvas Sidebar -->
+        <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link driver-nav-link @(active("Home","Index"))" asp-area="" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-house-door"></i>
+                        <span>Home</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                    <a class="nav-link driver-nav-link @(active("Home","Privacy"))" asp-area="" asp-controller="Home" asp-action="Privacy">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Privacy</span>
+                        <i class="bi bi-check-circle nav-indicator"></i>
+                    </a>
+                </nav>
+                <div class="mt-auto p-3 border-top">
                     <partial name="_LoginPartial" />
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    <div class="container">
+    <div class="w-100">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
