@@ -74,8 +74,8 @@ namespace CEMS.Controllers
             var approvedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Approved);
             var rejectedCount = await reportsQuery.CountAsync(r => r.Status == ReportStatus.Rejected);
 
+            // Efficiently compute approved/reimbursed totals without loading related blobs (e.g. ReceiptData)
             var approvedItemsQuery = _db.ExpenseItems
-                .Include(i => i.Report)
                 .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Status == ReportStatus.Approved);
 
             if (start.HasValue)
@@ -84,13 +84,9 @@ namespace CEMS.Controllers
                 approvedItemsQuery = approvedItemsQuery.Where(i => i.Date <= end.Value);
 
             var approvedTotal = await approvedItemsQuery.SumAsync(i => (decimal?)i.Amount) ?? 0m;
+            var approvedThisMonthTotal = await approvedItemsQuery.Where(i => i.Date >= monthStart).SumAsync(i => (decimal?)i.Amount) ?? 0m;
 
-            var approvedThisMonthQuery = approvedItemsQuery.Where(i => i.Date >= monthStart);
-            var approvedThisMonthTotal = await approvedThisMonthQuery.SumAsync(i => (decimal?)i.Amount) ?? 0m;
-
-            // Sum only items from reports Finance has actually marked as reimbursed (Reimbursed == true)
             var reimbursedItemsQuery = _db.ExpenseItems
-                .Include(i => i.Report)
                 .Where(i => i.Report != null && i.Report.UserId == userId && i.Report.Reimbursed == true);
 
             if (start.HasValue)
@@ -100,18 +96,25 @@ namespace CEMS.Controllers
 
             var reimbursedTotal = await reimbursedItemsQuery.SumAsync(i => (decimal?)i.Amount) ?? 0m;
 
-            var recentItemsQuery = _db.ExpenseItems
-                .Include(i => i.Report)
-                .Where(i => i.Report != null && i.Report.UserId == userId);
-
-            if (start.HasValue)
-                recentItemsQuery = recentItemsQuery.Where(i => i.Date >= start.Value);
-            if (end.HasValue)
-                recentItemsQuery = recentItemsQuery.Where(i => i.Date <= end.Value);
-
-            var recentItems = await recentItemsQuery
+            // Project only needed fields for recent items to avoid loading large ReceiptData blobs
+            var recentItems = await _db.ExpenseItems
+                .Where(i => i.Report != null && i.Report.UserId == userId)
+                .Where(i => !start.HasValue || i.Date >= start.Value)
+                .Where(i => !end.HasValue || i.Date <= end.Value)
                 .OrderByDescending(i => i.Date)
                 .Take(10)
+                .Select(i => new
+                {
+                    i.Id,
+                    Date = i.Date,
+                    i.Category,
+                    i.Amount,
+                    i.Description,
+                    ReportStatus = i.Report!.Status,
+                    BudgetCheck = i.Report!.BudgetCheck,
+                    ReceiptExists = i.ReceiptData != null,
+                    i.ReceiptPath
+                })
                 .ToListAsync();
 
             var recent = recentItems.Select(i => new
@@ -121,9 +124,9 @@ namespace CEMS.Controllers
                 category = i.Category,
                 amount = i.Amount,
                 description = i.Description,
-                reportStatus = i.Report != null ? i.Report.Status.ToString() : ReportStatus.Submitted.ToString(),
-                budgetCheck = i.Report != null ? i.Report.BudgetCheck.ToString() : "WithinBudget",
-                receiptUrl = (i.ReceiptData != null && i.ReceiptData.Length > 0) ? Url.Action("Receipt", "Driver", new { id = i.Id }) : (string.IsNullOrEmpty(i.ReceiptPath) ? null : i.ReceiptPath)
+                reportStatus = i.ReportStatus.ToString(),
+                budgetCheck = i.BudgetCheck.ToString(),
+                receiptUrl = i.ReceiptExists ? Url.Action("Receipt", "Driver", new { id = i.Id }) : (string.IsNullOrEmpty(i.ReceiptPath) ? null : i.ReceiptPath)
             }).ToList();
 
             // Budget data so driver sees limits
@@ -143,16 +146,22 @@ namespace CEMS.Controllers
         }
 
         [HttpGet("MyReports")]
-        public async Task<IActionResult> MyReports(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> MyReports(int page = 1, int pageSize = 5, string? status = null)
         {
             var userId = _userManager.GetUserId(User);
 
-            // total count for paging
-            var totalCount = await _db.ExpenseReports.Where(r => r.UserId == userId).CountAsync();
+            // Build base query and apply optional status filter
+            var baseQuery = _db.ExpenseReports.Where(r => r.UserId == userId);
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ReportStatus>(status, out var parsedStatus))
+            {
+                baseQuery = baseQuery.Where(r => r.Status == parsedStatus);
+            }
 
-            var reports = await _db.ExpenseReports
+            // total count for paging
+            var totalCount = await baseQuery.CountAsync();
+
+            var reports = await baseQuery
                 .Include(r => r.Items)
-                .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.SubmissionDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -163,6 +172,7 @@ namespace CEMS.Controllers
             ViewBag.PageSize = pageSize;
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            ViewBag.FilterStatus = status;
 
             // Load budgets for context
             var budgets = await _db.Budgets.ToListAsync();
