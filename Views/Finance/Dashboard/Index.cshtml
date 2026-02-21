@@ -20,13 +20,13 @@
 
     .dash-wrapper {
         background: var(--d-bg);
-        min-height: calc(100vh - 80px);
-        padding: 28px 0 40px;
+        min-height: calc(100vh - 60px);
+        padding: 12px 0 16px;
     }
 
     /* ── Header ── */
     .dash-header {
-        margin-bottom: 36px;
+        margin-bottom: 10px;
     }
     .dash-greeting {
         font-size: 1.65rem;
@@ -47,12 +47,12 @@
     .stat-card {
         background: var(--d-card);
         border: 1px solid var(--d-border);
-        border-radius: 10px;
-        padding: 18px 18px;
+        border-radius: 8px;
+        padding: 10px 12px;
         display: flex;
         align-items: center;
-        gap: 14px;
-        transition: transform .12s ease;
+        gap: 10px;
+        transition: transform .08s ease;
         text-decoration: none !important;
         color: inherit !important;
     }
@@ -95,12 +95,12 @@
     .dash-card {
         background: var(--d-card);
         border: 1px solid var(--d-border);
-        border-radius: 10px;
+        border-radius: 8px;
         overflow: hidden;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .dash-card-head {
-        padding: 14px 18px;
+        padding: 8px 12px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -116,11 +116,11 @@
         margin: 0;
     }
     .dash-card-title i { color: var(--d-primary); font-size: 1.1rem; }
-    .dash-card-body { padding: 16px 18px; }
+    .dash-card-body { padding: 8px 12px; }
 
     /* ── Chart ── */
     .chart-wrap {
-        height: 280px;
+        height: 200px;
     }
     .chart-wrap canvas {
         width: 100% !important;
@@ -131,25 +131,25 @@
     .filter-card {
         background: var(--d-card);
         border: 1px solid var(--d-border);
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-end;
-        gap: 12px 16px;
+        align-items: center;
+        gap: 8px 10px;
     }
     .filter-card label {
-        font-size: .82rem;
+        font-size: .78rem;
         font-weight: 600;
         color: var(--d-muted);
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .filter-card input {
         border: 1px solid var(--d-border);
         border-radius: 6px;
-        padding: 6px 10px;
-        font-size: .88rem;
+        padding: 6px 8px;
+        font-size: .85rem;
         color: var(--d-text);
     }
     .filter-actions .btn {
@@ -193,12 +193,15 @@
                 <label for="filterEnd">To</label>
                 <input type="date" id="filterEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
             </div>
-            <div class="filter-actions">
-                <button id="applyFilter" class="btn btn-outline-secondary">Apply</button>
-            </div>
-            <div style="margin-left:auto;">
-                <a href="@Url.Action("Reimbursements", "Finance")" class="btn text-white" style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
-                    <i class="bi bi-plus-lg me-1"></i>Process Reimbursement
+            <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+                <div class="quick-filter">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                </div>
+                <a href="@Url.Action("Reimbursements", "Finance")" class="btn text-white btn-sm" style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;padding:8px 12px;">
+                    <i class="bi bi-plus-lg me-1"></i> Process Reimbursement
                 </a>
             </div>
         </div>
@@ -394,25 +397,37 @@ async function loadFinanceMetrics(){
     }
 }
 
-document.addEventListener('DOMContentLoaded', loadFinanceMetrics);
+document.addEventListener('DOMContentLoaded', function(){
+    // initial load
+    loadFinanceMetrics();
 
-document.getElementById('applyFilter')?.addEventListener('click', function(){
-    const start = document.getElementById('filterStart').value;
-    const end = document.getElementById('filterEnd').value;
+    // auto-apply when date inputs change
+    ['filterStart','filterEnd'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener('change', function(){
+            if(window._debFilter) clearTimeout(window._debFilter);
+            window._debFilter = setTimeout(loadFinanceMetrics, 250);
+        });
+    });
 
-    (async function(){
-        try{
-            const url = '@Url.Action("Metrics","Finance")' + '?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end);
-            const res = await fetch(url);
-            const data = await res.json();
-            document.getElementById('processedVal').textContent = ((data.processedToday ?? 0).toFixed(2));
-            document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
-            document.getElementById('monthlyVal').textContent = ((data.monthlyTotal ?? 0).toFixed(2));
-            document.getElementById('monthlyCount').textContent = (data.monthlyCount ?? 0);
+    // quick-range buttons
+    document.querySelectorAll('.quick-filter [data-range]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var range = btn.getAttribute('data-range');
+            var now = new Date();
+            var start;
+            if(range === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            else if(range === 'week') start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+            else if(range === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
+            else if(range === 'year') start = new Date(now.getFullYear(), 0, 1);
 
-            const toProcess = Number('@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString(System.Globalization.CultureInfo.InvariantCulture))');
-            renderFinanceTrendChart(toProcess, data.processedToday ?? 0, data.monthlyTotal ?? 0);
-        }catch(e){ console.error(e); }
-    })();
+            var s = document.getElementById('filterStart');
+            var e = document.getElementById('filterEnd');
+            if(s && start) s.value = start.toISOString().slice(0,10);
+            if(e) e.value = now.toISOString().slice(0,10);
+            setTimeout(loadFinanceMetrics, 150);
+        });
+    });
 });
 </script>

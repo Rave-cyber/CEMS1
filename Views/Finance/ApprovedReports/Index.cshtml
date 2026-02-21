@@ -85,36 +85,40 @@
         background: #f8fafc;
     }
 
-    .status-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: .75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
+    /* neutral status text (no colored badges) */
+    .status-text { font-weight: 600; color: var(--d-text); font-size: .88rem; }
 
-    .status-badge--within { background: rgba(16,185,129,.1); color: #10b981; }
-    .status-badge--over { background: rgba(239,68,68,.1); color: #ef4444; }
-
-    .action-btn {
-        font-size: .85rem;
-        padding: 6px 12px;
-        border-radius: 6px;
-        text-decoration: none;
-        background: var(--d-primary);
-        color: #fff;
-        transition: all 0.2s;
+    .view-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: 6px;
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
     }
 
-    .action-btn:hover {
-        background: #154a8a;
+    .view-btn:hover { background: rgba(26,107,181,.12); color:#155a9a; }
+
+    .approve-btn, .reject-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
         color: #fff;
-        text-decoration: none;
+        border: none;
+        cursor: pointer;
     }
+
+    .approve-btn { background: #10b981; }
+    .approve-btn:hover { filter: brightness(.95); }
+
+    .reject-btn { background: #ef4444; }
+    .reject-btn:hover { filter: brightness(.95); }
 
     .empty-state {
         background: var(--d-card);
@@ -134,6 +138,46 @@
         color: var(--d-muted);
         margin: 0;
     }
+    /* dashboard-like card styles for consistency */
+    .dash-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .dash-card-head {
+        padding: 8px 12px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        border-bottom:1px solid var(--d-border);
+    }
+    .dash-card-title { font-size: .95rem; font-weight:600; color:var(--d-text); display:flex; align-items:center; gap:8px; }
+    .dash-card-body { padding:8px 12px; }
+    .quick-filter button { margin-left:6px; }
+
+    /* Align filter controls in card header */
+    .dash-card-head .form-control-sm {
+        width: 140px;
+        padding: 6px 8px;
+        height: 34px;
+        box-sizing: border-box;
+    }
+    .dash-card-head .quick-filter {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .dash-card-head .quick-filter .btn {
+        padding: 4px 8px;
+        font-size: .78rem;
+    }
+    @@media (max-width: 768px) {
+        .dash-card-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .dash-card-head .form-control-sm { width: 100%; }
+        .dash-card-head .quick-filter { width: 100%; justify-content: flex-start; }
+    }
 </style>
 
 <div class="page-wrapper">
@@ -146,44 +190,91 @@
             <p class="page-subtitle">Reports ready for reimbursement processing.</p>
         </div>
 
+<script>
+    // Auto-apply filters for Approved Reports (debounced)
+    document.addEventListener('DOMContentLoaded', function(){
+        var start = document.getElementById('approvedStart');
+        var end = document.getElementById('approvedEnd');
+        function applyFilters(){
+            var s = start?.value || '';
+            var e = end?.value || '';
+            var qs = [];
+            if(s) qs.push('start=' + encodeURIComponent(s));
+            if(e) qs.push('end=' + encodeURIComponent(e));
+            var url = '@Url.Action("ApprovedReports","Finance")' + (qs.length ? ('?' + qs.join('&')) : '');
+            window.location.href = url;
+        }
+        [start,end].forEach(function(el){ if(el) el.addEventListener('change', function(){ if(window._debA) clearTimeout(window._debA); window._debA = setTimeout(applyFilters, 200); }); });
+
+        document.querySelectorAll('.dash-card .quick-filter [data-range]').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var range = btn.getAttribute('data-range');
+                var now = new Date();
+                var sdate;
+                if(range === 'today') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                else if(range === 'week') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+                else if(range === 'month') sdate = new Date(now.getFullYear(), now.getMonth(), 1);
+                else if(range === 'year') sdate = new Date(now.getFullYear(), 0, 1);
+                if(start && sdate) start.value = sdate.toISOString().slice(0,10);
+                if(end) end.value = now.toISOString().slice(0,10);
+                setTimeout(applyFilters, 120);
+            });
+        });
+    });
+</script>
+
         @if(ViewBag.ApprovedReports != null && ((List<CEMS.Models.PendingExpenseReportDto>)ViewBag.ApprovedReports).Count > 0)
         {
-            <div class="table-card">
-                <div class="table-responsive">
-                    <table class="dash-table">
-                        <thead>
-                            <tr>
-                                <th>Report ID</th>
-                                <th>Driver</th>
-                                <th>Total Amount</th>
-                                <th>Submitted Date</th>
-                                <th>Budget Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
-                            {
-                                var r = dto.Report;
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <h4 class="dash-card-title"><i class="bi bi-check2-circle"></i> Approved Reports</h4>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="date" id="approvedStart" class="form-control form-control-sm" value="@((string)ViewBag.FilterStart ?? "")" />
+                        <input type="date" id="approvedEnd" class="form-control form-control-sm" value="@((string)ViewBag.FilterEnd ?? "")" />
+                        <div class="quick-filter">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="dash-card-body">
+                    <div class="table-responsive">
+                        <table class="dash-table">
+                            <thead>
                                 <tr>
-                                    <td><strong>@r.Id</strong></td>
-                                    <td>@(dto.UserName ?? "Unknown")</td>
-                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
-                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                    <td>
-                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
-                                            @r.BudgetCheck
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a class="action-btn" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                    </td>
+                                    <th>Report ID</th>
+                                    <th>Driver</th>
+                                    <th>Total Amount</th>
+                                    <th>Submitted Date</th>
+                                    <th>Budget Status</th>
+                                    <th>Actions</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
+                                {
+                                    var r = dto.Report;
+                                    <tr>
+                                        <td><strong>@r.Id</strong></td>
+                                        <td>@(dto.UserName ?? "Unknown")</td>
+                                        <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                        <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                        <td><span class="status-text">@(r.BudgetCheck)</span></td>
+                                        <td>
+                                            <a class="view-btn" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">View</a>
+                                            <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;margin-left:6px;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="approve-btn">Reimburse</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         }

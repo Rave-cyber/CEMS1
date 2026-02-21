@@ -45,10 +45,8 @@
 
     .payment-amount { font-weight: 700; color: #10b981; }
 
-    .badge-paid { background: #d1fae5; color: #065f46; }
-    .badge-unpaid { background: #fef3c7; color: #92400e; }
-    .badge-expired { background: #fee2e2; color: #991b1b; }
-    .badge-status { padding: 4px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; display: inline-block; }
+    /* Neutral status text (no colored badges) */
+    .status-text { font-weight: 600; color: var(--d-text); font-size: .88rem; }
 
     .empty-state { background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 40px; text-align: center; }
     .empty-state i { font-size: 3rem; color: var(--d-border); margin-bottom: 16px; }
@@ -113,9 +111,13 @@
                         <label class="form-label small fw-semibold text-muted mb-1">To</label>
                         <input type="date" name="end" class="form-control form-control-sm" value="@filterEnd" />
                     </div>
-                    <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
-                        <a asp-action="Payments" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i> Clear</a>
+                    <div class="col-md-3 d-flex gap-2 align-items-center">
+                        <div class="quick-filter ms-auto">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -173,24 +175,22 @@
                                     <td>GCash</td>
                                     <td class="link-id-cell" title="@p.PayMongoLinkId">@p.PayMongoLinkId</td>
                                     <td><code>RPT-@p.ReportId-@p.Id</code></td>
-                                    <td><span class="badge-status @badgeClass">@p.Status</span></td>
+                                    <td><span class="status-text">@p.Status</span></td>
                                     <td>@(p.PaidAt.HasValue ? p.PaidAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "—")</td>
                                     <td>@processedByName</td>
-                                    <td>
-                                        @if (p.Status != "paid")
-                                        {
-                                            <form method="post" asp-action="RefreshPaymentStatus" asp-route-id="@p.Id" style="display:inline;">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-outline-info btn-sync" title="Sync status from PayMongo">
-                                                    <i class="bi bi-arrow-repeat"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">✓</span>
-                                        }
-                                    </td>
+                                <td>
+                                    @if (p.Status != "paid")
+                                    {
+                                        <form method="post" asp-action="RefreshPaymentStatus" asp-route-id="@p.Id" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-info btn-sync" title="Sync status from PayMongo">Sync</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Paid</span>
+                                    }
+                                </td>
                                 </tr>
                             }
                         </tbody>
@@ -288,4 +288,33 @@
 
         doc.save('payment-history.pdf');
     }
+</script>
+
+<script>
+    // Auto-apply filter and quick-range buttons
+    document.addEventListener('DOMContentLoaded', function(){
+        var form = document.querySelector('.filter-card form');
+        if(!form) return;
+        ['search','status','start','end'].forEach(function(name){
+            var el = form.querySelector('[name="'+name+'"]');
+            if(el) el.addEventListener('change', function(){ if(window._deb) clearTimeout(window._deb); window._deb = setTimeout(function(){ form.submit(); }, 200); });
+        });
+
+        document.querySelectorAll('.quick-filter [data-range]').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var range = btn.getAttribute('data-range');
+                var now = new Date();
+                var start;
+                if(range === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                else if(range === 'week') start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+                else if(range === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
+                else if(range === 'year') start = new Date(now.getFullYear(), 0, 1);
+                var s = form.querySelector('[name="start"]');
+                var e = form.querySelector('[name="end"]');
+                if(s && start) s.value = start.toISOString().slice(0,10);
+                if(e) e.value = now.toISOString().slice(0,10);
+                setTimeout(function(){ form.submit(); }, 150);
+            });
+        });
+    });
 </script>

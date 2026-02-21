@@ -60,6 +60,19 @@
         color: var(--d-primary);
     }
 
+    /* compact filter card like dashboard */
+    .filter-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .filter-card input { padding:6px 8px; border:1px solid var(--d-border); border-radius:6px; }
+
     .table-card {
         background: var(--d-card);
         border: 1px solid var(--d-border);
@@ -99,58 +112,37 @@
         background: #f8fafc;
     }
 
-    .action-btn {
-        font-size: .85rem;
-        padding: 6px 12px;
-        border-radius: 6px;
-        border: none;
-        background: #10b981;
-        color: #fff;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
+    /* primary blue action (view/pay) */
+    .view-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-    }
-
-    .action-btn:hover {
-        background: #059669;
-        color: #fff;
-        text-decoration: none;
-    }
-
-    .action-btn--pay {
-        background: #6366f1;
-    }
-    .action-btn--pay:hover {
-        background: #4f46e5;
-    }
-
-    .action-btn--check {
-        background: #f59e0b;
-    }
-    .action-btn--check:hover {
-        background: #d97706;
-    }
-
-    .action-btn--manual {
-        background: #6b7280;
-    }
-    .action-btn--manual:hover {
-        background: #4b5563;
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 4px 10px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
         border-radius: 6px;
-        font-size: .75rem;
-        font-weight: 600;
-        text-transform: uppercase;
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
     }
-    .status-badge--unpaid { background: rgba(245,158,11,.1); color: #d97706; }
-    .status-badge--paid { background: rgba(16,185,129,.1); color: #10b981; }
+    .view-btn:hover { background: rgba(26,107,181,.12); color:#155a9a; }
+
+    /* approve / success action (green) */
+    .approve-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+        border: none;
+        background: #10b981;
+        cursor: pointer;
+    }
+    .approve-btn:hover { filter: brightness(.95); }
+
+    /* neutral status text (no colored badges) */
+    .status-text { font-weight: 600; color: var(--d-text); font-size: .88rem; }
 
     .empty-state {
         background: var(--d-card);
@@ -185,6 +177,26 @@
                 Reimbursements
             </h1>
             <p class="page-subtitle">Process approved expense reimbursements via PayMongo.</p>
+        </div>
+
+        <div class="filter-card">
+            <div style="flex:1;min-width:160px;">
+                <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">From</label>
+                <input type="date" id="reimStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
+            </div>
+            <div style="flex:1;min-width:160px;">
+                <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">To</label>
+                <input type="date" id="reimEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+                <div class="quick-filter">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                </div>
+                <a href="@Url.Action("Reimbursements","Finance")" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
         </div>
 
         @if (TempData["Success"] != null)
@@ -239,9 +251,7 @@
                                     <td>
                                         @if (hasPayment)
                                         {
-                                            <span class="status-badge @(paymentRecord!.Status == "paid" ? "status-badge--paid" : "status-badge--unpaid")">
-                                                @paymentRecord.Status
-                                            </span>
+                                            <span class="status-text">@paymentRecord.Status</span>
                                         }
                                         else
                                         {
@@ -259,17 +269,13 @@
                                             <form method="post" asp-action="CheckPaymentStatus" asp-controller="Finance" style="display:inline-block;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@paymentRecord!.Id" />
-                                                <button type="submit" class="action-btn action-btn--check">
-                                                    <i class="bi bi-arrow-clockwise"></i> Check Status
-                                                </button>
+                                                <button type="submit" class="view-btn">Check Status</button>
                                             </form>
                                             <!-- Retry payment -->
                                             <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block; margin-left:6px;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="action-btn action-btn--pay">
-                                                    <i class="bi bi-arrow-repeat"></i> Retry Payment
-                                                </button>
+                                                <button type="submit" class="approve-btn">Retry Payment</button>
                                             </form>
                                         }
                                         else
@@ -278,17 +284,13 @@
                                             <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="action-btn">
-                                                    <i class="bi bi-credit-card"></i> Pay via GCash/Card
-                                                </button>
+                                                <button type="submit" class="view-btn">Pay via GCash/Card</button>
                                             </form>
                                             <!-- Manual fallback -->
                                             <form method="post" asp-action="MarkReimbursedManual" asp-controller="Finance" style="display:inline-block; margin-left:6px;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="action-btn action-btn--manual" onclick="return confirm('Mark as reimbursed without PayMongo?');">
-                                                    <i class="bi bi-check2"></i> Manual
-                                                </button>
+                                                <button type="submit" class="approve-btn" onclick="return confirm('Mark as reimbursed without PayMongo?');">Manual</button>
                                             </form>
                                         }
                                     </td>
@@ -308,3 +310,31 @@
         }
     </div>
 </div>
+
+<script>
+    // auto-apply filters on this page
+    document.addEventListener('DOMContentLoaded', function(){
+        var start = document.getElementById('reimStart');
+        var end = document.getElementById('reimEnd');
+        function apply(){
+            var s = start?.value || ''; var e = end?.value || ''; var qs = [];
+            if(s) qs.push('start=' + encodeURIComponent(s)); if(e) qs.push('end=' + encodeURIComponent(e));
+            var url = '@Url.Action("Reimbursements","Finance")' + (qs.length ? ('?' + qs.join('&')) : '');
+            window.location.href = url;
+        }
+        [start,end].forEach(function(el){ if(el) el.addEventListener('change', function(){ if(window._debR) clearTimeout(window._debR); window._debR = setTimeout(apply, 200); }); });
+
+        document.querySelectorAll('.filter-card .quick-filter [data-range]').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var range = btn.getAttribute('data-range'); var now = new Date(); var sdate;
+                if(range==='today') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                else if(range==='week') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+                else if(range==='month') sdate = new Date(now.getFullYear(), now.getMonth(), 1);
+                else if(range==='year') sdate = new Date(now.getFullYear(), 0, 1);
+                if(start && sdate) start.value = sdate.toISOString().slice(0,10);
+                if(end) end.value = now.toISOString().slice(0,10);
+                setTimeout(apply, 120);
+            });
+        });
+    });
+</script>

@@ -102,7 +102,7 @@ async function loadDriverMetrics(){
                 <td class="text-muted">${item.description || '—'}</td>
                 <td><span class="status-dot ${statusClass}"></span> ${statusLabel}</td>
                 <td>${isOver ? '<span class="budget-flag budget-flag--over">Over</span>' : '<span class="budget-flag budget-flag--ok">OK</span>'}</td>
-                <td>${item.receiptUrl ? `<a class="dash-link" target="_blank" href="${item.receiptUrl}"><i class="bi bi-file-earmark-text"></i> View</a>` : '<span class="text-muted">—</span>'}</td>
+                <td>${item.receiptUrl ? `<a class="dash-link" target="_blank" href="${item.receiptUrl}">View</a>` : '<span class="text-muted">—</span>'}</td>
             `;
             tbody.appendChild(tr);
         }
@@ -275,14 +275,14 @@ function setDefaultMonthFilter(){
     .dash-card-title i { color: var(--d-primary); font-size:1.1rem; }
     .dash-card-body { padding: 16px 18px; }
     .dash-link {
-        color: var(--d-accent);
+        color: var(--d-primary);
         text-decoration: none;
         font-weight: 500;
         font-size: .88rem;
         transition: color .2s;
     }
     .dash-link:hover {
-        color: var(--d-primary);
+        color: #154a8a;
     }
 
     /* Action Button (consistent with History/MyReports) */
@@ -291,9 +291,9 @@ function setDefaultMonthFilter(){
         align-items: center;
         gap: 6px;
         padding: 6px 12px;
-        background: rgba(26, 107, 181, .08);
-        color: var(--d-primary);
-        border: 1px solid rgba(26, 107, 181, .2);
+        background: rgba(26, 107, 181, .12);
+        color: #fff;
+        border: 1px solid rgba(26, 107, 181, .12);
         border-radius: var(--d-radius-sm);
         font-size: .85rem;
         font-weight: 500;
@@ -301,7 +301,19 @@ function setDefaultMonthFilter(){
         transition: all .2s;
     }
 
-    .view-btn:hover { background: rgba(26,107,181,.12); color: #155a9a; }
+    .view-btn:hover { background: #1a6bb5; color: #fff; }
+
+    /* approve button style (green) */
+    .approve-btn {
+        background: #10b981;
+        color: #fff;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .approve-btn:hover { filter: brightness(.95); }
 
     /* ── Budget Progress ── */
     .budget-item {
@@ -651,10 +663,10 @@ function setDefaultMonthFilter(){
                                         _ => r.Status.ToString()
                                     };
                                     <tr>
-                                        <td class="fw-semibold">#@r.Id</td>
+                <td class="fw-semibold">#@r.Id</td>
                                         <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
                                         <td class="fw-semibold">₱@r.TotalAmount.ToString("N2")</td>
-                                        <td><span class="status-dot @statusClass"></span> @statusLabel</td>
+                <td>@statusLabel</td>
                                         <td>
                                             @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
                                             {
