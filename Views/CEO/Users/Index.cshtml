@@ -367,11 +367,11 @@
                         <form asp-controller="CEO" asp-action="CreateAccount" method="post">
                             <input type="hidden" name="role" value="Manager" />
                             <div class="row g-3">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                     <input type="text" name="fullName" class="form-control" required placeholder="e.g. Juan Dela Cruz" />
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" name="email" class="form-control" required placeholder="manager@expense.com" />
                                 </div>
@@ -382,6 +382,46 @@
                                 <div class="col-md-2">
                                     <label class="form-label">Department</label>
                                     <input type="text" name="department" class="form-control" placeholder="e.g. Operations" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Contact Number</label>
+                                    <input type="text" name="contactNumber" class="form-control" placeholder="e.g. 09171234567" maxlength="20" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Street / House No.</label>
+                                    <input type="text" name="street" class="form-control" placeholder="e.g. 123 Rizal St." />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Barangay</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="barangay" class="form-control address-autocomplete" data-address-type="barangay" placeholder="Search barangay..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">City / Municipality</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="city" class="form-control address-autocomplete" data-address-type="city" placeholder="Search city..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Province</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="province" class="form-control address-autocomplete" data-address-type="province" placeholder="Search province..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">ZIP Code</label>
+                                    <input type="text" name="zipCode" class="form-control" placeholder="e.g. 1100" maxlength="10" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Country</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="country" class="form-control address-autocomplete" data-address-type="country" placeholder="Search country..." autocomplete="off" value="Philippines" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> Create</button>
@@ -475,11 +515,11 @@
                         <form asp-controller="CEO" asp-action="CreateAccount" method="post">
                             <input type="hidden" name="role" value="Finance" />
                             <div class="row g-3">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                     <input type="text" name="fullName" class="form-control" required placeholder="e.g. Maria Santos" />
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" name="email" class="form-control" required placeholder="finance@expense.com" />
                                 </div>
@@ -490,6 +530,46 @@
                                 <div class="col-md-2">
                                     <label class="form-label">Department</label>
                                     <input type="text" name="department" class="form-control" placeholder="e.g. Accounting" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Contact Number</label>
+                                    <input type="text" name="contactNumber" class="form-control" placeholder="e.g. 09171234567" maxlength="20" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Street / House No.</label>
+                                    <input type="text" name="street" class="form-control" placeholder="e.g. 123 Rizal St." />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Barangay</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="barangay" class="form-control address-autocomplete" data-address-type="barangay" placeholder="Search barangay..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">City / Municipality</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="city" class="form-control address-autocomplete" data-address-type="city" placeholder="Search city..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Province</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="province" class="form-control address-autocomplete" data-address-type="province" placeholder="Search province..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">ZIP Code</label>
+                                    <input type="text" name="zipCode" class="form-control" placeholder="e.g. 1100" maxlength="10" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Country</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="country" class="form-control address-autocomplete" data-address-type="country" placeholder="Search country..." autocomplete="off" value="Philippines" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> Create</button>
@@ -583,11 +663,11 @@
                         <form asp-controller="CEO" asp-action="CreateAccount" method="post">
                             <input type="hidden" name="role" value="Driver" />
                             <div class="row g-3">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                     <input type="text" name="fullName" class="form-control" required placeholder="e.g. Pedro Garcia" />
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" name="email" class="form-control" required placeholder="driver@expense.com" />
                                 </div>
@@ -598,6 +678,46 @@
                                 <div class="col-md-2">
                                     <label class="form-label">License Number</label>
                                     <input type="text" name="licenseNumber" class="form-control" placeholder="e.g. N01-12-345678" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Contact Number</label>
+                                    <input type="text" name="contactNumber" class="form-control" placeholder="e.g. 09171234567" maxlength="20" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Street / House No.</label>
+                                    <input type="text" name="street" class="form-control" placeholder="e.g. 123 Rizal St." />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Barangay</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="barangay" class="form-control address-autocomplete" data-address-type="barangay" placeholder="Search barangay..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">City / Municipality</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="city" class="form-control address-autocomplete" data-address-type="city" placeholder="Search city..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Province</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="province" class="form-control address-autocomplete" data-address-type="province" placeholder="Search province..." autocomplete="off" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">ZIP Code</label>
+                                    <input type="text" name="zipCode" class="form-control" placeholder="e.g. 1100" maxlength="10" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Country</label>
+                                    <div class="position-relative">
+                                        <input type="text" name="country" class="form-control address-autocomplete" data-address-type="country" placeholder="Search country..." autocomplete="off" value="Philippines" />
+                                        <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
+                                    </div>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-info text-white w-100"><i class="bi bi-plus-circle"></i> Create</button>
@@ -729,3 +849,144 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    // Address autocomplete: provinces, cities, barangays from PSGC API + country list
+    (function () {
+        var cache = { provinces: null, cities: null, countries: null };
+
+        var countryList = [
+            "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
+            "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
+            "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
+            "Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica",
+            "Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt",
+            "El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia",
+            "Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras",
+            "Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan",
+            "Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein",
+            "Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania",
+            "Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia",
+            "Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
+            "Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
+            "Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa",
+            "San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore",
+            "Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka",
+            "Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo",
+            "Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates",
+            "United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen",
+            "Zambia","Zimbabwe"
+        ];
+
+        function loadData(type) {
+            if (type === 'province') {
+                if (cache.provinces) return Promise.resolve(cache.provinces);
+                return fetch('https://psgc.gitlab.io/api/provinces.json')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { cache.provinces = data.map(function (d) { return d.name; }).sort(); return cache.provinces; })
+                    .catch(function () { return []; });
+            }
+            if (type === 'city') {
+                if (cache.cities) return Promise.resolve(cache.cities);
+                return fetch('https://psgc.gitlab.io/api/cities-municipalities.json')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { cache.cities = data.map(function (d) { return d.name; }).sort(); return cache.cities; })
+                    .catch(function () { return []; });
+            }
+            if (type === 'country') {
+                return Promise.resolve(countryList);
+            }
+            if (type === 'barangay') {
+                return Promise.resolve(null);
+            }
+            return Promise.resolve([]);
+        }
+
+        function filterList(list, query) {
+            var q = query.toLowerCase();
+            return list.filter(function (item) { return item.toLowerCase().indexOf(q) !== -1; }).slice(0, 15);
+        }
+
+        function showSuggestions(box, items, input) {
+            box.innerHTML = '';
+            if (items.length > 0) {
+                items.forEach(function (name) {
+                    var li = document.createElement('li');
+                    li.className = 'list-group-item list-group-item-action';
+                    li.style.cursor = 'pointer';
+                    li.style.fontSize = '0.88rem';
+                    li.textContent = name;
+                    li.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        input.value = name;
+                        box.style.display = 'none';
+                    });
+                    box.appendChild(li);
+                });
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        var inputs = document.querySelectorAll('.address-autocomplete');
+        inputs.forEach(function (input) {
+            var box = input.parentElement.querySelector('.address-suggestions');
+            var type = input.getAttribute('data-address-type');
+            var timer = null;
+
+            input.addEventListener('input', function () {
+                var q = this.value.trim();
+                clearTimeout(timer);
+                if (q.length < 1) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+                timer = setTimeout(function () {
+                    if (type === 'barangay') {
+                        fetch('https://psgc.gitlab.io/api/barangays.json')
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                var names = data.map(function (d) { return d.name; });
+                                showSuggestions(box, filterList(names, q), input);
+                            })
+                            .catch(function () {
+                                fetch('https://psgc.cloud/api/barangays?search=' + encodeURIComponent(q) + '&limit=15')
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (data) {
+                                        var names = (data || []).map(function (d) { return d.name; });
+                                        showSuggestions(box, names, input);
+                                    })
+                                    .catch(function () { box.style.display = 'none'; });
+                            });
+                    } else {
+                        loadData(type).then(function (list) {
+                            if (list && list.length > 0) {
+                                showSuggestions(box, filterList(list, q), input);
+                            }
+                        });
+                    }
+                }, 200);
+            });
+
+            input.addEventListener('focus', function () {
+                var q = this.value.trim();
+                if (q.length >= 1 && box.children.length > 0) {
+                    box.style.display = 'block';
+                }
+            });
+
+            input.addEventListener('blur', function () {
+                setTimeout(function () { box.style.display = 'none'; }, 200);
+            });
+        });
+
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.address-suggestions').forEach(function (box) {
+                if (!box.contains(e.target)) {
+                    box.style.display = 'none';
+                }
+            });
+        });
+    })();
+</script>
+}

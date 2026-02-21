@@ -539,7 +539,9 @@ namespace CEMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAccount(string email, string password, string fullName, string role, string? department, string? licenseNumber)
+        public async Task<IActionResult> CreateAccount(string email, string password, string fullName, string role,
+            string? department, string? licenseNumber,
+            string? street, string? barangay, string? city, string? province, string? zipCode, string? country, string? contactNumber)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
             {
@@ -587,6 +589,13 @@ namespace CEMS.Controllers
                         UserId = user.Id,
                         FullName = fullName,
                         Department = department,
+                        Street = street,
+                        Barangay = barangay,
+                        City = city,
+                        Province = province,
+                        ZipCode = zipCode,
+                        Country = country,
+                        ContactNumber = contactNumber,
                         IsActive = true,
                         CreatedByUserId = ceoUserId
                     });
@@ -597,6 +606,13 @@ namespace CEMS.Controllers
                         UserId = user.Id,
                         FullName = fullName,
                         Department = department,
+                        Street = street,
+                        Barangay = barangay,
+                        City = city,
+                        Province = province,
+                        ZipCode = zipCode,
+                        Country = country,
+                        ContactNumber = contactNumber,
                         IsActive = true,
                         CreatedByUserId = ceoUserId
                     });
@@ -607,6 +623,13 @@ namespace CEMS.Controllers
                         UserId = user.Id,
                         FullName = fullName,
                         LicenseNumber = licenseNumber,
+                        Street = street,
+                        Barangay = barangay,
+                        City = city,
+                        Province = province,
+                        ZipCode = zipCode,
+                        Country = country,
+                        ContactNumber = contactNumber,
                         IsActive = true,
                         CreatedByUserId = ceoUserId
                     });

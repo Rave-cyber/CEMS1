@@ -1,24 +1,22 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+using System.Collections.Generic;
 
-namespace CEMS.Models
+namespace CEMS.Controllers
 {
-    public class DriverProfile
+    public class EditUserViewModel
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
         public string UserId { get; set; } = null!;
 
-        public IdentityUser User { get; set; } = null!;
-
         [Required]
-        [MaxLength(100)]
-        public string FullName { get; set; } = null!;
+        [EmailAddress]
+        public string Email { get; set; } = null!;
 
-        [MaxLength(50)]
-        public string? LicenseNumber { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
+
+        // Profile fields
+        [MaxLength(100)]
+        public string? FullName { get; set; }
 
         [MaxLength(200)]
         public string? Street { get; set; }
@@ -40,11 +38,5 @@ namespace CEMS.Models
 
         [MaxLength(20)]
         public string? ContactNumber { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public string? CreatedByUserId { get; set; }
     }
 }

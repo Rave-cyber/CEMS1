@@ -1,0 +1,60 @@
+@model CEMS.Controllers.EditUserViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h5>Edit User</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="EditUser" method="post">
+                <input type="hidden" name="UserId" value="@Model.UserId" />
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="Email" class="form-control" value="@Model.Email" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="FullName" class="form-control" value="@Model.FullName" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Contact Number</label>
+                        <input type="text" name="ContactNumber" class="form-control" value="@Model.ContactNumber" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Street / House No.</label>
+                        <input type="text" name="Street" class="form-control" value="@Model.Street" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Barangay</label>
+                        <input type="text" name="Barangay" class="form-control" value="@Model.Barangay" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">City / Municipality</label>
+                        <input type="text" name="City" class="form-control" value="@Model.City" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Province</label>
+                        <input type="text" name="Province" class="form-control" value="@Model.Province" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">ZIP Code</label>
+                        <input type="text" name="ZipCode" class="form-control" value="@Model.ZipCode" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Country</label>
+                        <input type="text" name="Country" class="form-control" value="@Model.Country" />
+                    </div>
+                    <div class="col-md-12 mt-3">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a class="btn btn-secondary ms-2" href="@Url.Action("Users", "SuperAdmin")">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

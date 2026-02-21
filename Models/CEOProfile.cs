@@ -17,6 +17,27 @@ namespace CEMS.Models
         [MaxLength(100)]
         public string FullName { get; set; } = null!;
 
+        [MaxLength(200)]
+        public string? Street { get; set; }
+
+        [MaxLength(100)]
+        public string? Barangay { get; set; }
+
+        [MaxLength(100)]
+        public string? City { get; set; }
+
+        [MaxLength(100)]
+        public string? Province { get; set; }
+
+        [MaxLength(10)]
+        public string? ZipCode { get; set; }
+
+        [MaxLength(100)]
+        public string? Country { get; set; }
+
+        [MaxLength(20)]
+        public string? ContactNumber { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

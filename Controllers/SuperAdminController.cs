@@ -82,7 +82,8 @@ namespace CEMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAccount(string email, string password, string fullName, string role)
+        public async Task<IActionResult> CreateAccount(string email, string password, string fullName, string role,
+            string? street, string? barangay, string? city, string? province, string? zipCode, string? country, string? contactNumber)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
             {
@@ -123,16 +124,16 @@ namespace CEMS.Controllers
             switch (role)
             {
                 case "CEO":
-                    _db.CEOProfiles.Add(new CEOProfile { UserId = user.Id, FullName = fullName, IsActive = true });
+                    _db.CEOProfiles.Add(new CEOProfile { UserId = user.Id, FullName = fullName, Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true });
                     break;
                 case "Manager":
-                    _db.ManagerProfiles.Add(new ManagerProfile { UserId = user.Id, FullName = fullName, Department = "General", IsActive = true, CreatedByUserId = adminId });
+                    _db.ManagerProfiles.Add(new ManagerProfile { UserId = user.Id, FullName = fullName, Department = "General", Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
                     break;
                 case "Finance":
-                    _db.FinanceProfiles.Add(new FinanceProfile { UserId = user.Id, FullName = fullName, Department = "Accounting", IsActive = true, CreatedByUserId = adminId });
+                    _db.FinanceProfiles.Add(new FinanceProfile { UserId = user.Id, FullName = fullName, Department = "Accounting", Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
                     break;
                 case "Driver":
-                    _db.DriverProfiles.Add(new DriverProfile { UserId = user.Id, FullName = fullName, IsActive = true, CreatedByUserId = adminId });
+                    _db.DriverProfiles.Add(new DriverProfile { UserId = user.Id, FullName = fullName, Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
                     break;
             }
 
@@ -148,6 +149,111 @@ namespace CEMS.Controllers
 
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Account '{email}' created successfully with role '{role}'.";
+            return RedirectToAction("Users");
+        }
+
+        // GET: Edit user form
+        public async Task<IActionResult> EditUser(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return BadRequest();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            // Try to find a profile for this user (CEO/Manager/Finance/Driver)
+            var ceo = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var manager = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var finance = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+            var driver = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+
+            var vm = new EditUserViewModel
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                Roles = (await _userManager.GetRolesAsync(user)).ToList(),
+                FullName = ceo?.FullName ?? manager?.FullName ?? finance?.FullName ?? driver?.FullName,
+                Street = ceo?.Street ?? manager?.Street ?? finance?.Street ?? driver?.Street,
+                Barangay = ceo?.Barangay ?? manager?.Barangay ?? finance?.Barangay ?? driver?.Barangay,
+                City = ceo?.City ?? manager?.City ?? finance?.City ?? driver?.City,
+                Province = ceo?.Province ?? manager?.Province ?? finance?.Province ?? driver?.Province,
+                ZipCode = ceo?.ZipCode ?? manager?.ZipCode ?? finance?.ZipCode ?? driver?.ZipCode,
+                Country = ceo?.Country ?? manager?.Country ?? finance?.Country ?? driver?.Country,
+                ContactNumber = ceo?.ContactNumber ?? manager?.ContactNumber ?? finance?.ContactNumber ?? driver?.ContactNumber
+            };
+
+            return View("Users/Edit", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(EditUserViewModel model)
+        {
+            if (!ModelState.IsValid) return View("Users/Edit", model);
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null) return NotFound();
+
+            // Update email if changed
+            if (!string.Equals(user.Email, model.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                user.Email = model.Email;
+                user.UserName = model.Email;
+                await _userManager.UpdateAsync(user);
+            }
+
+            // Update profile fields for whichever profile exists
+            var ceo = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == model.UserId);
+            var manager = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == model.UserId);
+            var finance = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == model.UserId);
+            var driver = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == model.UserId);
+
+            if (ceo != null)
+            {
+                ceo.FullName = model.FullName;
+                ceo.Street = model.Street;
+                ceo.Barangay = model.Barangay;
+                ceo.City = model.City;
+                ceo.Province = model.Province;
+                ceo.ZipCode = model.ZipCode;
+                ceo.Country = model.Country;
+                ceo.ContactNumber = model.ContactNumber;
+            }
+            if (manager != null)
+            {
+                manager.FullName = model.FullName;
+                manager.Street = model.Street;
+                manager.Barangay = model.Barangay;
+                manager.City = model.City;
+                manager.Province = model.Province;
+                manager.ZipCode = model.ZipCode;
+                manager.Country = model.Country;
+                manager.ContactNumber = model.ContactNumber;
+            }
+            if (finance != null)
+            {
+                finance.FullName = model.FullName;
+                finance.Street = model.Street;
+                finance.Barangay = model.Barangay;
+                finance.City = model.City;
+                finance.Province = model.Province;
+                finance.ZipCode = model.ZipCode;
+                finance.Country = model.Country;
+                finance.ContactNumber = model.ContactNumber;
+            }
+            if (driver != null)
+            {
+                driver.FullName = model.FullName;
+                driver.Street = model.Street;
+                driver.Barangay = model.Barangay;
+                driver.City = model.City;
+                driver.Province = model.Province;
+                driver.ZipCode = model.ZipCode;
+                driver.Country = model.Country;
+                driver.ContactNumber = model.ContactNumber;
+            }
+
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "User updated successfully.";
             return RedirectToAction("Users");
         }
 
@@ -377,7 +483,7 @@ namespace CEMS.Controllers
         public string UserId { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string UserName { get; set; } = null!;
-        public List<string> Roles { get; set; } = [];
+        public List<string> Roles { get; set; } = new List<string>();
         public bool IsLockedOut { get; set; }
     }
 }

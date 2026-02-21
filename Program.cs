@@ -110,12 +110,12 @@ using (var scope = app.Services.CreateScope())
         // Create test users with different roles
         var users = new[]
         {
-            new { Email = "superadmin@expense.com", Role = "SuperAdmin", Password = "Test@123" },
-            new { Email = "ceo@expense.com", Role = "CEO", Password = "Test@123" },
-            new { Email = "manager@expense.com", Role = "Manager", Password = "Test@123" },
-            new { Email = "driver@expense.com", Role = "Driver", Password = "Test@123" },
-            new { Email = "finance@expense.com", Role = "Finance", Password = "Test@123" },
-            new { Email = "test@expense.com", Role = "Manager", Password = "Test@123" }
+            new { Email = "superadmin@expense.com", Role = "SuperAdmin", Password = "Test@123", FullName = "Super Admin", Street = "123 Admin St.", Barangay = "Barangay Holy Spirit", City = "Quezon City", Province = "Metro Manila", ZipCode = "1127", Country = "Philippines", ContactNumber = "09170000001" },
+            new { Email = "ceo@expense.com", Role = "CEO", Password = "Test@123", FullName = "Juan Dela Cruz", Street = "456 Ayala Ave.", Barangay = "Barangay Bel-Air", City = "Makati City", Province = "Metro Manila", ZipCode = "1209", Country = "Philippines", ContactNumber = "09170000002" },
+            new { Email = "manager@expense.com", Role = "Manager", Password = "Test@123", FullName = "Maria Santos", Street = "789 Ortigas Center", Barangay = "Barangay Ugong", City = "Pasig City", Province = "Metro Manila", ZipCode = "1604", Country = "Philippines", ContactNumber = "09170000003" },
+            new { Email = "driver@expense.com", Role = "Driver", Password = "Test@123", FullName = "Pedro Reyes", Street = "321 Bonifacio High St.", Barangay = "Barangay Fort Bonifacio", City = "Taguig City", Province = "Metro Manila", ZipCode = "1634", Country = "Philippines", ContactNumber = "09170000004" },
+            new { Email = "finance@expense.com", Role = "Finance", Password = "Test@123", FullName = "Ana Garcia", Street = "654 Shaw Blvd.", Barangay = "Barangay Wack-Wack", City = "Mandaluyong City", Province = "Metro Manila", ZipCode = "1550", Country = "Philippines", ContactNumber = "09170000005" },
+            new { Email = "test@expense.com", Role = "Manager", Password = "Test@123", FullName = "Test Manager", Street = "987 N. Domingo St.", Barangay = "Barangay San Perfecto", City = "San Juan City", Province = "Metro Manila", ZipCode = "1500", Country = "Philippines", ContactNumber = "09170000006" }
         };
 
         foreach (var userInfo in users)
@@ -220,28 +220,28 @@ using (var scope = app.Services.CreateScope())
                 case "CEO":
                     if (!context.CEOProfiles.Any(p => p.UserId == u.Id))
                     {
-                        context.CEOProfiles.Add(new CEOProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        context.CEOProfiles.Add(new CEOProfile { UserId = u.Id, FullName = userInfo.FullName, Street = userInfo.Street, Barangay = userInfo.Barangay, City = userInfo.City, Province = userInfo.Province, ZipCode = userInfo.ZipCode, Country = userInfo.Country, ContactNumber = userInfo.ContactNumber, IsActive = true });
                         Console.WriteLine($"  -> Created CEO profile for {userInfo.Email}");
                     }
                     break;
                 case "Manager":
                     if (!context.ManagerProfiles.Any(p => p.UserId == u.Id))
                     {
-                        context.ManagerProfiles.Add(new ManagerProfile { UserId = u.Id, FullName = userInfo.Email, Department = "General", IsActive = true });
+                        context.ManagerProfiles.Add(new ManagerProfile { UserId = u.Id, FullName = userInfo.FullName, Department = "General", Street = userInfo.Street, Barangay = userInfo.Barangay, City = userInfo.City, Province = userInfo.Province, ZipCode = userInfo.ZipCode, Country = userInfo.Country, ContactNumber = userInfo.ContactNumber, IsActive = true });
                         Console.WriteLine($"  -> Created Manager profile for {userInfo.Email}");
                     }
                     break;
                 case "Finance":
                     if (!context.FinanceProfiles.Any(p => p.UserId == u.Id))
                     {
-                        context.FinanceProfiles.Add(new FinanceProfile { UserId = u.Id, FullName = userInfo.Email, Department = "Accounting", IsActive = true });
+                        context.FinanceProfiles.Add(new FinanceProfile { UserId = u.Id, FullName = userInfo.FullName, Department = "Accounting", Street = userInfo.Street, Barangay = userInfo.Barangay, City = userInfo.City, Province = userInfo.Province, ZipCode = userInfo.ZipCode, Country = userInfo.Country, ContactNumber = userInfo.ContactNumber, IsActive = true });
                         Console.WriteLine($"  -> Created Finance profile for {userInfo.Email}");
                     }
                     break;
                 case "Driver":
                     if (!context.DriverProfiles.Any(p => p.UserId == u.Id))
                     {
-                        context.DriverProfiles.Add(new DriverProfile { UserId = u.Id, FullName = userInfo.Email, IsActive = true });
+                        context.DriverProfiles.Add(new DriverProfile { UserId = u.Id, FullName = userInfo.FullName, Street = userInfo.Street, Barangay = userInfo.Barangay, City = userInfo.City, Province = userInfo.Province, ZipCode = userInfo.ZipCode, Country = userInfo.Country, ContactNumber = userInfo.ContactNumber, IsActive = true });
                         Console.WriteLine($"  -> Created Driver profile for {userInfo.Email}");
                     }
                     break;
