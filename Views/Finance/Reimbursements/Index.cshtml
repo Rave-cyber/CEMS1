@@ -180,22 +180,25 @@
         </div>
 
         <div class="filter-card">
-            <div style="flex:1;min-width:160px;">
-                <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">From</label>
-                <input type="date" id="reimStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
-            </div>
-            <div style="flex:1;min-width:160px;">
-                <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">To</label>
-                <input type="date" id="reimEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
-            </div>
-            <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
-                <div class="quick-filter">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+                <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:160px;">
+                        <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">From</label>
+                        <input type="date" id="reimStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
+                    </div>
+                    <div style="flex:1;min-width:160px;">
+                        <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">To</label>
+                        <input type="date" id="reimEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
+                    </div>
                 </div>
-                <a href="@Url.Action("Reimbursements","Finance")" class="btn btn-outline-secondary btn-sm">Clear</a>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <div class="quick-filter">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                    </div>
+                </div>
             </div>
         </div>
 

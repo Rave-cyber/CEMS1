@@ -23,8 +23,12 @@ namespace CEMS.Controllers
         }
 
         // ───────────── Dashboard ─────────────
-        public async Task<IActionResult> Dashboard()
+        public async Task<IActionResult> Dashboard(DateTime? start = null, DateTime? end = null)
         {
+            // Set default date range to current month
+            var startDate = start ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var endDate = end ?? DateTime.Now;
+
             var budgets = await _db.Budgets.ToListAsync();
             ViewBag.TotalBudget = budgets.Sum(b => b.Allocated);
             ViewBag.TotalSpent = budgets.Sum(b => b.Spent);
@@ -78,6 +82,40 @@ namespace CEMS.Controllers
                 });
             }
             ViewBag.RecentOverBudget = recentDto;
+
+            // ── Spending Trend Data (Weekly) ──
+            var allReports = await _db.ExpenseReports
+                .Where(r => r.SubmissionDate >= startDate && r.SubmissionDate <= endDate)
+                .ToListAsync();
+
+            // Group by week
+            var weeklySpending = new Dictionary<int, decimal>();
+            for (int i = 0; i < 4; i++)
+            {
+                var weekStart = startDate.AddDays(i * 7);
+                var weekEnd = weekStart.AddDays(6);
+                var weekTotal = allReports
+                    .Where(r => r.SubmissionDate >= weekStart && r.SubmissionDate <= weekEnd)
+                    .Sum(r => r.TotalAmount);
+                weeklySpending[i + 1] = weekTotal;
+            }
+
+            ViewBag.WeeklySpending = System.Text.Json.JsonSerializer.Serialize(weeklySpending.Values.ToList());
+
+            // ── Report Status Distribution Data ──
+            var submitted = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var approved = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Approved && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var rejected = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Rejected && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var pendingApproval = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.PendingCEOApproval && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+
+            ViewBag.SubmittedCount = submitted;
+            ViewBag.ApprovedCount = approved;
+            ViewBag.RejectedCount = rejected;
+            ViewBag.PendingApprovalCount = pendingApproval;
+
+            // Store filter dates for view
+            ViewBag.FilterStart = startDate.ToString("yyyy-MM-dd");
+            ViewBag.FilterEnd = endDate.ToString("yyyy-MM-dd");
 
             return View("Dashboard/Index");
         }

@@ -563,21 +563,25 @@ function setDefaultMonthFilter(){
         </div>
 
             <div class="filter-card">
-            <div>
-                <label for="metricsStart">From</label>
-                <input id="metricsStart" type="date" />
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+                    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                        <div>
+                            <label for="metricsStart">From</label>
+                            <input id="metricsStart" type="date" />
+                        </div>
+                        <div>
+                            <label for="metricsEnd">To</label>
+                            <input id="metricsEnd" type="date" />
+                        </div>
+                    </div>
+                    <div class="quick-filter">
+                        <button class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
+                        <button class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
+                        <button class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
+                        <button class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="metricsEnd">To</label>
-                <input id="metricsEnd" type="date" />
-            </div>
-            <div class="ms-auto quick-filter">
-                <button class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                <button class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                <button class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                <button class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
-            </div>
-        </div>
 
         <div class="dash-card">
             <div class="dash-card-head">
