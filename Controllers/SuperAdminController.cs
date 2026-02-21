@@ -139,6 +139,8 @@ namespace CEMS.Controllers
             _db.AuditLogs.Add(new AuditLog
             {
                 Action = "CreateAccount",
+                Module = "User Management",
+                Role = "SuperAdmin",
                 PerformedByUserId = adminId,
                 TargetUserId = user.Id,
                 Details = $"Created account '{email}' with role '{role}'"
@@ -173,6 +175,8 @@ namespace CEMS.Controllers
             _db.AuditLogs.Add(new AuditLog
             {
                 Action = "AssignRole",
+                Module = "User Management",
+                Role = "SuperAdmin",
                 PerformedByUserId = _userManager.GetUserId(User),
                 TargetUserId = userId,
                 Details = $"Assigned role '{role}' to '{user.Email}'"
@@ -201,6 +205,8 @@ namespace CEMS.Controllers
             _db.AuditLogs.Add(new AuditLog
             {
                 Action = "RemoveRole",
+                Module = "User Management",
+                Role = "SuperAdmin",
                 PerformedByUserId = _userManager.GetUserId(User),
                 TargetUserId = userId,
                 Details = $"Removed role '{role}' from '{user.Email}'"
@@ -242,6 +248,8 @@ namespace CEMS.Controllers
             _db.AuditLogs.Add(new AuditLog
             {
                 Action = isLockedOut ? "UnlockAccount" : "LockAccount",
+                Module = "User Management",
+                Role = "SuperAdmin",
                 PerformedByUserId = currentUserId,
                 TargetUserId = userId,
                 Details = $"{(isLockedOut ? "Unlocked" : "Locked")} account '{user.Email}'"
@@ -272,6 +280,8 @@ namespace CEMS.Controllers
             _db.AuditLogs.Add(new AuditLog
             {
                 Action = "DeleteAccount",
+                Module = "User Management",
+                Role = "SuperAdmin",
                 PerformedByUserId = currentUserId,
                 TargetUserId = userId,
                 Details = $"Deleted account '{email}'"
@@ -283,18 +293,49 @@ namespace CEMS.Controllers
         }
 
         // ───────────── Audit Logs ─────────────
-        public async Task<IActionResult> AuditLogs(string? action, DateTime? start, DateTime? end)
+        public async Task<IActionResult> AuditLogs(string? actionType, string? module, string? role, string? user, DateTime? start, DateTime? end, int page = 1, int pageSize = 10)
         {
             var q = _db.AuditLogs.AsQueryable();
-
-            if (!string.IsNullOrEmpty(action))
-                q = q.Where(l => l.Action == action);
+            if (!string.IsNullOrEmpty(actionType))
+                q = q.Where(l => l.Action == actionType);
+            if (!string.IsNullOrEmpty(module))
+                q = q.Where(l => l.Module == module);
+            if (!string.IsNullOrEmpty(role))
+                q = q.Where(l => l.Role == role);
             if (start.HasValue)
-                q = q.Where(l => l.Timestamp >= start.Value);
+                q = q.Where(l => l.Timestamp >= start.Value.Date);
             if (end.HasValue)
-                q = q.Where(l => l.Timestamp <= end.Value);
+                q = q.Where(l => l.Timestamp < end.Value.Date.AddDays(1));
 
-            var logs = await q.OrderByDescending(l => l.Timestamp).Take(200).ToListAsync();
+            // User search — resolve matching user IDs then filter
+            if (!string.IsNullOrWhiteSpace(user))
+            {
+                var matchingUserIds = await _userManager.Users
+                    .Where(u => u.Email!.Contains(user) || u.UserName!.Contains(user))
+                    .Select(u => u.Id)
+                    .ToListAsync();
+                q = q.Where(l => matchingUserIds.Contains(l.PerformedByUserId));
+            }
+
+            var totalCount = await q.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var logs = await q
+                .OrderByDescending(l => l.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // If no logs found and no filters provided, show recent logs as a friendly fallback
+            var noFilters = string.IsNullOrWhiteSpace(actionType) && string.IsNullOrWhiteSpace(module) && string.IsNullOrWhiteSpace(role) && string.IsNullOrWhiteSpace(user) && !start.HasValue && !end.HasValue;
+            if (logs.Count == 0 && noFilters)
+            {
+                logs = await _db.AuditLogs.OrderByDescending(l => l.Timestamp).Take(50).ToListAsync();
+                totalCount = logs.Count;
+                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                ViewBag.CurrentPage = 1;
+            }
 
             var userIds = logs
                 .SelectMany(l => new[] { l.PerformedByUserId, l.TargetUserId })
@@ -307,12 +348,19 @@ namespace CEMS.Controllers
 
             ViewBag.Logs = logs;
             ViewBag.LogUsers = users;
-            ViewBag.FilterAction = action;
+            ViewBag.FilterAction = actionType;
+            ViewBag.FilterModule = module;
+            ViewBag.FilterRole = role;
+            ViewBag.FilterUser = user;
             ViewBag.FilterStart = start;
             ViewBag.FilterEnd = end;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
 
-            var actions = await _db.AuditLogs.Select(l => l.Action).Distinct().ToListAsync();
-            ViewBag.Actions = actions;
+            ViewBag.Actions = await _db.AuditLogs.Select(l => l.Action).Distinct().OrderBy(a => a).ToListAsync();
+            ViewBag.Modules = await _db.AuditLogs.Where(l => l.Module != null).Select(l => l.Module!).Distinct().OrderBy(m => m).ToListAsync();
+            ViewBag.Roles = new List<string> { "SuperAdmin", "CEO", "Manager", "Finance", "Driver" };
 
             return View("AuditLogs/Index");
         }

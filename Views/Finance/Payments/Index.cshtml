@@ -1,9 +1,21 @@
 @{
     ViewData["Title"] = "Payment History";
     Layout = "~/Views/Shared/_FinanceLayout.cshtml";
+
+    var payments = ViewBag.PaymentList as List<CEMS.Models.ReimbursementPayment> ?? new List<CEMS.Models.ReimbursementPayment>();
+    var userMap = ViewBag.UserMap as Dictionary<string, string> ?? new Dictionary<string, string>();
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalCount = ViewBag.TotalCount ?? 0;
+    string search = ViewBag.Search ?? "";
+    string statusFilter = ViewBag.StatusFilter ?? "";
+    string filterStart = ViewBag.FilterStart ?? "";
+    string filterEnd = ViewBag.FilterEnd ?? "";
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <style>
     :root {
@@ -16,142 +28,220 @@
         --d-muted: #6b7280;
     }
 
-    .page-wrapper {
-        background: var(--d-bg);
-        min-height: calc(100vh - 80px);
-        padding: 28px 0 40px;
-    }
+    .page-wrapper { background: var(--d-bg); min-height: calc(100vh - 80px); padding: 28px 0 40px; }
+    .page-header { margin-bottom: 24px; }
+    .page-title { font-size: 1.65rem; font-weight: 700; color: var(--d-text); display: flex; align-items: center; gap: 12px; }
+    .page-title i { color: var(--d-primary); font-size: 1.8rem; }
+    .page-subtitle { color: var(--d-muted); font-size: .95rem; margin-top: 4px; }
 
-    .page-header {
-        margin-bottom: 28px;
-    }
+    .filter-card { background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; }
+    .table-card { background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; overflow: hidden; }
 
-    .page-title {
-        font-size: 1.65rem;
-        font-weight: 700;
-        color: var(--d-text);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .dash-table { width: 100%; margin-bottom: 0; }
+    .dash-table thead th { background: #f8fafc; color: var(--d-muted); font-weight: 600; font-size: .73rem; text-transform: uppercase; letter-spacing: .5px; padding: 11px 12px; border: none; white-space: nowrap; }
+    .dash-table tbody td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: var(--d-text); font-size: .85rem; }
+    .dash-table tbody tr:last-child td { border-bottom: none; }
+    .dash-table tbody tr:hover { background: #f8fafc; }
 
-    .page-title i {
-        color: var(--d-primary);
-        font-size: 1.8rem;
-    }
+    .payment-amount { font-weight: 700; color: #10b981; }
 
-    .page-subtitle {
-        color: var(--d-muted);
-        font-size: .95rem;
-        margin-top: 4px;
-    }
+    .badge-paid { background: #d1fae5; color: #065f46; }
+    .badge-unpaid { background: #fef3c7; color: #92400e; }
+    .badge-expired { background: #fee2e2; color: #991b1b; }
+    .badge-status { padding: 4px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; display: inline-block; }
 
-    .table-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 10px;
-        overflow: hidden;
-    }
+    .empty-state { background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 40px; text-align: center; }
+    .empty-state i { font-size: 3rem; color: var(--d-border); margin-bottom: 16px; }
+    .empty-state p { color: var(--d-muted); margin: 0; }
 
-    .dash-table {
-        width: 100%;
-        margin-bottom: 0;
-    }
+    .pagination-wrap { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--d-border); background: #fafbfc; }
+    .pagination-info { font-size: .85rem; color: var(--d-muted); }
+    .pagination-btns { display: flex; gap: 6px; }
+    .pagination-btns a, .pagination-btns span { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; font-size: .85rem; text-decoration: none; border: 1px solid var(--d-border); color: var(--d-text); background: #fff; }
+    .pagination-btns a:hover { background: #e8f4fd; border-color: var(--d-primary); }
+    .pagination-btns span.active { background: var(--d-primary); color: #fff; border-color: var(--d-primary); }
+    .pagination-btns span.disabled { opacity: .4; cursor: default; }
 
-    .dash-table thead th {
-        background: #f8fafc;
-        color: var(--d-muted);
-        font-weight: 600;
-        font-size: .78rem;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        padding: 12px 16px;
-        border: none;
-    }
-
-    .dash-table tbody td {
-        padding: 14px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-        color: var(--d-text);
-        font-size: .9rem;
-    }
-
-    .dash-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .dash-table tbody tr:hover {
-        background: #f8fafc;
-    }
-
-    .payment-amount {
-        font-weight: 700;
-        color: #10b981;
-    }
-
-    .empty-state {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 10px;
-        padding: 40px;
-        text-align: center;
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        color: var(--d-border);
-        margin-bottom: 16px;
-    }
-
-    .empty-state p {
-        color: var(--d-muted);
-        margin: 0;
-    }
+    .btn-sync { padding: 3px 8px; font-size: .75rem; border-radius: 5px; }
+    .link-id-cell { font-family: monospace; font-size: .78rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     @@media (max-width: 768px) {
         .page-wrapper { padding: 20px 0 32px; }
         .page-title { font-size: 1.4rem; }
+        .filter-row { flex-direction: column; }
     }
 </style>
 
 <div class="page-wrapper">
     <div class="container-fluid px-4">
-        <div class="page-header">
-            <h1 class="page-title">
-                <i class="bi bi-credit-card"></i>
-                Payment History
-            </h1>
-            <p class="page-subtitle">View all processed reimbursement payments.</p>
+
+        <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-credit-card"></i>
+                    Payment History
+                </h1>
+                <p class="page-subtitle">All PayMongo reimbursement payments — @totalCount total record(s).</p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" onclick="exportPdf()">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </button>
         </div>
 
-        @if(ViewBag.Payments != null && ((IEnumerable<dynamic>)ViewBag.Payments).Count() > 0)
+        <!-- Search / Filter Bar -->
+        <div class="filter-card">
+            <form method="get" asp-action="Payments">
+                <div class="row g-2 align-items-end filter-row">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted mb-1">Search</label>
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Report ID or PayMongo ID..." value="@search" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Status</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">All</option>
+                            <option value="paid" selected="@(statusFilter == "paid" ? "selected" : null)">Paid</option>
+                            <option value="unpaid" selected="@(statusFilter == "unpaid" ? "selected" : null)">Unpaid</option>
+                            <option value="expired" selected="@(statusFilter == "expired" ? "selected" : null)">Expired</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">From</label>
+                        <input type="date" name="start" class="form-control form-control-sm" value="@filterStart" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">To</label>
+                        <input type="date" name="end" class="form-control form-control-sm" value="@filterEnd" />
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
+                        <a asp-action="Payments" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i> Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (payments.Count > 0)
         {
             <div class="table-card">
                 <div class="table-responsive">
-                    <table class="dash-table">
+                    <table class="dash-table" id="paymentsTable">
                         <thead>
                             <tr>
                                 <th>Report ID</th>
+                                <th>Driver / Payee</th>
                                 <th>Amount</th>
-                                <th>Processed Date</th>
+                                <th>Currency</th>
+                                <th>Payment Method</th>
+                                <th>PayMongo Payment ID</th>
+                                <th>Reference Number</th>
+                                <th>Status</th>
+                                <th>Paid At</th>
                                 <th>Processed By</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach(var item in ViewBag.Payments as IEnumerable<dynamic>)
+                            @foreach (var p in payments)
                             {
-                                var r = item.Report;
+                                var driverName = (p.Report?.UserId != null && userMap.ContainsKey(p.Report.UserId))
+                                    ? userMap[p.Report.UserId] : "—";
+                                var processedByName = (p.ProcessedByUserId != null && userMap.ContainsKey(p.ProcessedByUserId))
+                                    ? userMap[p.ProcessedByUserId] : "—";
+                                var badgeClass = p.Status == "paid" ? "badge-paid" : p.Status == "expired" ? "badge-expired" : "badge-unpaid";
+
                                 <tr>
-                                    <td><strong>@r.Id</strong></td>
-                                    <td class="payment-amount">₱@r.TotalAmount.ToString("N2")</td>
-                                    <td>@(item.DecisionDate?.ToLocalTime().ToString("MMM d, yyyy") ?? "N/A")</td>
-                                    <td>@(item.ApprovedBy ?? "Finance Officer")</td>
+                                    <td><strong>#@p.ReportId</strong></td>
+                                    <td>@driverName</td>
+                                    <td class="payment-amount">₱@p.Amount.ToString("N2")</td>
+                                    <td>PHP</td>
+                                    <td>GCash</td>
+                                    <td class="link-id-cell" title="@p.PayMongoLinkId">@p.PayMongoLinkId</td>
+                                    <td><code>RPT-@p.ReportId-@p.Id</code></td>
+                                    <td><span class="badge-status @badgeClass">@p.Status</span></td>
+                                    <td>@(p.PaidAt.HasValue ? p.PaidAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "—")</td>
+                                    <td>@processedByName</td>
+                                    <td>
+                                        @if (p.Status != "paid")
+                                        {
+                                            <form method="post" asp-action="RefreshPaymentStatus" asp-route-id="@p.Id" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-info btn-sync" title="Sync status from PayMongo">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">✓</span>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination -->
+                @if (totalPages > 1)
+                {
+                    <div class="pagination-wrap">
+                        <div class="pagination-info">
+                            Page @currentPage of @totalPages (@totalCount records)
+                        </div>
+                        <div class="pagination-btns">
+                            @if (currentPage > 1)
+                            {
+                                <a asp-action="Payments" asp-route-page="@(currentPage - 1)" asp-route-search="@search" asp-route-status="@statusFilter" asp-route-start="@filterStart" asp-route-end="@filterEnd">‹</a>
+                            }
+                            else
+                            {
+                                <span class="disabled">‹</span>
+                            }
+
+                            @{
+                                int startPage = Math.Max(1, currentPage - 2);
+                                int endPage = Math.Min(totalPages, startPage + 4);
+                                startPage = Math.Max(1, endPage - 4);
+                            }
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                if (i == currentPage)
+                                {
+                                    <span class="active">@i</span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Payments" asp-route-page="@i" asp-route-search="@search" asp-route-status="@statusFilter" asp-route-start="@filterStart" asp-route-end="@filterEnd">@i</a>
+                                }
+                            }
+
+                            @if (currentPage < totalPages)
+                            {
+                                <a asp-action="Payments" asp-route-page="@(currentPage + 1)" asp-route-search="@search" asp-route-status="@statusFilter" asp-route-start="@filterStart" asp-route-end="@filterEnd">›</a>
+                            }
+                            else
+                            {
+                                <span class="disabled">›</span>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
         else
@@ -163,3 +253,39 @@
         }
     </div>
 </div>
+
+<script>
+    function exportPdf() {
+        var { jsPDF } = window.jspdf;
+        var doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+        doc.setFontSize(16);
+        doc.text('CEMS - Payment History', 14, 18);
+        doc.setFontSize(9);
+        doc.text('Generated: ' + new Date().toLocaleString(), 14, 24);
+
+        var rows = [];
+        var table = document.getElementById('paymentsTable');
+        var trs = table.querySelectorAll('tbody tr');
+        trs.forEach(function (tr) {
+            var tds = tr.querySelectorAll('td');
+            // skip the last "Actions" column
+            var row = [];
+            for (var i = 0; i < tds.length - 1; i++) {
+                row.push(tds[i].innerText.trim());
+            }
+            rows.push(row);
+        });
+
+        doc.autoTable({
+            startY: 30,
+            head: [['Report ID', 'Driver / Payee', 'Amount', 'Currency', 'Payment Method', 'PayMongo ID', 'Reference #', 'Status', 'Paid At', 'Processed By']],
+            body: rows,
+            styles: { fontSize: 7.5, cellPadding: 2 },
+            headStyles: { fillColor: [26, 107, 181], fontSize: 7.5 },
+            theme: 'grid'
+        });
+
+        doc.save('payment-history.pdf');
+    }
+</script>

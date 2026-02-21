@@ -181,24 +181,127 @@ namespace CEMS.Controllers
             return View("ReportDetails", report);
         }
 
-        // Payment history: show reports that have been reimbursed (recorded via Finance approval)
-        public async Task<IActionResult> Payments()
+        // Payment history: fetched from ReimbursementPayments table (no webhook needed)
+        public async Task<IActionResult> Payments(string? search, string? status, DateTime? start, DateTime? end, int page = 1, int pageSize = 15)
         {
-            var approvals = await _db.Approvals
-                .Include(a => a.Report)
-                .Where(a => a.Stage == "Finance" && a.Status == ApprovalStatus.Approved)
-                .OrderByDescending(a => a.DecisionDate)
+            var query = _db.ReimbursementPayments
+                .Include(p => p.Report)
+                .AsQueryable();
+
+            // Status filter
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(p => p.Status == status);
+
+            // Date range filter (on CreatedAt)
+            if (start.HasValue)
+                query = query.Where(p => p.CreatedAt >= start.Value.Date);
+            if (end.HasValue)
+                query = query.Where(p => p.CreatedAt < end.Value.Date.AddDays(1));
+
+            // Search filter (report ID or PayMongo link ID)
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                if (int.TryParse(search.Trim(), out var searchId))
+                    query = query.Where(p => p.ReportId == searchId);
+                else
+                    query = query.Where(p => p.PayMongoLinkId.Contains(search.Trim()));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var payments = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            // convert to simple DTO for view
-            var list = approvals.Select(a => new {
-                Report = a.Report,
-                DecisionDate = a.DecisionDate,
-                ApprovedBy = a.ApprovedByUserId
-            }).ToList();
+            // Resolve driver (Report.UserId) and processor user names
+            var driverIds = payments.Where(p => p.Report?.UserId != null).Select(p => p.Report!.UserId!).Distinct().ToList();
+            var processorIds = payments.Where(p => p.ProcessedByUserId != null).Select(p => p.ProcessedByUserId!).Distinct().ToList();
+            var allUserIds = driverIds.Union(processorIds).Distinct().ToList();
+            var userMap = await _userManager.Users
+                .Where(u => allUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.UserName ?? u.Email ?? "Unknown");
 
-            ViewBag.Payments = list;
+            ViewBag.PaymentList = payments;
+            ViewBag.UserMap = userMap;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.Search = search ?? "";
+            ViewBag.StatusFilter = status ?? "";
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd") ?? "";
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd") ?? "";
+
             return View("Payments/Index");
+        }
+
+        // Refresh a single payment's status from PayMongo API (no webhook needed)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RefreshPaymentStatus(int id)
+        {
+            var payment = await _db.ReimbursementPayments
+                .Include(p => p.Report)
+                    .ThenInclude(r => r!.Items)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (payment == null) return NotFound();
+
+            try
+            {
+                var apiStatus = await _payMongo.GetCheckoutStatusAsync(payment.PayMongoLinkId);
+                payment.Status = apiStatus;
+
+                if (apiStatus == "paid" && payment.Report != null && !payment.Report.Reimbursed)
+                {
+                    payment.PaidAt = DateTime.UtcNow;
+                    payment.Report.Reimbursed = true;
+
+                    foreach (var item in payment.Report.Items)
+                    {
+                        var category = item.Category?.Trim() ?? "";
+                        var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
+                        if (budget != null)
+                            budget.Spent += item.Amount;
+                    }
+
+                    _db.Approvals.Add(new Approval
+                    {
+                        ReportId = payment.ReportId,
+                        ApprovedByUserId = _userManager.GetUserId(User),
+                        Status = ApprovalStatus.Approved,
+                        DecisionDate = DateTime.UtcNow,
+                        Stage = "Finance",
+                        Remarks = "Reimbursed via PayMongo (synced)"
+                    });
+
+                    TempData["Success"] = $"✅ Report #{payment.ReportId} confirmed paid!";
+
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        Action = "PaymentSynced",
+                        Module = "Reimbursements",
+                        Role = "Finance",
+                        PerformedByUserId = _userManager.GetUserId(User),
+                        RelatedRecordId = payment.ReportId,
+                        Details = $"Synced payment for report #{payment.ReportId} — confirmed paid"
+                    });
+                }
+                else
+                {
+                    TempData["Success"] = $"Report #{payment.ReportId} status: {apiStatus}";
+                }
+
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to sync: {ex.Message}";
+            }
+
+            return RedirectToAction("Payments");
         }
 
         [HttpPost]
@@ -263,6 +366,17 @@ namespace CEMS.Controllers
 
                 await _db.SaveChangesAsync();
 
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    Action = "InitiatePayment",
+                    Module = "Reimbursements",
+                    Role = "Finance",
+                    PerformedByUserId = _userManager.GetUserId(User),
+                    RelatedRecordId = report.Id,
+                    Details = $"Initiated PayMongo payment for report #{report.Id} (₱{report.TotalAmount:N2})"
+                });
+                await _db.SaveChangesAsync();
+
                 // Redirect finance user directly to PayMongo checkout (GCash / card)
                 return Redirect(checkoutUrl);
             }
@@ -320,6 +434,17 @@ namespace CEMS.Controllers
 
                     await _db.SaveChangesAsync();
                     TempData["Success"] = $"✅ Report #{reportId} has been paid and marked as reimbursed!";
+
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        Action = "PaymentConfirmed",
+                        Module = "Reimbursements",
+                        Role = "Finance",
+                        PerformedByUserId = payment.ProcessedByUserId,
+                        RelatedRecordId = reportId,
+                        Details = $"Payment confirmed for report #{reportId} via PayMongo"
+                    });
+                    await _db.SaveChangesAsync();
                 }
                 else
                 {
@@ -417,6 +542,16 @@ namespace CEMS.Controllers
                 DecisionDate = DateTime.UtcNow,
                 Stage = "Finance",
                 Remarks = "Manually marked as reimbursed"
+            });
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "ManualReimbursement",
+                Module = "Reimbursements",
+                Role = "Finance",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = report.Id,
+                Details = $"Manually marked report #{report.Id} as reimbursed (₱{report.TotalAmount:N2})"
             });
 
             await _db.SaveChangesAsync();

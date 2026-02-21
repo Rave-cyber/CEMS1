@@ -202,6 +202,16 @@ namespace CEMS.Controllers
                 report.Status = ReportStatus.PendingCEOApproval;
             }
 
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "ApproveReport",
+                Module = "Expense Reports",
+                Role = "Manager",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = report.Id,
+                Details = $"Approved expense report #{report.Id} (₱{report.TotalAmount:N2}){(report.BudgetCheck == BudgetCheckStatus.OverBudget ? " — forwarded to CEO" : " — sent to Finance")}"
+            });
+
             await _db.SaveChangesAsync();
 
             // If within budget, create a task/flag for finance to reimburse (simple approach: set Reimbursed=false and leave ForwardedToCEO false)
@@ -238,6 +248,17 @@ namespace CEMS.Controllers
                 Remarks = "Rejected by manager"
             };
             _db.Approvals.Add(rejection);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "RejectReport",
+                Module = "Expense Reports",
+                Role = "Manager",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = report.Id,
+                Details = $"Rejected expense report #{report.Id}"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report rejected.";
@@ -288,6 +309,17 @@ namespace CEMS.Controllers
 
             report.ForwardedToCEO = true;
             report.Status = ReportStatus.PendingCEOApproval;
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "ForwardToCEO",
+                Module = "Expense Reports",
+                Role = "Manager",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = report.Id,
+                Details = $"Forwarded report #{report.Id} to CEO for approval"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report forwarded to CEO for approval.";

@@ -175,6 +175,16 @@ namespace CEMS.Controllers
                 }
             }
 
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "CEOApprove",
+                Module = "Expense Reports",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = id,
+                Details = $"CEO approved report #{id}"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report approved by CEO and forwarded to Finance for reimbursement.";
@@ -201,13 +211,22 @@ namespace CEMS.Controllers
                 Remarks = remarks
             };
             _db.Approvals.Add(approval);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "CEOReject",
+                Module = "Expense Reports",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = id,
+                Details = $"CEO rejected report #{id}"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report rejected by CEO.";
             return RedirectToAction("Approvals");
         }
-
-        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveForReimbursement(int id)
         {
@@ -228,6 +247,17 @@ namespace CEMS.Controllers
                 Remarks = "Quick-approved for reimbursement"
             };
             _db.Approvals.Add(approval);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "ApproveForReimbursement",
+                Module = "Expense Reports",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = id,
+                Details = $"CEO quick-approved report #{id} for reimbursement"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report approved for reimbursement.";
@@ -255,6 +285,17 @@ namespace CEMS.Controllers
                 Remarks = "Quick-rejected"
             };
             _db.Approvals.Add(approval);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "RejectForReimbursement",
+                Module = "Expense Reports",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = id,
+                Details = $"CEO quick-rejected report #{id}"
+            });
+
             await _db.SaveChangesAsync();
 
             TempData["Success"] = "Report rejected by CEO.";
@@ -289,6 +330,16 @@ namespace CEMS.Controllers
             }
 
             _db.Budgets.Add(new Budget { Category = category, Allocated = allocated, Spent = 0 });
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "CreateBudget",
+                Module = "Budget Management",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                Details = $"Created budget '{category}' with ₱{allocated:N2}"
+            });
+
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Budget for '{category}' created successfully.";
             return RedirectToAction("Budget");
@@ -319,6 +370,17 @@ namespace CEMS.Controllers
 
             budget.Category = category;
             budget.Allocated = allocated;
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "EditBudget",
+                Module = "Budget Management",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = budget.Id,
+                Details = $"Updated budget '{category}' to ₱{allocated:N2}"
+            });
+
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Budget '{budget.Category}' updated to ₱{allocated:N2}.";
             return RedirectToAction("Budget");
@@ -340,6 +402,17 @@ namespace CEMS.Controllers
             }
 
             _db.Budgets.Remove(budget);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "DeleteBudget",
+                Module = "Budget Management",
+                Role = "CEO",
+                PerformedByUserId = _userManager.GetUserId(User),
+                RelatedRecordId = budget.Id,
+                Details = $"Deleted budget '{budget.Category}'"
+            });
+
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Budget '{budget.Category}' deleted.";
             return RedirectToAction("Budget");
