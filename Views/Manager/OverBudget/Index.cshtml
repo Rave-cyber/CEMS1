@@ -96,13 +96,20 @@
 
     .exceed-badge {
         display: inline-block;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: .75rem;
-        font-weight: 600;
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
+        padding: 0;
+        border-radius: 0;
+        font-size: .9rem;
+        font-weight: 700;
+        background: transparent;
+        color: var(--d-text);
     }
+
+    /* row accent for over-budget items to match reports list */
+    .report-overbudget td:first-child {
+        border-left: 4px solid #ef4444;
+        padding-left: 10px;
+    }
+    .report-overbudget { background: rgba(239,68,68,0.02); }
 
     .action-btn {
         font-size: .85rem;
@@ -138,6 +145,39 @@
         color: #fff;
         text-decoration: none;
     }
+
+    /* Consistent view / approve button styles used elsewhere */
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: 6px;
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
+    }
+
+    .view-btn:hover { background: rgba(26,107,181,.12); color:#155a9a; }
+
+    .approve-btn, .reject-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+    }
+
+    .approve-btn { background: #10b981; }
+    .approve-btn:hover { filter: brightness(.95); }
+
+    .reject-btn { background: #ef4444; }
+    .reject-btn:hover { filter: brightness(.95); }
 
     .empty-state {
         background: var(--d-card);
@@ -198,25 +238,19 @@
                         <tbody>
                             @foreach(var dto in ViewBag.OverBudget as List<CEMS.Models.OverBudgetReportDto>)
                             {
-                                <tr>
+                                <tr class="report-overbudget">
                                     <td><strong>@dto.Report.Id</strong></td>
                                     <td>@(dto.UserName ?? "Unknown")</td>
                                     <td><strong>₱@dto.Report.TotalAmount.ToString("N2")</strong></td>
                                     <td>
-                                        <span class="exceed-badge">
-                                            <i class="bi bi-arrow-up-right"></i> ₱@dto.ExceedAmount.ToString("N2")
-                                        </span>
+                                        <span class="exceed-badge">+₱@dto.ExceedAmount.ToString("N2")</span>
                                     </td>
                                     <td>
-                                        <a class="action-btn action-btn--primary" href="@Url.Action("ReportDetails","Manager", new { id = dto.Report.Id })">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                        <form method="post" asp-action="ForwardToCEO" asp-controller="Manager" style="display:inline-block; margin-left:6px;">
+                                        <a class="view-btn" href="@Url.Action("ReportDetails", "Manager", new { id = dto.Report.Id })">View</a>
+                                        <form method="post" asp-action="ForwardToCEO" asp-controller="Manager" style="display: inline-block; margin-left: 6px;">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@dto.Report.Id" />
-                                            <button class="action-btn action-btn--danger" type="submit">
-                                                <i class="bi bi-arrow-up"></i> Forward
-                                            </button>
+                                            <button class="approve-btn" type="submit">Forward</button>
                                         </form>
                                     </td>
                                 </tr>

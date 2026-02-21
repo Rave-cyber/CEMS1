@@ -45,22 +45,23 @@
         background: var(--d-card);
         border: 1px solid var(--d-border);
         border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 24px;
+        padding: 12px 12px;
+        margin-bottom: 12px;
     }
 
     .filter-card .form-label {
         font-size: .85rem;
         font-weight: 600;
         color: var(--d-muted);
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .filter-card .form-control,
     .filter-card .form-select {
         border-color: var(--d-border);
         border-radius: 6px;
-        font-size: .9rem;
+        font-size: .88rem;
+        padding: 6px 8px;
     }
 
     .filter-card .form-control:focus,
@@ -110,18 +111,25 @@
 
     .status-badge {
         display: inline-block;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: .75rem;
+        padding: 0;
+        font-size: .9rem;
         font-weight: 600;
-        text-transform: uppercase;
+        text-transform: none;
+        color: var(--d-text);
     }
 
-    .status-badge--pending { background: rgba(245, 158, 11, 0.1); color: #d97706; }
-    .status-badge--approved { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .status-badge--rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-    .status-badge--within { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .status-badge--over { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .status-badge--pending { color: var(--d-text); }
+    .status-badge--approved { color: var(--d-text); }
+    .status-badge--rejected { color: var(--d-text); }
+    .status-badge--within { color: var(--d-text); }
+    .status-badge--over { color: var(--d-text); }
+
+    /* Over-budget row indicator (left accent) */
+    .report-overbudget td:first-child {
+        border-left: 4px solid var(--d-danger);
+        padding-left: 10px;
+    }
+    .report-overbudget { background: rgba(239,68,68,0.02); }
 
     .action-btn {
         font-size: .85rem;
@@ -133,28 +141,37 @@
         align-items: center;
         gap: 6px;
     }
-
-    .action-btn--primary {
-        background: var(--d-primary);
-        color: #fff;
-    }
-
-    .action-btn--primary:hover {
-        background: #154a8a;
-        color: #fff;
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: var(--d-radius);
+        font-size: .85rem;
+        font-weight: 500;
         text-decoration: none;
+        transition: all .2s;
     }
 
-    .action-btn--secondary {
-        background: var(--d-accent);
+    .view-btn:hover { background: rgba(26,107,181,.12); color:#155a9a; }
+
+    .approve-btn, .reject-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
         color: #fff;
+        border: none;
+        cursor: pointer;
     }
 
-    .action-btn--secondary:hover {
-        background: #27a89e;
-        color: #fff;
-        text-decoration: none;
-    }
+    .approve-btn { background: #10b981; }
+    .approve-btn:hover { filter: brightness(.95); }
+
+    .reject-btn { background: #ef4444; }
+    .reject-btn:hover { filter: brightness(.95); }
 
     .empty-state {
         background: var(--d-card);
@@ -266,6 +283,8 @@
                 Expense Reports
             </h1>
         </div>
+        
+        <!-- filters removed for consistent manager view -->
 
         @if (TempData["Success"] != null)
         {
@@ -280,34 +299,54 @@
         <div class="filter-card">
             <form id="filters" class="row g-3" method="get" action="@Context.Request.Path">
                 <div class="col-md-3">
-                    <label class="form-label">Driver Name</label>
-                    <input type="text" name="driver" class="form-control" value="@Context.Request.Query["driver"]" placeholder="Search driver..." />
+                    <label class="form-label">Driver</label>
+                    <input type="text" name="driver" class="form-control form-control-sm" value="@Context.Request.Query["driver"]" placeholder="Driver name" />
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" name="start" class="form-control" value="@Context.Request.Query["start"]" />
+                <div class="col-md-3">
+                    <label class="form-label">From</label>
+                    <input type="date" name="start" id="mgrStart" class="form-control form-control-sm" value="@Context.Request.Query["start"]" />
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">End Date</label>
-                    <input type="date" name="end" class="form-control" value="@Context.Request.Query["end"]" />
+                <div class="col-md-3">
+                    <label class="form-label">To</label>
+                    <input type="date" name="end" id="mgrEnd" class="form-control form-control-sm" value="@Context.Request.Query["end"]" />
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">All Statuses</option>
+                    <select name="status" id="mgrStatus" class="form-select form-select-sm">
+                        <option value="">All</option>
                         <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Pending</option>
-                        <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"]=="PendingCEOApproval")">Forwarded to CEO</option>
+                        <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"]=="PendingCEOApproval")">Forwarded</option>
                         <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
                         <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button class="btn w-100" type="submit" style="background: var(--d-primary); color: white; border: none; border-radius: 6px; font-weight: 600;">
-                        <i class="bi bi-search me-2"></i> Filter Reports
-                    </button>
-                </div>
             </form>
         </div>
+
+        <script>
+            // Remove colored text/badges behavior already done in CSS. Keep filters auto-applying set earlier.
+            document.addEventListener('DOMContentLoaded', function(){
+                // Handle approve/reject forms via fetch to show toast without reload
+                document.querySelectorAll('.approve-form, .reject-form').forEach(function(f){
+                    f.addEventListener('submit', async function(e){
+                        e.preventDefault();
+                        var action = f.getAttribute('asp-action') || f.action;
+                        var formData = new FormData(f);
+                        try{
+                            var res = await fetch(f.action, { method: 'POST', body: formData, headers: { 'X-Requested-With':'XMLHttpRequest' } });
+                            var json = await res.json();
+                            // show toast
+                            var t = document.getElementById('actionToast');
+                            var text = document.getElementById('toastText');
+                            var icon = document.getElementById('toastIcon');
+                            if(json.success){ t.classList.add('action-toast--success','show'); text.textContent = json.message || 'Done'; }
+                            else { t.classList.add('action-toast--error','show'); text.textContent = json.message || 'Failed'; }
+                            setTimeout(function(){ t.classList.remove('show','action-toast--success','action-toast--error'); }, 2200);
+                        }catch(err){ console.error(err); }
+                    });
+                });
+            });
+        </script>
 
         <!-- Reports Table -->
         <div class="table-card">
@@ -330,46 +369,47 @@
                             @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
                             {
                                 var r = dto.Report;
-                                <tr>
+                                <tr class="@(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "report-overbudget" : "")">
                                     <td><strong>@r.Id</strong></td>
                                     <td>@(dto.UserName ?? "Unknown")</td>
                                     <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
                                     <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
                                     <td>
-                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
-                                            @r.BudgetCheck
-                                        </span>
+                                        @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)
+                                        {
+                                            <span class="status-badge">Over budget</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge">Within budget</span>
+                                        }
                                     </td>
                                     <td>
                                         @if (r.Status == CEMS.Models.ReportStatus.PendingCEOApproval)
                                         {
-                                            <span class="status-badge" style="background:rgba(139,92,246,.1);color:#7c3aed;">Forwarded to CEO</span>
+                                            <span class="status-badge">Forwarded to CEO</span>
                                         }
                                         else
                                         {
-                                            <span class="status-badge @(r.Status == CEMS.Models.ReportStatus.Submitted ? "status-badge--pending" : r.Status == CEMS.Models.ReportStatus.Approved ? "status-badge--approved" : "status-badge--rejected")">
-                                                @r.Status
-                                            </span>
+                                            <span class="status-badge">@r.Status</span>
                                         }
                                     </td>
                                     <td>
-                                        <a class="action-btn action-btn--primary" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
+                                        <a class="view-btn" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">View</a>
                                         @if (r.Status == CEMS.Models.ReportStatus.Submitted)
                                         {
                                             <form method="post" asp-action="ApproveReport" asp-controller="Manager" class="approve-form" style="display:inline-block; margin-left:6px;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button class="action-btn" type="submit" style="background:#10b981;color:#fff;border:none;cursor:pointer;">
-                                                    <i class="bi bi-check-lg"></i> Approve
+                                                <button class="approve-btn" type="submit">
+                                                    Approve
                                                 </button>
                                             </form>
                                             <form method="post" asp-action="RejectReport" asp-controller="Manager" class="reject-form" style="display:inline-block; margin-left:6px;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button class="action-btn" type="submit" style="background:#ef4444;color:#fff;border:none;cursor:pointer;">
-                                                    <i class="bi bi-x-lg"></i> Reject
+                                                <button class="reject-btn" type="submit">
+                                                    Reject
                                                 </button>
                                             </form>
                                         }
@@ -395,6 +435,7 @@
 <div class="action-toast" id="actionToast">
     <i class="bi" id="toastIcon"></i>
     <span id="toastText"></span>
+    <button type="button" id="toastClose" style="margin-left:8px;background:transparent;border:none;color:#fff;">×</button>
 </div>
 
 <!-- Confirmation Modal -->

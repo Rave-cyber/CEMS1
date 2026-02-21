@@ -51,12 +51,12 @@
     }
 
     .badge-pending {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.85rem;
+        background: transparent;
+        color: var(--d-text);
+        padding: 0;
+        border-radius: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
     }
 
     .table-card {
@@ -100,12 +100,11 @@
 
     .status-badge {
         display: inline-block;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: .75rem;
+        padding: 0;
+        font-size: .9rem;
         font-weight: 600;
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
+        background: transparent;
+        color: var(--d-text);
     }
 
     .action-btn {
@@ -122,38 +121,37 @@
         gap: 6px;
     }
 
-    .action-btn--view {
-        background: rgba(26, 107, 181, 0.1);
+    .view-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
         color: var(--d-primary);
-        border-color: transparent;
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: 6px;
+        font-size: .85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
     }
 
-    .action-btn--view:hover {
-        background: var(--d-primary);
+    .view-btn:hover { background: rgba(26,107,181,.12); color:#155a9a; }
+
+    .approve-btn, .reject-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
         color: #fff;
+        border: none;
+        cursor: pointer;
     }
 
-    .action-btn--approve {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-        border-color: transparent;
-    }
+    .approve-btn { background: #10b981; }
+    .approve-btn:hover { filter: brightness(.95); }
 
-    .action-btn--approve:hover {
-        background: #10b981;
-        color: #fff;
-    }
-
-    .action-btn--reject {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-        border-color: transparent;
-    }
-
-    .action-btn--reject:hover {
-        background: #ef4444;
-        color: #fff;
-    }
+    .reject-btn { background: #ef4444; }
+    .reject-btn:hover { filter: brightness(.95); }
 
     .empty-state {
         background: var(--d-card);
@@ -191,7 +189,7 @@
 
 <div class="page-wrapper">
     <div class="container-fluid px-4">
-        <div class="page-header">
+            <div class="page-header">
             <div>
                 <h1 class="page-title">
                     <i class="bi bi-exclamation-triangle"></i>
@@ -201,9 +199,9 @@
             </div>
             @if (reports.Any())
             {
-                <div class="badge-pending">
-                    @reports.Count Pending
-                </div>
+                    <div class="badge-pending">
+                        @reports.Count Pending
+                    </div>
             }
         </div>
 
@@ -234,33 +232,27 @@
                                     <td>
                                         @if (dto.ExceedAmount > 0)
                                         {
-                                            <span style="color: #ef4444; font-weight: 600;">+₱@dto.ExceedAmount.ToString("N2")</span>
+                                            <span class="fw-semibold">+₱@dto.ExceedAmount.ToString("N2")</span>
                                         }
                                         else
                                         {
-                                            <span style="color: var(--d-muted);">—</span>
+                                            <span class="text-muted">—</span>
                                         }
                                     </td>
                                     <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
                                     <td><span class="status-badge">Pending CEO</span></td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a class="action-btn action-btn--view" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">
-                                                <i class="bi bi-eye"></i> View
-                                            </a>
+                                            <a class="view-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">View</a>
                                             <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="action-btn action-btn--approve">
-                                                    <i class="bi bi-check-lg"></i> Approve
-                                                </button>
+                                                <button type="submit" class="approve-btn">Approve</button>
                                             </form>
                                             <form method="post" asp-action="RejectForReimbursement" asp-controller="CEO" style="display:inline;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="action-btn action-btn--reject">
-                                                    <i class="bi bi-x-lg"></i> Reject
-                                                </button>
+                                                <button type="submit" class="reject-btn">Reject</button>
                                             </form>
                                         </div>
                                     </td>

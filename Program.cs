@@ -3,6 +3,7 @@ using CEMS.Models;
 using CEMS.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
-        sqlOptions.CommandTimeout(120)));
+    {
+        sqlOptions.CommandTimeout(120);
+        // Enable transient fault resiliency for SQL Server
+        sqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+    }));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ✅ PROPER Identity Configuration
