@@ -19,17 +19,18 @@
     int totalCount = ViewBag.TotalCount ?? 0;
 }
 
-<div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0"><i class="bi bi-journal-text"></i> Audit Logs</h2>
-            <small class="text-muted">@totalCount total record(s)</small>
+<div class="page-wrapper">
+    <div class="container-fluid px-4">
+        <div class="page-header" style="margin-bottom: 16px;">
+            <h1 class="page-title">
+                <i class="bi bi-journal-text"></i>
+                Audit Logs
+            </h1>
+            <p class="page-subtitle">@totalCount total record(s)</p>
         </div>
-    </div>
 
-    <!-- Filters -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+        <!-- Filters -->
+        <div class="filter-card">
             <form method="get" asp-action="AuditLogs" class="row g-3 align-items-end">
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Search User</label>
@@ -79,77 +80,49 @@
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- Logs Table -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
+        <!-- Logs Table -->
+        <div class="table-card">
             @if (logs.Count == 0)
             {
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-journal-x" style="font-size:3rem;"></i>
-                    <p class="mt-2">No audit logs found.</p>
+                <div class="empty-state">
+                    <i class="bi bi-journal-x"></i>
+                    <p class="empty-state-title">No audit logs found</p>
+                    <p class="empty-state">Try adjusting your filters to see results</p>
                 </div>
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Role</th>
+                            <th>Performed By</th>
+                            <th>Target User</th>
+                            <th>Record</th>
+                            <th>Details</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in logs)
+                        {
                             <tr>
-                                <th>#</th>
-                                <th>Action</th>
-                                <th>Module</th>
-                                <th>Role</th>
-                                <th>Performed By</th>
-                                <th>Target User</th>
-                                <th>Record</th>
-                                <th>Details</th>
-                                <th>Timestamp</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var log in logs)
-                            {
-                                var actionBadge = log.Action switch
-                                {
-                                    "CreateAccount" => "bg-success",
-                                    "DeleteAccount" or "DeleteBudget" => "bg-danger",
-                                    "AssignRole" => "bg-primary",
-                                    "RemoveRole" => "bg-warning text-dark",
-                                    "LockAccount" => "bg-danger",
-                                    "UnlockAccount" => "bg-info text-dark",
-                                    "ApproveReport" or "CEOApprove" or "ApproveForReimbursement" => "bg-success",
-                                    "RejectReport" or "CEOReject" or "RejectForReimbursement" => "bg-danger",
-                                    "ForwardToCEO" => "bg-info text-dark",
-                                    "InitiatePayment" or "PaymentConfirmed" or "PaymentSynced" => "bg-primary",
-                                    "ManualReimbursement" => "bg-warning text-dark",
-                                    "CreateBudget" or "EditBudget" => "bg-info text-dark",
-                                    _ => "bg-secondary"
-                                };
-
-                                var moduleBadge = log.Module switch
-                                {
-                                    "User Management" => "bg-primary bg-opacity-10 text-primary",
-                                    "Expense Reports" => "bg-info bg-opacity-10 text-info",
-                                    "Reimbursements" => "bg-success bg-opacity-10 text-success",
-                                    "Budget Management" => "bg-warning bg-opacity-10 text-warning",
-                                    _ => "bg-secondary bg-opacity-10 text-secondary"
-                                };
-
-                                <tr>
-                                    <td>@log.Id</td>
-                                    <td><span class="badge @actionBadge">@log.Action</span></td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(log.Module))
-                                        {
-                                            <span class="badge @moduleBadge">@log.Module</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
+                                <td>@log.Id</td>
+                                <td><span style="color: #0f1724; font-weight: 600; font-size: 0.9rem;">@log.Action</span></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.Module))
+                                    {
+                                        <span style="color: #0f1724; font-weight: 600; font-size: 0.9rem;">@log.Module</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
                                     <td>
                                         @if (!string.IsNullOrEmpty(log.Role))
                                         {
@@ -198,17 +171,17 @@
                                     <td><small>@log.Timestamp.ToString("MMM dd, yyyy hh:mm tt")</small></td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
+                    </tbody>
+                </table>
+
 
                 <!-- Pagination -->
                 @if (totalPages > 1)
                 {
-                    <div class="d-flex justify-content-between align-items-center px-3 py-3 border-top">
-                        <small class="text-muted">Page @currentPage of @totalPages (@totalCount records)</small>
+                    <div class=\"d-flex justify-content-between align-items-center px-3 py-3 border-top\">
+                        <small class=\"text-muted\">Page @currentPage of @totalPages (@totalCount records)</small>
                         <nav>
-                            <ul class="pagination pagination-sm mb-0">
+                            <ul class=\"pagination pagination-sm mb-0\">
                                 @if (currentPage > 1)
                                 {
                                     <li class="page-item">

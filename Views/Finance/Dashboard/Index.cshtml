@@ -132,31 +132,39 @@
         background: var(--d-card);
         border: 1px solid var(--d-border);
         border-radius: 8px;
-        padding: 8px 10px;
+        padding: 12px 12px;
         margin-bottom: 8px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 10px;
     }
-    .filter-card label {
-        font-size: .78rem;
+    .filter-card .form-label {
+        font-size: .85rem;
         font-weight: 600;
         color: var(--d-muted);
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
-    .filter-card input {
-        border: 1px solid var(--d-border);
+    .filter-card .form-control,
+    .filter-card .form-select {
+        border-color: var(--d-border);
         border-radius: 6px;
+        font-size: .88rem;
         padding: 6px 8px;
-        font-size: .85rem;
-        color: var(--d-text);
     }
-    .filter-actions .btn {
-        font-size: .86rem;
-        font-weight: 600;
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus {
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
+    }
+    .quick-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        color: var(--d-text);
         border-radius: 6px;
-        padding: 6px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .quick-filter-btn:hover {
+        background: var(--d-border);
     }
 
     @@media (max-width: 768px) {
@@ -185,29 +193,31 @@
 
         <!-- ── Filter Card ── -->
         <div class="filter-card">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
-                <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:160px;">
-                        <label for="filterStart">From</label>
-                        <input type="date" id="filterStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
-                    </div>
-                    <div style="flex:1;min-width:160px;">
-                        <label for="filterEnd">To</label>
-                        <input type="date" id="filterEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
+            <form id="financeFilters" class="row g-3" method="get" action="@Context.Request.Path">
+                <div class="col-md-3">
+                    <label class="form-label">From</label>
+                    <input type="date" name="start" id="filterStart" class="form-control form-control-sm" value="@Context.Request.Query["start"]" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To</label>
+                    <input type="date" name="end" id="filterEnd" class="form-control form-control-sm" value="@Context.Request.Query["end"]" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Quick Filter</label>
+                    <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="today">Today</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="week">Week</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="month">Month</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="year">Year</button>
                     </div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <div class="quick-filter">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
-                    </div>
-                    <a href="@Url.Action("Reimbursements", "Finance")" class="btn text-white btn-sm" style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;padding:8px 12px;">
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <a href="@Url.Action("Reimbursements", "Finance")" class="btn text-white btn-sm w-100" style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
                         <i class="bi bi-plus-lg me-1"></i> Process Reimbursement
                     </a>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- ── Stats Row ── -->
@@ -385,7 +395,15 @@ function renderMonthlyBreakdown(monthlyData, categories) {
 
 async function loadFinanceMetrics(){
     try{
-        const res = await fetch('@Url.Action("Metrics","Finance")');
+        var start = document.getElementById('filterStart')?.value;
+        var end = document.getElementById('filterEnd')?.value;
+        var params = new URLSearchParams();
+        if(start) params.append('start', start);
+        if(end) params.append('end', end);
+        var query = params.toString();
+        var url = '@Url.Action("Metrics","Finance")' + (query ? '?' + query : '');
+
+        const res = await fetch(url);
         const data = await res.json();
         document.getElementById('processedVal').textContent = ((data.processedToday ?? 0).toFixed(2));
         document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
@@ -405,18 +423,19 @@ document.addEventListener('DOMContentLoaded', function(){
     // initial load
     loadFinanceMetrics();
 
-    // auto-apply when date inputs change
-    ['filterStart','filterEnd'].forEach(function(id){
-        var el = document.getElementById(id);
-        if(!el) return;
-        el.addEventListener('change', function(){
-            if(window._debFilter) clearTimeout(window._debFilter);
-            window._debFilter = setTimeout(loadFinanceMetrics, 250);
+    // auto-apply when form fields change
+    var filtersForm = document.getElementById('financeFilters');
+    if(filtersForm){
+        var inputs = filtersForm.querySelectorAll('input, select');
+        inputs.forEach(function(input){
+            input.addEventListener('change', function(){
+                loadFinanceMetrics();
+            });
         });
-    });
+    }
 
     // quick-range buttons
-    document.querySelectorAll('.quick-filter [data-range]').forEach(function(btn){
+    document.querySelectorAll('.quick-filter-btn[data-range]').forEach(function(btn){
         btn.addEventListener('click', function(){
             var range = btn.getAttribute('data-range');
             var now = new Date();

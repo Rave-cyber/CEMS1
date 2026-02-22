@@ -6,138 +6,7 @@
     var allRoles = (List<string?>)ViewBag.AllRoles;
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-
 <style>
-    :root {
-        --d-primary: #1a6bb5;
-        --d-accent: #2ec4b6;
-        --d-bg: #f7fbfc;
-        --d-card: #ffffff;
-        --d-border: #e9eef6;
-        --d-text: #0f1724;
-        --d-muted: #6b7280;
-        --d-radius: 8px;
-        --d-radius-lg: 10px;
-    }
-
-    .page-wrapper {
-        background: var(--d-bg);
-        min-height: calc(100vh - 80px);
-        padding: 28px 0 40px;
-    }
-
-    .page-header {
-        margin-bottom: 32px;
-    }
-
-    .page-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--d-text);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .page-title i {
-        color: var(--d-primary);
-        font-size: 1.8rem;
-    }
-
-    .page-subtitle {
-        color: var(--d-muted);
-        font-size: 0.95rem;
-    }
-
-    .table-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: var(--d-radius-lg);
-        overflow: hidden;
-        margin-bottom: 28px;
-    }
-
-    .table-card-header {
-        background: #f8fafc;
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--d-border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-    }
-
-    .table-card-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--d-text);
-    }
-
-    .create-btn {
-        background: var(--d-primary);
-        color: #fff;
-        border: none;
-        padding: 10px 16px;
-        border-radius: var(--d-radius);
-        font-size: 0.9rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
-
-    .create-btn:hover {
-        background: #155297;
-        box-shadow: 0 4px 12px rgba(26, 107, 181, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .dash-table {
-        width: 100%;
-        margin-bottom: 0;
-    }
-
-    .dash-table thead th {
-        background: #f8fafc;
-        color: var(--d-muted);
-        font-weight: 600;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 12px 16px;
-        border: none;
-    }
-
-    .dash-table tbody td {
-        padding: 14px 16px;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-        color: var(--d-text);
-        font-size: 0.9rem;
-    }
-
-    .dash-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .dash-table tbody tr:hover {
-        background: #f8fafc;
-    }
-
-    .user-email {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
     .user-avatar {
         width: 32px;
         height: 32px;
@@ -149,11 +18,6 @@
         color: var(--d-primary);
         font-size: 1rem;
         flex-shrink: 0;
-    }
-
-    .user-email-text {
-        font-weight: 600;
-        color: var(--d-text);
     }
 
     .role-badges {
@@ -170,12 +34,12 @@
         display: inline-block;
     }
 
-    .badge-superadmin { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
-    .badge-ceo { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-    .badge-manager { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .badge-finance { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .badge-driver { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-    .badge-norole { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+    .badge-superadmin { background: none; color: #0f1724; }
+    .badge-ceo { background: none; color: #0f1724; }
+    .badge-manager { background: none; color: #0f1724; }
+    .badge-finance { background: none; color: #0f1724; }
+    .badge-driver { background: none; color: #0f1724; }
+    .badge-norole { background: none; color: #0f1724; }
 
     .status-badge {
         display: inline-flex;
@@ -187,8 +51,8 @@
         font-weight: 600;
     }
 
-    .status-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-    .status-locked { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+    .status-active { background: none; color: #0f1724; }
+    .status-locked { background: none; color: #0f1724; }
 
     .actions-group {
         display: flex;
@@ -235,31 +99,37 @@
         border-color: #dc2626;
     }
 
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
+    .table-card-header {
+        background: linear-gradient(135deg, rgba(26, 107, 181, 0.03), rgba(16, 185, 129, 0.03));
     }
 
-    .empty-state i {
-        font-size: 3rem;
-        color: var(--d-border);
-        margin-bottom: 16px;
+    .create-btn {
+        background: var(--d-primary);
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
     }
 
-    .empty-state p {
-        color: var(--d-muted);
-        font-size: 0.95rem;
-        margin: 0;
+    .create-btn:hover {
+        background: #155297;
+        filter: brightness(0.95);
     }
 
     @@media (max-width: 768px) {
-        .page-wrapper { padding: 20px 0 32px; }
-        .page-title { font-size: 1.4rem; }
-        .table-card-header { flex-direction: column; align-items: flex-start; }
+        .table-card-header { flex-direction: column; align-items: flex-start; gap: 12px; }
         .actions-group { justify-content: flex-start; }
         .dash-table thead { display: none; }
-        .dash-table tbody td { display: block; padding: 12px 16px; border: none; }
-        .dash-table tbody tr { border: 1px solid var(--d-border); border-radius: var(--d-radius-lg); margin-bottom: 12px; display: block; }
+        .dash-table tbody td { display: block; padding: 12px 14px; border: none; }
+        .dash-table tbody tr { border: 1px solid var(--d-border); border-radius: 10px; margin-bottom: 12px; display: block; }
         .dash-table tbody td::before { content: attr(data-label); font-weight: 600; color: var(--d-muted); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; }
     }
 </style>
@@ -267,7 +137,7 @@
 <div class="page-wrapper">
     <div class="container-fluid px-4">
         <!-- Header -->
-        <div class="page-header">
+        <div class="page-header" style="margin-bottom: 16px;">
             <h1 class="page-title">
                 <i class="bi bi-people"></i>
                 User Management
@@ -277,10 +147,10 @@
 
         <!-- Users Table -->
         <div class="table-card">
-            <div class="table-card-header">
-                <div class="table-card-title">
-                    <i class="bi bi-table"></i>
-                    All Users
+            <div class="table-card-header" style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--d-text); font-size: 0.9rem;">
+                    <i class="bi bi-people"></i>
+                    All Users (@users.Count)
                 </div>
                 <button class="create-btn" data-bs-toggle="modal" data-bs-target="#createAccountModal">
                     <i class="bi bi-person-plus"></i> Create Account
@@ -289,9 +159,9 @@
             <div class="table-responsive">
                 @if (users.Count == 0)
                 {
-                    <div class="empty-state">
-                        <i class="bi bi-people"></i>
-                        <p>No users found.</p>
+                    <div class="empty-state" style="background: var(--d-card); border-top: 1px solid var(--d-border); padding: 32px; text-align: center;">
+                        <i class="bi bi-people" style="font-size: 2.8rem; color: var(--d-success); margin-bottom: 12px;"></i>
+                        <p style="color: var(--d-muted); margin: 0; font-size: 0.9rem;">No users found.</p>
                     </div>
                 }
                 else
@@ -310,11 +180,11 @@
                             {
                                 <tr>
                                     <td data-label="Email">
-                                        <div class="user-email">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
                                             <div class="user-avatar">
                                                 <i class="bi bi-person"></i>
                                             </div>
-                                            <span class="user-email-text">@user.Email</span>
+                                            <span style="font-weight: 600; color: var(--d-text);">@user.Email</span>
                                         </div>
                                     </td>
                                     <td data-label="Roles">
@@ -381,7 +251,7 @@
                                                 </button>
                                             </form>
                                             <!-- Edit (opens modal) -->
-                                            <button class="action-btn" title="Edit" onclick="openEditModal('@user.UserId')">
+                                            <button class="action-btn action-btn-primary" title="Edit" onclick="openEditModal('@user.UserId')">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <!-- Delete -->

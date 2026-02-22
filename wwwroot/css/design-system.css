@@ -354,6 +354,107 @@
     color: var(--d-info);
 }
 
+/* Action Badges (for audit logs and system actions) */
+.badge-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-action-create {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.badge-action-delete {
+    background: rgba(239, 68, 68, 0.15);
+    color: #991b1b;
+}
+
+.badge-action-assign {
+    background: rgba(26, 107, 181, 0.15);
+    color: #1e40af;
+}
+
+.badge-action-approve {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.badge-action-reject {
+    background: rgba(239, 68, 68, 0.15);
+    color: #991b1b;
+}
+
+.badge-action-lock {
+    background: rgba(239, 68, 68, 0.15);
+    color: #991b1b;
+}
+
+.badge-action-unlock {
+    background: rgba(26, 107, 181, 0.15);
+    color: #1e40af;
+}
+
+.badge-action-payment {
+    background: rgba(26, 107, 181, 0.15);
+    color: #1e40af;
+}
+
+.badge-action-edit {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+}
+
+.badge-action-default {
+    background: rgba(107, 114, 128, 0.15);
+    color: #4b5563;
+}
+
+/* Module Badges */
+.badge-module {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-module-user {
+    background: rgba(26, 107, 181, 0.15);
+    color: #1e40af;
+}
+
+.badge-module-expense {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+}
+
+.badge-module-reimbursement {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.badge-module-budget {
+    background: rgba(245, 158, 11, 0.15);
+    color: #92400e;
+}
+
+.badge-module-default {
+    background: rgba(107, 114, 128, 0.15);
+    color: #4b5563;
+}
+
 /* Row Accents */
 .report-overbudget {
     border-left: 4px solid var(--d-danger);

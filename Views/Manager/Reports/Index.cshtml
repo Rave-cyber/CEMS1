@@ -314,7 +314,7 @@
                     <label class="form-label">Status</label>
                     <select name="status" id="mgrStatus" class="form-select form-select-sm">
                         <option value="">All</option>
-                        <option value="Submitted" selected="@(Context.Request.Query["status"]=="Submitted")">Pending</option>
+                        <option value="Submitted" selected="@(string.IsNullOrEmpty(Context.Request.Query["status"]) || Context.Request.Query["status"]=="Submitted")">Pending</option>
                         <option value="PendingCEOApproval" selected="@(Context.Request.Query["status"]=="PendingCEOApproval")">Forwarded</option>
                         <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
                         <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
@@ -324,8 +324,18 @@
         </div>
 
         <script>
-            // Remove colored text/badges behavior already done in CSS. Keep filters auto-applying set earlier.
+            // Auto-apply filters on form field change
             document.addEventListener('DOMContentLoaded', function(){
+                var filtersForm = document.getElementById('filters');
+                if(filtersForm){
+                    var inputs = filtersForm.querySelectorAll('input, select');
+                    inputs.forEach(function(input){
+                        input.addEventListener('change', function(){
+                            filtersForm.submit();
+                        });
+                    });
+                }
+
                 // Handle approve/reject forms via fetch to show toast without reload
                 document.querySelectorAll('.approve-form, .reject-form').forEach(function(f){
                     f.addEventListener('submit', async function(e){

@@ -20,10 +20,17 @@ namespace CEMS.Controllers
             _userManager = userManager;
         }
         
-        public async Task<IActionResult> Dashboard()
+        public async Task<IActionResult> Dashboard(DateTime? start, DateTime? end)
         {
+            // Set default date range if not provided
+            if (!start.HasValue) start = DateTime.UtcNow.AddMonths(-1).Date;
+            if (!end.HasValue) end = DateTime.UtcNow.Date;
+
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
+
             var pendingReports = await _db.ExpenseReports
-                .Where(r => r.Status == ReportStatus.Submitted)
+                .Where(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
                 .OrderByDescending(r => r.SubmissionDate)
                 .Take(20)
                 .ToListAsync();
@@ -64,14 +71,28 @@ namespace CEMS.Controllers
         public async Task<IActionResult> Reports(string driver, DateTime? start, DateTime? end, string status)
         {
             var q = _db.ExpenseReports.Include(r => r.User).AsQueryable();
+
             if (!string.IsNullOrEmpty(driver))
             {
                 var users = await _userManager.Users.Where(u => u.UserName.Contains(driver)).Select(u => u.Id).ToListAsync();
                 q = q.Where(r => r.UserId != null && users.Contains(r.UserId));
             }
             if (start.HasValue) q = q.Where(r => r.SubmissionDate >= start.Value);
-            if (end.HasValue) q = q.Where(r => r.SubmissionDate <= end.Value);
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ReportStatus>(status, out var st)) q = q.Where(r => r.Status == st);
+            if (end.HasValue) q = q.Where(r => r.SubmissionDate <= end.Value.AddDays(1));
+
+            // Default to "Submitted" status if no status filter is provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (Enum.TryParse<ReportStatus>(status, out var st))
+                {
+                    q = q.Where(r => r.Status == st);
+                }
+            }
+            else
+            {
+                // Default: show only Submitted (pending review) reports
+                q = q.Where(r => r.Status == ReportStatus.Submitted);
+            }
 
             var reports = await q.OrderByDescending(r => r.SubmissionDate).Take(200).ToListAsync();
 
@@ -84,12 +105,27 @@ namespace CEMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Metrics()
+        public async Task<IActionResult> Metrics(DateTime? start, DateTime? end)
         {
-            var totalPending = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Submitted).CountAsync();
-            var approved = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Approved).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-            var rejected = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Rejected).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-            var overBudgetCount = await _db.ExpenseReports.Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget).CountAsync();
+            // Set default date range if not provided
+            if (!start.HasValue) start = DateTime.UtcNow.AddMonths(-1).Date;
+            if (!end.HasValue) end = DateTime.UtcNow.Date;
+
+            var totalPending = await _db.ExpenseReports
+                .Where(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .CountAsync();
+
+            var approved = await _db.ExpenseReports
+                .Where(r => r.Status == ReportStatus.Approved && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+
+            var rejected = await _db.ExpenseReports
+                .Where(r => r.Status == ReportStatus.Rejected && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+
+            var overBudgetCount = await _db.ExpenseReports
+                .Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .CountAsync();
 
             // budget per category
             var budgets = await _db.Budgets.Select(b => new { b.Category, b.Allocated, b.Spent }).ToListAsync();

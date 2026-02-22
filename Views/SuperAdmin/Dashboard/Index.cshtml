@@ -10,6 +10,7 @@
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
     :root {
@@ -324,6 +325,37 @@
 
     .badge-action--primary { background: rgba(26, 107, 181, 0.1); color: var(--d-primary); }
 
+    /* Chart Container */
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+
+    .chart-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .chart-card-title {
+        font-weight: 600;
+        color: var(--d-text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-card-title i {
+        color: var(--d-primary);
+    }
+
+    canvas { max-height: 240px !important; }
+
     @@media (max-width: 768px) {
         .page-wrapper { padding: 20px 0 32px; }
         .greeting-title { font-size: 1.4rem; }
@@ -332,6 +364,7 @@
         .stat-value { font-size: 1.3rem; }
         .action-grid { grid-template-columns: repeat(2, 1fr); }
         .role-grid { grid-template-columns: repeat(2, 1fr); }
+        .chart-grid { grid-template-columns: 1fr; }
     }
 </style>
 
@@ -376,6 +409,26 @@
         });
     })();
 </script>
+        <!-- Audit Logs Filter -->
+        <div class="filter-card" style="margin-bottom: 20px;">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" id="filterStart" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" id="filterEnd" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-6 d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnToday">Today</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnWeek">Week</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnMonth">Month</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnYear">Year</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Key Metrics -->
         <div class="metrics-grid">
             <a href="@Url.Action("Users","SuperAdmin")" class="stat-card" aria-label="View users">
@@ -465,11 +518,29 @@
                         <div class="role-name">@rc.Key</div>
                     </div>
                 }
+                 </div>
             </div>
-        </div>
 
-        <!-- Recent Audit Logs -->
-        <div class="table-card">
+            <!-- Analytics Charts -->
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-card-title">
+                        <i class="bi bi-pie-chart"></i>
+                        Role Distribution Chart
+                    </div>
+                    <canvas id="roleChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card-title">
+                        <i class="bi bi-bar-chart"></i>
+                        Activity by Action Type
+                    </div>
+                    <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Audit Logs -->
+                <div class="table-card">
             <div class="table-card-head">
                 <div class="table-card-title">
                     <i class="bi bi-activity"></i>
@@ -503,7 +574,7 @@
                             {
                                 <tr>
                                     <td>
-                                        <span class="badge-action badge-action--primary">@log.Action</span>
+                                        <span style="color: #0f1724; font-weight: 600;">@log.Action</span>
                                     </td>
                                     <td>
                                         @if (log.PerformedByUserId != null && logUsers.ContainsKey(log.PerformedByUserId))
@@ -526,3 +597,156 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Load and render charts
+    function initCharts() {
+        // Role Distribution Chart
+        var roleLabels = [@string.Join(",", roleCounts.Keys.Select(k => $"'{k}'"))];
+        var roleData = [@string.Join(",", roleCounts.Values)];
+
+        var roleCtx = document.getElementById('roleChart');
+        if (roleCtx && roleLabels.length > 0) {
+            new Chart(roleCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: roleLabels,
+                    datasets: [{
+                        data: roleData,
+                        backgroundColor: [
+                            'rgba(26, 107, 181, 0.8)',   // Primary blue
+                            'rgba(16, 185, 129, 0.8)',   // Success green
+                            'rgba(245, 158, 11, 0.8)',   // Warning orange
+                            'rgba(59, 130, 246, 0.8)',   // Info light blue
+                            'rgba(139, 92, 246, 0.8)',   // Purple
+                            'rgba(107, 114, 128, 0.8)'   // Gray
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                boxWidth: 12,
+                                font: { size: 12 },
+                                padding: 12,
+                                color: '#0f1724'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Activity by Action Type
+        var actionCounts = {};
+        var logs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(recentLogs));
+        logs.forEach(function(log) {
+            actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
+        });
+
+        var actionLabels = Object.keys(actionCounts).slice(0, 8);
+        var actionData = actionLabels.map(function(label) { return actionCounts[label]; });
+
+        var activityCtx = document.getElementById('activityChart');
+        if (activityCtx && actionLabels.length > 0) {
+            new Chart(activityCtx, {
+                type: 'bar',
+                data: {
+                    labels: actionLabels,
+                    datasets: [{
+                        label: 'Actions Count',
+                        data: actionData,
+                        backgroundColor: 'rgba(26, 107, 181, 0.6)',
+                        borderColor: 'rgba(26, 107, 181, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { color: '#6b7280', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#6b7280', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            initQuickRangeButtons();
+        });
+
+        function initQuickRangeButtons() {
+            var startInput = document.getElementById('filterStart');
+            var endInput = document.getElementById('filterEnd');
+
+            function setDateRange(start, end) {
+                startInput.value = start;
+                endInput.value = end;
+                applyFilter();
+            }
+
+            function applyFilter() {
+                var start = startInput.value;
+                var end = endInput.value;
+                if (start && end) {
+                    window.location = '@Url.Action("Dashboard", "SuperAdmin")' + '?start=' + start + '&end=' + end;
+                }
+            }
+
+            // Today
+            document.getElementById('btnToday').addEventListener('click', function() {
+                var today = new Date().toISOString().split('T')[0];
+                setDateRange(today, today);
+            });
+
+            // Week
+            document.getElementById('btnWeek').addEventListener('click', function() {
+                var today = new Date();
+                var weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+                var weekEnd = new Date(today.setDate(today.getDate() + 6));
+                setDateRange(weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0]);
+            });
+
+            // Month
+            document.getElementById('btnMonth').addEventListener('click', function() {
+                var today = new Date();
+                var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                var monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                setDateRange(monthStart.toISOString().split('T')[0], monthEnd.toISOString().split('T')[0]);
+            });
+
+            // Year
+            document.getElementById('btnYear').addEventListener('click', function() {
+                var today = new Date();
+                var yearStart = new Date(today.getFullYear(), 0, 1);
+                var yearEnd = new Date(today.getFullYear(), 11, 31);
+                setDateRange(yearStart.toISOString().split('T')[0], yearEnd.toISOString().split('T')[0]);
+            });
+
+            // Auto-filter on date change
+            startInput.addEventListener('change', applyFilter);
+            endInput.addEventListener('change', applyFilter);
+        }
+    </script>

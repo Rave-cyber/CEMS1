@@ -65,13 +65,40 @@
         background: var(--d-card);
         border: 1px solid var(--d-border);
         border-radius: 8px;
-        padding: 8px 10px;
+        padding: 12px 12px;
         margin-bottom: 12px;
-        display: flex;
-        gap: 8px;
-        align-items: center;
     }
-    .filter-card input { padding:6px 8px; border:1px solid var(--d-border); border-radius:6px; }
+    .filter-card .form-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        margin-bottom: 4px;
+    }
+    .filter-card .form-control,
+    .filter-card .form-select {
+        border-color: var(--d-border);
+        border-radius: 6px;
+        font-size: .88rem;
+        padding: 6px 8px;
+    }
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus {
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
+    }
+    .quick-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        color: var(--d-text);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .quick-filter-btn:hover {
+        background: var(--d-border);
+    }
 
     .table-card {
         background: var(--d-card);
@@ -180,26 +207,25 @@
         </div>
 
         <div class="filter-card">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
-                <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:160px;">
-                        <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">From</label>
-                        <input type="date" id="reimStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
-                    </div>
-                    <div style="flex:1;min-width:160px;">
-                        <label class="small text-muted" style="font-weight:600;margin-bottom:4px;display:block;">To</label>
-                        <input type="date" id="reimEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
+            <form id="reimbursementFilters" class="row g-3" method="get" action="@Context.Request.Path">
+                <div class="col-md-4">
+                    <label class="form-label">From</label>
+                    <input type="date" name="start" id="reimStart" class="form-control form-control-sm" value="@Context.Request.Query["start"]" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">To</label>
+                    <input type="date" name="end" id="reimEnd" class="form-control form-control-sm" value="@Context.Request.Query["end"]" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Quick Filter</label>
+                    <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                        <button type="button" class="quick-filter-btn" data-range="today">Today</button>
+                        <button type="button" class="quick-filter-btn" data-range="week">Week</button>
+                        <button type="button" class="quick-filter-btn" data-range="month">Month</button>
+                        <button type="button" class="quick-filter-btn" data-range="year">Year</button>
                     </div>
                 </div>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <div class="quick-filter">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
 
         @if (TempData["Success"] != null)
@@ -315,28 +341,34 @@
 </div>
 
 <script>
-    // auto-apply filters on this page
+    // Auto-apply filters on form field change
     document.addEventListener('DOMContentLoaded', function(){
-        var start = document.getElementById('reimStart');
-        var end = document.getElementById('reimEnd');
-        function apply(){
-            var s = start?.value || ''; var e = end?.value || ''; var qs = [];
-            if(s) qs.push('start=' + encodeURIComponent(s)); if(e) qs.push('end=' + encodeURIComponent(e));
-            var url = '@Url.Action("Reimbursements","Finance")' + (qs.length ? ('?' + qs.join('&')) : '');
-            window.location.href = url;
+        var filtersForm = document.getElementById('reimbursementFilters');
+        if(filtersForm){
+            var inputs = filtersForm.querySelectorAll('input, select');
+            inputs.forEach(function(input){
+                input.addEventListener('change', function(){
+                    filtersForm.submit();
+                });
+            });
         }
-        [start,end].forEach(function(el){ if(el) el.addEventListener('change', function(){ if(window._debR) clearTimeout(window._debR); window._debR = setTimeout(apply, 200); }); });
 
-        document.querySelectorAll('.filter-card .quick-filter [data-range]').forEach(function(btn){
+        // Quick-range buttons
+        document.querySelectorAll('.quick-filter-btn[data-range]').forEach(function(btn){
             btn.addEventListener('click', function(){
-                var range = btn.getAttribute('data-range'); var now = new Date(); var sdate;
-                if(range==='today') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                else if(range==='week') sdate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-                else if(range==='month') sdate = new Date(now.getFullYear(), now.getMonth(), 1);
-                else if(range==='year') sdate = new Date(now.getFullYear(), 0, 1);
-                if(start && sdate) start.value = sdate.toISOString().slice(0,10);
-                if(end) end.value = now.toISOString().slice(0,10);
-                setTimeout(apply, 120);
+                var range = btn.getAttribute('data-range');
+                var now = new Date();
+                var start;
+                if(range === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                else if(range === 'week') start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+                else if(range === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
+                else if(range === 'year') start = new Date(now.getFullYear(), 0, 1);
+
+                var s = document.getElementById('reimStart');
+                var e = document.getElementById('reimEnd');
+                if(s && start) s.value = start.toISOString().slice(0,10);
+                if(e) e.value = now.toISOString().slice(0,10);
+                setTimeout(function(){ filtersForm.submit(); }, 150);
             });
         });
     });
