@@ -16,10 +16,19 @@
         --d-radius-sm: 6px;
     }
 
+    body.dark-mode {
+        --d-bg: #1a1f2e;
+        --d-card: #2d3748;
+        --d-border: #3a4452;
+        --d-text: #e8eef5;
+        --d-muted: #a0aec0;
+    }
+
     .expenses-wrapper {
         background: var(--d-bg);
         min-height: calc(100vh - 80px);
         padding: 28px 0 40px;
+        transition: background 0.3s ease;
     }
 
     /* Header */
@@ -32,11 +41,13 @@
         font-weight: 700;
         color: var(--d-text);
         margin-bottom: 4px;
+        transition: color 0.3s ease;
     }
 
     .expenses-subtitle {
         color: var(--d-muted);
         font-size: .92rem;
+        transition: color 0.3s ease;
     }
 
     /* Filter Card */
@@ -46,6 +57,7 @@
         border-radius: var(--d-radius);
         padding: 20px;
         margin-bottom: 24px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
 
     .filter-label {
@@ -54,6 +66,7 @@
         color: var(--d-text);
         margin-bottom: 6px;
         display: block;
+        transition: color 0.3s ease;
     }
 
     .filter-input {
@@ -61,10 +74,10 @@
         padding: 10px 14px;
         border: 1px solid var(--d-border);
         border-radius: var(--d-radius-sm);
-        background: #fff;
+        background: var(--d-card);
         font-size: .9rem;
         color: var(--d-text);
-        transition: border-color .2s;
+        transition: border-color .2s, background 0.3s ease, color 0.3s ease;
     }
 
         .filter-input:focus {
@@ -103,6 +116,7 @@
         align-items: center;
         gap: 4px;
         margin-top: 8px;
+        transition: color 0.2s;
     }
 
         .filter-reset:hover {
@@ -118,6 +132,7 @@
         border: 1px solid var(--d-border);
         border-radius: var(--d-radius);
         overflow: hidden;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
 
         .expenses-table thead th {
@@ -130,6 +145,11 @@
             padding: 16px 20px;
             border-bottom: 1px solid var(--d-border);
             text-align: left;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body.dark-mode .expenses-table thead th {
+            background: #374151;
         }
 
         .expenses-table tbody td {
@@ -138,6 +158,11 @@
             vertical-align: middle;
             color: var(--d-text);
             font-size: .9rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body.dark-mode .expenses-table tbody td {
+            border-bottom-color: #4b5563;
         }
 
         .expenses-table tbody tr:last-child td {
@@ -146,14 +171,27 @@
 
         .expenses-table tbody tr:hover {
             background: #f8fafc;
+            transition: background 0.2s ease;
+        }
+
+        body.dark-mode .expenses-table tbody tr:hover {
+            background: #374151;
         }
 
         .expenses-table tbody tr.table-warning {
             background: rgba(245, 158, 11, .04);
         }
 
+        body.dark-mode .expenses-table tbody tr.table-warning {
+            background: rgba(245, 158, 11, .1);
+        }
+
             .expenses-table tbody tr.table-warning:hover {
                 background: rgba(245, 158, 11, .08);
+            }
+
+            body.dark-mode .expenses-table tbody tr.table-warning:hover {
+                background: rgba(245, 158, 11, .15);
             }
 
     /* Pagination (plain style, centered) */
@@ -171,15 +209,18 @@
         border: none;
         color: var(--d-text);
         padding: 6px 10px;
+        transition: color 0.2s;
     }
 
     .controls-pagination .page-link:hover {
         text-decoration: underline;
+        color: var(--d-primary);
     }
 
     .controls-pagination .page-item.active .page-link {
         font-weight: 700;
         text-decoration: none;
+        color: var(--d-primary);
     }
 
     /* Status Badges */
@@ -201,6 +242,11 @@
     .status-badge--default {
         background: rgba(148, 163, 184, .1);
         color: #64748b;
+    }
+
+    body.dark-mode .status-badge--default {
+        background: rgba(148, 163, 184, .2);
+        color: #cbd5e1;
     }
 
     .status-dot {
@@ -253,6 +299,7 @@
         color: var(--d-text);
         font-size: .82rem;
         font-weight: 500;
+        transition: color 0.3s ease;
     }
 
     /* Description truncation */
@@ -293,17 +340,34 @@
         text-decoration: none;
     }
 
+    body.dark-mode .view-btn {
+        background: rgba(46, 196, 182, .12);
+        color: #5eead4;
+        border-color: rgba(46, 196, 182, .2);
+    }
+
+    body.dark-mode .view-btn:hover {
+        background: rgba(46, 196, 182, .18);
+        color: #5eead4;
+    }
+
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
         color: var(--d-muted);
+        transition: color 0.3s ease;
     }
 
     .empty-icon {
         font-size: 3rem;
         color: #cbd5e1;
         margin-bottom: 16px;
+        transition: color 0.3s ease;
+    }
+
+    body.dark-mode .empty-icon {
+        color: #4b5563;
     }
 
     .empty-title {
@@ -311,12 +375,18 @@
         font-weight: 600;
         margin-bottom: 8px;
         color: var(--d-text);
+        transition: color 0.3s ease;
     }
 
     .empty-text {
         font-size: .9rem;
         max-width: 400px;
         margin: 0 auto;
+    }
+
+    /* Fix text-muted for dark mode */
+    .text-muted {
+        color: var(--d-muted) !important;
     }
 
     @@media (max-width: 768px) {
