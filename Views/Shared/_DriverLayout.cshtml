@@ -9,41 +9,126 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-        @{ 
-            var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
-            var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
-            Func<string, string, string> active = (c, a) =>
-            {
-                if (string.Equals(c, currentController, System.StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(a, currentAction, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return "active";
-                }
-                return string.Empty;
-            };
-        }
-    <header>
-        <!-- Mobile Header with Hamburger Menu -->
-        <div class="mobile-header d-md-none">
-            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
-                ☰
-            </button>
-            <div class="brand p-3 d-flex align-items-center">
-                <a class="d-flex align-items-center text-decoration-none" asp-controller="Driver" asp-action="Dashboard">
-                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
-                  
-                </a>
-            </div>
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        Func<string, string, string> active = (c, a) =>
+        {
+            if (string.Equals(c, currentController, System.StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(a, currentAction, System.StringComparison.OrdinalIgnoreCase))
+                return "active";
+            return string.Empty;
+        };
+        var userName = User.Identity?.Name ?? "User";
+        var initial = userName.Length > 0 ? userName[0].ToString().ToUpper() : "U";
+        var pageTitle = ViewData["Title"]?.ToString() ?? "Driver Portal";
+    }
+
+    <!-- ══ Desktop Sidebar ══ -->
+    <aside class="driver-sidebar d-none d-md-flex flex-column">
+        <div class="brand">
+            <a class="d-flex align-items-center text-decoration-none" asp-controller="Driver" asp-action="Dashboard">
+                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo" />
+            </a>
+        </div>
+        <nav class="nav flex-column p-3">
+            <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
+            <a class="nav-link driver-nav-link @(active("Driver","Expenses"))" asp-controller="Driver" asp-action="Expenses">
+                <i class="bi bi-receipt"></i>
+                <span>Submit Expenses</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
+            <a class="nav-link driver-nav-link @(active("Driver","MyReports"))" asp-controller="Driver" asp-action="MyReports">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>My Reports</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
+            <a class="nav-link driver-nav-link @(active("Driver","History"))" asp-controller="Driver" asp-action="History">
+                <i class="bi bi-clock-history"></i>
+                <span>Expense History</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ══ Top Navigation Bar (desktop + mobile) ══ -->
+    <header class="driver-topbar">
+        <!-- Mobile: hamburger -->
+        <button class="driver-topbar-toggle d-md-none" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas"
+                aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <!-- Mobile: logo -->
+        <a class="d-flex d-md-none align-items-center text-decoration-none ms-2"
+           asp-controller="Driver" asp-action="Dashboard">
+            <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-topbar-logo-img" />
+        </a>
+
+        <!-- Page title -->
+        <div class="driver-topbar-title d-none d-md-flex align-items-center gap-2">
+            <i class="bi bi-grid-1x2-fill driver-topbar-icon"></i>
+            <span class="driver-topbar-page">@pageTitle</span>
         </div>
 
-        <!-- Desktop Sidebar -->
-        <aside class="driver-sidebar d-none d-md-flex flex-column">
-            <div class="brand p-3 d-flex align-items-center">
-                <a class="d-flex align-items-center text-decoration-none" asp-controller="Driver" asp-action="Dashboard">
-                    <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
-                   
-                </a>
+        <!-- Dark Mode Toggle -->
+        <button class="dark-mode-toggle" id="darkModeToggle" type="button" 
+                title="Toggle dark mode" aria-label="Toggle dark mode">
+            <i class="bi bi-moon"></i>
+        </button>
+
+        <!-- Profile dropdown -->
+        <div>
+            <div class="dropdown">
+                <button class="driver-profile-btn dropdown-toggle" type="button"
+                        id="driverProfileDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        data-bs-offset="0,8">
+                    <div class="driver-avatar">@initial</div>
+                    <div class="driver-profile-info d-none d-sm-flex">
+                        <span class="driver-profile-name">@userName</span>
+                        <span class="driver-profile-role">Driver</span>
+                    </div>
+                    <i class="bi bi-chevron-down driver-profile-caret d-none d-sm-inline-block"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end driver-profile-dropdown"
+                    aria-labelledby="driverProfileDropdown">
+                    <li>
+                        <div class="driver-dropdown-header">
+                            <div class="driver-avatar driver-avatar--lg">@initial</div>
+                            <div class="driver-dropdown-info">
+                                <div class="driver-dropdown-name">@userName</div>
+                                <span class="driver-dropdown-badge">
+                                    <i class="bi bi-truck me-1"></i>Driver
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider my-0"></li>
+                    <li><partial name="_LoginPartial" /></li>
+                </ul>
             </div>
+        </div>
+    </header>
+
+    <!-- ══ Mobile Offcanvas Sidebar ══ -->
+    <div class="offcanvas offcanvas-start d-md-none" tabindex="-1"
+         id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+        <div class="offcanvas-header">
+            <a class="d-flex align-items-center text-decoration-none"
+               asp-controller="Driver" asp-action="Dashboard">
+                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS"
+                     style="height:48px;width:auto;object-fit:contain;" />
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
             <nav class="nav flex-column p-3">
                 <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard">
                     <i class="bi bi-speedometer2"></i>
@@ -66,74 +151,16 @@
                     <i class="bi bi-check-circle nav-indicator"></i>
                 </a>
             </nav>
-            <div class="mt-auto profile-section">
-                <div class="dropdown">
-                    <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i>
-                        <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">View Profile</a></li>
-                        <li><a class="dropdown-item" href="#">Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><partial name="_LoginPartial" /></li>
-                    </ul>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Mobile Offcanvas Sidebar -->
-        <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS Driver</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body p-0 d-flex flex-column">
-                <nav class="nav flex-column p-3">
-                    <a class="nav-link driver-nav-link @(active("Driver","Dashboard"))" asp-controller="Driver" asp-action="Dashboard">
-                        <i class="bi bi-speedometer2"></i>
-                        <span>Dashboard</span>
-                        <i class="bi bi-check-circle nav-indicator"></i>
-                    </a>
-                    <a class="nav-link driver-nav-link @(active("Driver","Expenses"))" asp-controller="Driver" asp-action="Expenses">
-                        <i class="bi bi-receipt"></i>
-                        <span>Submit Expenses</span>
-                        <i class="bi bi-check-circle nav-indicator"></i>
-                    </a>
-                    <a class="nav-link driver-nav-link @(active("Driver","MyReports"))" asp-controller="Driver" asp-action="MyReports">
-                        <i class="bi bi-file-earmark-text"></i>
-                        <span>My Reports</span>
-                        <i class="bi bi-check-circle nav-indicator"></i>
-                    </a>
-                    <a class="nav-link driver-nav-link @(active("Driver","History"))" asp-controller="Driver" asp-action="History">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Expense History</span>
-                        <i class="bi bi-check-circle nav-indicator"></i>
-                    </a>
-                </nav>
-                <div class="mt-auto profile-section">
-                    <div class="dropdown">
-                        <button class="btn btn-link profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i>
-                            <span class="profile-name">@(User.Identity?.Name ?? "User")</span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">View Profile</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><partial name="_LoginPartial" /></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
         </div>
-    </header>
-    <div class="w-100">
+    </div>
+
+    <!-- ══ Main Content ══ -->
+    <div class="driver-body-wrapper">
         <main role="main" class="pb-3">
             @if (TempData["Success"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @TempData["Success"]
+                <div class="alert alert-success alert-dismissible fade show mx-3 mt-3" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             }
@@ -141,14 +168,94 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="footer text-muted border-top">
         <div class="container">
             &copy; 2026 - CEMS Driver
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Dark Mode Toggle
+        (function() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+            const darkModeKey = 'cems-dark-mode';
+
+            // Check if user has dark mode preference saved
+            function initDarkMode() {
+                const savedPreference = localStorage.getItem(darkModeKey);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                // Use saved preference, otherwise use system preference
+                const isDarkMode = savedPreference !== null ? 
+                    savedPreference === 'true' : 
+                    prefersDark;
+
+                if (isDarkMode) {
+                    enableDarkMode();
+                } else {
+                    disableDarkMode();
+                }
+            }
+
+            // Enable dark mode
+            function enableDarkMode() {
+                body.classList.add('dark-mode');
+                if (darkModeToggle) {
+                    darkModeToggle.innerHTML = '<i class="bi bi-sun"></i>';
+                    darkModeToggle.title = 'Switch to light mode';
+                }
+                localStorage.setItem(darkModeKey, 'true');
+                // Dispatch event for pages that need to react to dark mode change
+                document.dispatchEvent(new CustomEvent('darkModeToggled', { detail: { isDarkMode: true } }));
+            }
+
+            // Disable dark mode
+            function disableDarkMode() {
+                body.classList.remove('dark-mode');
+                if (darkModeToggle) {
+                    darkModeToggle.innerHTML = '<i class="bi bi-moon"></i>';
+                    darkModeToggle.title = 'Switch to dark mode';
+                }
+                localStorage.setItem(darkModeKey, 'false');
+                // Dispatch event for pages that need to react to dark mode change
+                document.dispatchEvent(new CustomEvent('darkModeToggled', { detail: { isDarkMode: false } }));
+            }
+
+            // Toggle dark mode
+            function toggleDarkMode() {
+                if (body.classList.contains('dark-mode')) {
+                    disableDarkMode();
+                } else {
+                    enableDarkMode();
+                }
+            }
+
+            // Attach event listener
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', toggleDarkMode);
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (localStorage.getItem(darkModeKey) === null) {
+                    if (e.matches) {
+                        enableDarkMode();
+                    } else {
+                        disableDarkMode();
+                    }
+                }
+            });
+
+            // Initialize on page load
+            initDarkMode();
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

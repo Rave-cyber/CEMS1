@@ -103,7 +103,6 @@ namespace CEMS.Controllers
 
             try
             {
-                // PayMongo signature format: t=timestamp,te=test_signature,li=live_signature
                 var parts = signatureHeader.Split(',')
                     .Select(p => p.Split('=', 2))
                     .Where(p => p.Length == 2)

@@ -18,10 +18,19 @@
         --d-danger: #ef4444;
     }
 
+    body.dark-mode {
+        --d-bg: #1a1f2e;
+        --d-card: #2d3748;
+        --d-border: #3a4452;
+        --d-text: #e8eef5;
+        --d-muted: #a0aec0;
+    }
+
     .expense-wrapper {
         background: var(--d-bg);
         min-height: calc(100vh - 80px);
         padding: 28px 0 40px;
+        transition: background 0.3s ease;
     }
 
     /* Header */
@@ -34,11 +43,13 @@
         font-weight: 700;
         color: var(--d-text);
         margin-bottom: 4px;
+        transition: color 0.3s ease;
     }
 
     .expense-subtitle {
         color: var(--d-muted);
         font-size: .92rem;
+        transition: color 0.3s ease;
     }
 
     /* Main Card */
@@ -48,6 +59,7 @@
         border-radius: var(--d-radius);
         overflow: hidden;
         margin-bottom: 20px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
 
     .expense-card-head {
@@ -111,6 +123,16 @@
             text-decoration: none;
         }
 
+    body.dark-mode .add-row-btn {
+        background: rgba(46, 196, 182, .12);
+        color: #2ec4b6;
+        border-color: rgba(46, 196, 182, .2);
+    }
+
+    body.dark-mode .add-row-btn:hover {
+        background: rgba(46, 196, 182, .18);
+    }
+
     .submit-all-btn {
         display: inline-flex;
         align-items: center;
@@ -139,6 +161,10 @@
             transform: translateY(1px);
         }
 
+    body.dark-mode .submit-all-btn:hover {
+        background: linear-gradient(135deg, #0f5a9e 0%, #1fa399 100%);
+    }
+
     /* Expense Rows */
     .expense-rows-container {
         display: flex;
@@ -155,7 +181,11 @@
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 20px;
         position: relative;
-        transition: border-color .2s;
+        transition: border-color .2s, background 0.3s ease;
+    }
+
+    body.dark-mode .expense-row {
+        background: #374151;
     }
 
         .expense-row:hover {
@@ -175,6 +205,7 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        transition: color 0.3s ease;
     }
 
         .field-label .required {
@@ -186,10 +217,14 @@
         padding: 10px 14px;
         border: 1px solid var(--d-border);
         border-radius: var(--d-radius-sm);
-        background: #fff;
+        background: var(--d-card);
         font-size: .9rem;
         color: var(--d-text);
-        transition: border-color .2s;
+        transition: border-color .2s, background 0.3s ease, color 0.3s ease;
+    }
+
+    .field-input::placeholder {
+        color: var(--d-muted);
     }
 
         .field-input:focus {
@@ -246,6 +281,7 @@
         border-radius: var(--d-radius);
         font-size: .9rem;
         font-weight: 500;
+        transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
 
     .result-success {
@@ -254,16 +290,29 @@
         border: 1px solid rgba(16, 185, 129, .2);
     }
 
+    body.dark-mode .result-success {
+        background: rgba(48, 187, 120, .15);
+        color: #86efac;
+        border-color: rgba(48, 187, 120, .3);
+    }
+
     .result-error {
         background: rgba(239, 68, 68, .1);
         color: #991b1b;
         border: 1px solid rgba(239, 68, 68, .2);
     }
 
+    body.dark-mode .result-error {
+        background: rgba(245, 101, 101, .15);
+        color: #fca5a5;
+        border-color: rgba(245, 101, 101, .3);
+    }
+
     /* Category Select Styling */
     select.field-input option {
         padding: 8px;
-        background: white;
+        background: var(--d-card);
+        color: var(--d-text);
     }
 
         select.field-input option:hover {
@@ -312,7 +361,14 @@
         border-radius: var(--d-radius);
         padding: 18px 24px;
         margin-bottom: 20px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
+
+    body.dark-mode .trip-context-card {
+        background: rgba(46, 196, 182, .1);
+        border-color: rgba(46, 196, 182, .2);
+    }
+
     .trip-context-title {
         font-size: .92rem;
         font-weight: 700;
@@ -349,6 +405,12 @@
         font-weight: 600;
         white-space: nowrap;
         margin-bottom: 6px;
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-mode .trip-days-badge {
+        background: rgba(46, 196, 182, .2);
+        color: #5eead4;
     }
 
     /* ── Receipt Summary Panel ── */
@@ -362,7 +424,13 @@
         border-radius: var(--d-radius);
         overflow: hidden;
         box-shadow: 0 2px 12px rgba(0,0,0,.05);
+        transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
+
+    body.dark-mode .receipt-card {
+        box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+
     .receipt-head {
         background: var(--d-primary);
         color: #fff;
@@ -386,6 +454,8 @@
     .receipt-body {
         padding: 18px 20px;
         font-size: .88rem;
+        color: var(--d-text);
+        transition: color 0.3s ease;
     }
     .receipt-store {
         text-align: center;
@@ -410,6 +480,11 @@
         padding: 8px 0;
         border-bottom: 1px dotted #e5e7eb;
     }
+
+    body.dark-mode .receipt-item-row {
+        border-bottom-color: #4b5563;
+    }
+
     .receipt-item-row:last-child { border-bottom: none; }
     .receipt-item-left   { flex: 1; min-width: 0; }
     .receipt-item-cat    { font-weight: 600; color: var(--d-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -440,7 +515,14 @@
         border-radius: 6px;
         padding: 10px 14px;
         margin-top: 10px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
+
+    body.dark-mode .receipt-total-row {
+        background: rgba(46, 196, 182, .1);
+        border-color: rgba(46, 196, 182, .2);
+    }
+
     .receipt-total-label  { font-size: .88rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--d-text); }
     .receipt-total-amount { font-size: 1.25rem; font-weight: 800; color: var(--d-primary); }
     .receipt-footer {
@@ -466,7 +548,7 @@
         border-radius: 10px;
         box-shadow: 0 8px 32px rgba(16,185,129,.22);
         z-index: 1060;
-        pointer-events: none;   /* invisible but in DOM so transition works */
+        pointer-events: none;
         opacity: 0;
         transform: translateY(12px) scale(.96);
         transition: opacity .22s ease, transform .22s ease;
@@ -481,16 +563,11 @@
     }
     .submit-modal-body { display: flex; align-items: center; gap: 10px; }
     .submit-modal-icon { font-size: 1.3rem; flex-shrink: 0; }
-</style>
+    </style>
+
 
 <div class="expense-wrapper">
     <div class="container-fluid px-4">
-
-        <!-- Header -->
-        <div class="expense-header">
-            <h1 class="expense-title">Submit Expenses</h1>
-            <p class="expense-subtitle">Add multiple expense items and submit them together</p>
-        </div>
 
         <div class="row g-4 align-items-start">
             <div class="col-lg-8">

@@ -5,17 +5,12 @@ namespace CEMS.Services
 {
     public interface IPayMongoService
     {
-        /// <summary>
-        /// Creates a PayMongo Checkout Session (supports GCash, card, etc.).
-        /// Returns (checkoutSessionId, checkoutUrl).
-        /// </summary>
+       
         Task<(string SessionId, string CheckoutUrl)> CreateCheckoutSessionAsync(
             decimal amount, string description, int reportId, string successUrl, string cancelUrl,
             string? customerEmail = null, string? customerName = null);
 
-        /// <summary>
-        /// Retrieves a checkout session by ID and returns payment status.
-        /// </summary>
+     
         Task<string> GetCheckoutStatusAsync(string sessionId);
     }
 
@@ -34,7 +29,7 @@ namespace CEMS.Services
             decimal amount, string description, int reportId, string successUrl, string cancelUrl,
             string? customerEmail = null, string? customerName = null)
         {
-            // PayMongo amounts are in centavos — use long to avoid Int32 overflow
+         
             var amountInCentavos = (long)(amount * 100m);
 
             if (amountInCentavos < 100)

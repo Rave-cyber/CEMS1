@@ -56,5 +56,32 @@ namespace CEMS.Controllers
 
             return RedirectToAction("Index");
         }
+
+        // Handle Access Denied
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        // DEBUG: Show current user's roles and permissions
+        [Authorize]
+        public async Task<IActionResult> DebugRoles()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return NotFound("User not found");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                email = user.Email,
+                userId = user.Id,
+                userName = user.UserName,
+                roles = roles,
+                isAuthenticated = User.Identity.IsAuthenticated,
+                timestamp = DateTime.UtcNow
+            });
+        }
     }
 }

@@ -19,6 +19,10 @@ function renderDriverBudgetChart(budgets){
         return;
     }
 
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const textColor = isDarkMode ? '#e8eef5' : '#0f1724';
+    const gridColor = isDarkMode ? '#3a4452' : '#e9eef6';
+
     const labels = (budgets || []).map(b => b.category);
     const allocated = (budgets || []).map(b => b.allocated ?? 0);
     const spent = (budgets || []).map(b => b.spent ?? 0);
@@ -35,27 +39,43 @@ function renderDriverBudgetChart(budgets){
                 {
                     label: 'Allocated',
                     data: allocated,
-                    backgroundColor: 'rgba(26,107,181,0.25)',
+                    backgroundColor: 'rgba(26,107,181,0.2)',
                     borderColor: '#1a6bb5',
-                    borderWidth: 1
+                    borderWidth: 1.5,
+                    borderRadius: 4
                 },
                 {
                     label: 'Spent',
                     data: spent,
-                    backgroundColor: 'rgba(239,68,68,0.25)',
+                    backgroundColor: 'rgba(239,68,68,0.2)',
                     borderColor: '#ef4444',
-                    borderWidth: 1
+                    borderWidth: 1.5,
+                    borderRadius: 4
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' }
+            plugins: { 
+                legend: { 
+                    position: 'bottom',
+                    labels: {
+                        color: textColor,
+                        font: { size: 12 }
+                    }
+                } 
             },
-            scales: {
-                y: { beginAtZero: true }
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                },
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: gridColor }
+                }
             }
         }
     });
@@ -134,6 +154,11 @@ function setDefaultMonthFilter(){
     document.getElementById('metricsStart')?.addEventListener('change', ()=> loadDriverMetrics());
     document.getElementById('metricsEnd')?.addEventListener('change', ()=> loadDriverMetrics());
 
+    // Re-render chart on dark mode toggle
+    document.addEventListener('darkModeToggled', () => {
+        loadDriverMetrics();
+    });
+
     // quick range buttons
     document.querySelectorAll('.quick-filter [data-range]').forEach(function(btn){
         btn.addEventListener('click', function(){
@@ -176,20 +201,31 @@ function setDefaultMonthFilter(){
         --d-radius-sm: 6px;
     }
 
+    body.dark-mode {
+        --d-bg: #1a1f2e;
+        --d-card: #2d3748;
+        --d-border: #3a4452;
+        --d-text: #e8eef5;
+        --d-muted: #a0aec0;
+    }
+
     .dash-wrapper {
         background: var(--d-bg);
         min-height: calc(100vh - 80px);
         padding: 28px 0 40px;
+        transition: background 0.3s ease;
     }
 
     /* ── Header ── */
     .dash-header {
-        margin-bottom: 36px;
+        margin-bottom: 32px;
     }
     .dash-greeting {
         font-size: 1.65rem;
         font-weight: 700;
         color: var(--d-text);
+        margin-bottom: 2px;
+        transition: color 0.3s ease;
     }
     .dash-greeting span {
         color: var(--d-primary);
@@ -199,6 +235,7 @@ function setDefaultMonthFilter(){
         color: var(--d-muted);
         font-size: .92rem;
         margin-top: 2px;
+        transition: color 0.3s ease;
     }
 
     /* ── Stat Cards ── */
@@ -206,15 +243,17 @@ function setDefaultMonthFilter(){
         background: var(--d-card);
         border: 1px solid var(--d-border);
         border-radius: 10px;
-        padding: 18px 18px;
+        padding: 18px;
         display: flex;
         align-items: center;
         gap: 14px;
-        transition: transform .12s ease;
+        transition: transform .12s ease, background 0.3s ease, border-color 0.3s ease;
         text-decoration: none !important;
         color: inherit !important;
     }
-    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card:hover { 
+        transform: translateY(-2px);
+    }
     .stat-icon {
         width: 44px;
         height: 44px;
@@ -224,29 +263,39 @@ function setDefaultMonthFilter(){
         justify-content: center;
         font-size: 1.1rem;
         flex-shrink: 0;
+        transition: background 0.3s ease, color 0.3s ease;
     }
-    .stat-icon--pending  { background: rgba(26,107,181,.06);  color: #1a6bb5; }
-    .stat-icon--approved { background: rgba(16,185,129,.06);  color: #10b981; }
-    .stat-icon--money    { background: rgba(99,102,241,.06);  color: #6366f1; }
-    .stat-icon--rejected { background: rgba(239,68,68,.06);   color: #ef4444; }
+    .stat-icon--pending  { background: rgba(26,107,181,.08);  color: #1a6bb5; }
+    .stat-icon--approved { background: rgba(16,185,129,.08);  color: #10b981; }
+    .stat-icon--money    { background: rgba(99,102,241,.08);  color: #6366f1; }
+    .stat-icon--rejected { background: rgba(239,68,68,.08);   color: #ef4444; }
+
+    body.dark-mode .stat-icon--pending  { background: rgba(46, 196, 182, .15); color: #5eead4; }
+    body.dark-mode .stat-icon--approved { background: rgba(16, 185, 129, .15); color: #86efac; }
+    body.dark-mode .stat-icon--money    { background: rgba(99, 102, 241, .15); color: #a5b4fc; }
+    body.dark-mode .stat-icon--rejected { background: rgba(239, 68, 68, .15);  color: #fca5a5; }
+
     .stat-label {
-        font-size: .78rem;
+        font-size: .76rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .5px;
         color: var(--d-muted);
         margin-bottom: 4px;
+        transition: color 0.3s ease;
     }
     .stat-value {
-        font-size: 1.6rem;
+        font-size: 1.55rem;
         font-weight: 700;
         color: var(--d-text);
         line-height: 1.2;
+        transition: color 0.3s ease;
     }
     .stat-sub {
-        font-size: .82rem;
+        font-size: .8rem;
         color: var(--d-muted);
         margin-top: 2px;
+        transition: color 0.3s ease;
     }
 
     /* ── Section Cards ── */
@@ -256,6 +305,7 @@ function setDefaultMonthFilter(){
         border-radius: 10px;
         overflow: hidden;
         margin-bottom: 20px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
     .dash-card-head {
         padding: 14px 18px;
@@ -263,16 +313,18 @@ function setDefaultMonthFilter(){
         align-items: center;
         justify-content: space-between;
         border-bottom: 1px solid var(--d-border);
+        transition: border-color 0.3s ease;
     }
     .dash-card-title {
-        font-size: .98rem;
+        font-size: .95rem;
         font-weight: 600;
         color: var(--d-text);
         display: flex;
         align-items: center;
         gap: 8px;
+        transition: color 0.3s ease;
     }
-    .dash-card-title i { color: var(--d-primary); font-size:1.1rem; }
+    .dash-card-title i { color: var(--d-primary); font-size:1rem; }
     .dash-card-body { padding: 16px 18px; }
     .dash-link {
         color: var(--d-primary);
@@ -282,7 +334,7 @@ function setDefaultMonthFilter(){
         transition: color .2s;
     }
     .dash-link:hover {
-        color: #154a8a;
+        color: #155a9a;
     }
 
     /* Action Button (consistent with History/MyReports) */
@@ -317,61 +369,88 @@ function setDefaultMonthFilter(){
 
     /* ── Budget Progress ── */
     .budget-item {
-        padding: 16px 0;
+        padding: 14px 0;
     }
     .budget-item + .budget-item {
         border-top: 1px solid var(--d-border);
+        transition: border-color 0.3s ease;
     }
     .budget-label {
         font-weight: 600;
         color: var(--d-text);
-        font-size: .92rem;
+        font-size: .9rem;
+        transition: color 0.3s ease;
     }
     .budget-remain {
-        font-size: .82rem;
+        font-size: .8rem;
         font-weight: 500;
     }
     .budget-remain--ok   { color: #0d8b7d; }
     .budget-remain--over { color: #dc2626; }
-    .budget-bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top:8px; overflow:hidden; }
-    .budget-bar-fill { height:100%; border-radius:3px; transition: width .5s ease; }
+
+    body.dark-mode .budget-remain--ok   { color: #5eead4; }
+    body.dark-mode .budget-remain--over { color: #fca5a5; }
+
+    .budget-bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top: 8px; overflow: hidden; transition: background 0.3s ease; }
+    .budget-bar-fill { height: 100%; border-radius: 3px; }
     .budget-bar-fill--ok     { background: var(--d-primary); }
     .budget-bar-fill--warn   { background: #f59e0b; }
     .budget-bar-fill--danger { background: #ef4444; }
+
+    body.dark-mode .budget-bar { background: #374151; }
+
     .budget-amounts {
-        font-size: .78rem;
+        font-size: .76rem;
         color: var(--d-muted);
         margin-top: 4px;
+        transition: color 0.3s ease;
     }
 
     /* ── Tables ── */
     .dash-table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: .9rem;
+        margin-bottom: 0;
     }
     .dash-table thead th {
         background: #f8fafc;
         color: var(--d-muted);
         font-weight: 600;
-        font-size: .78rem;
+        font-size: .76rem;
         text-transform: uppercase;
         letter-spacing: .5px;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--d-border);
+        padding: 11px 16px;
+        border: none;
+        transition: background 0.3s ease, color 0.3s ease;
     }
+
+    body.dark-mode .dash-table thead th {
+        background: #374151;
+        color: var(--d-muted);
+    }
+
     .dash-table tbody td {
-        padding: 14px 16px;
+        padding: 13px 16px;
         border-bottom: 1px solid #f1f5f9;
         vertical-align: middle;
         color: var(--d-text);
+        font-size: .88rem;
+        transition: color 0.3s ease, border-color 0.3s ease;
     }
+
+    body.dark-mode .dash-table tbody td {
+        border-bottom-color: #4b5563;
+    }
+
     .dash-table tbody tr:last-child td {
         border-bottom: none;
     }
     .dash-table tbody tr:hover {
         background: #f8fafc;
+        transition: background 0.2s ease;
+    }
+
+    body.dark-mode .dash-table tbody tr:hover {
+        background: #374151;
     }
 
     /* ── Status Dots ── */
@@ -398,14 +477,21 @@ function setDefaultMonthFilter(){
         color: #0d8b7d;
         font-size: .82rem;
         font-weight: 500;
+        transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* ── Budget Flag (no badge) ── */
-    .budget-flag {
-        font-size: .82rem;
-        font-weight: 600;
+    body.dark-mode .category-chip {
+        background: rgba(46, 196, 182, .2);
+        color: #5eead4;
     }
-    .budget-flag--over { color: #dc2626; }
+
+    /* ── Budget Flag ── */
+    .budget-flag {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .budget-flag--over { color: #ef4444; }
     .budget-flag--ok   { color: #10b981; }
 
     /* ── Toast ── */
@@ -420,17 +506,32 @@ function setDefaultMonthFilter(){
         font-weight: 500;
         box-shadow: 0 8px 24px rgba(0,0,0,.12);
         animation: slideUp .4s ease;
+        transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
     .dash-toast--success {
         background: #ecfdf5;
         color: #065f46;
         border: 1px solid #a7f3d0;
     }
+
+    body.dark-mode .dash-toast--success {
+        background: rgba(16, 185, 129, .15);
+        color: #86efac;
+        border: 1px solid rgba(16, 185, 129, .3);
+    }
+
     .dash-toast--error {
         background: #fef2f2;
         color: #991b1b;
         border: 1px solid #fecaca;
     }
+
+    body.dark-mode .dash-toast--error {
+        background: rgba(239, 68, 68, .15);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, .3);
+    }
+
     @@keyframes slideUp {
         from { opacity: 0; transform: translateY(16px); }
         to   { opacity: 1; transform: translateY(0); }
@@ -438,12 +539,10 @@ function setDefaultMonthFilter(){
 
     @@media (max-width: 768px) {
         .dash-wrapper { padding: 20px 0 32px; }
-        .stat-card { padding: 20px 18px; }
-        .dash-card-body { padding: 18px 18px; }
     }
 
     .chart-wrap {
-        height: 280px;
+        height: 260px;
     }
     .chart-wrap canvas {
         width: 100% !important;
@@ -454,42 +553,54 @@ function setDefaultMonthFilter(){
         background: var(--d-card);
         border: 1px solid var(--d-border);
         border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
-        gap: 12px 16px;
+        gap: 10px 14px;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
     .filter-card label {
-        font-size: .82rem;
+        font-size: .8rem;
         font-weight: 600;
         color: var(--d-muted);
-        margin-bottom: 4px;
+        margin-bottom: 3px;
+        transition: color 0.3s ease;
     }
     .filter-card input {
         border: 1px solid var(--d-border);
         border-radius: 6px;
-        padding: 6px 10px;
-        font-size: .88rem;
+        padding: 5px 8px;
+        font-size: .85rem;
         color: var(--d-text);
+        background: var(--d-card);
+        transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
     }
+
+    .filter-card input:focus {
+        outline: none;
+        border-color: var(--d-primary);
+        background: var(--d-card);
+    }
+
     .filter-actions .btn {
-        font-size: .86rem;
+        font-size: .84rem;
         font-weight: 600;
         border-radius: 6px;
-        padding: 6px 14px;
+        padding: 5px 12px;
     }
 
     .quick-filter {
         display: inline-flex;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
     }
     .quick-filter .btn {
-        padding: 6px 10px;
-        font-size: .85rem;
+        padding: 5px 8px;
+        font-size: .82rem;
         border-radius: 6px;
+        transition: all 0.2s ease;
     }
 </style>
 
@@ -508,6 +619,28 @@ function setDefaultMonthFilter(){
            @*  <a href="@Url.Action("Expenses", "Driver")" class="btn px-4 py-2 text-white" style="background:var(--d-gradient);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
                 <i class="bi bi-plus-lg me-1"></i> New Expense
             </a> *@
+        </div>
+
+        <!-- Filter Card -->
+        <div style="background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; justify-content: space-between;">
+                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 160px;">
+                        <label for="metricsStart" class="form-label" style="margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--d-muted);">From</label>
+                        <input type="date" id="metricsStart" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem; width: 100%;" />
+                    </div>
+                    <div style="flex: 1; min-width: 160px;">
+                        <label for="metricsEnd" class="form-label" style="margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--d-muted);">To</label>
+                        <input type="date" id="metricsEnd" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem; width: 100%;" />
+                    </div>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Today</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Week</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Month</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Year</button>
+                </div>
+            </div>
         </div>
 
         <!-- ── Stats Row ── -->
@@ -562,30 +695,9 @@ function setDefaultMonthFilter(){
             </div>
         </div>
 
-            <div class="filter-card">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
-                    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-                        <div>
-                            <label for="metricsStart">From</label>
-                            <input id="metricsStart" type="date" />
-                        </div>
-                        <div>
-                            <label for="metricsEnd">To</label>
-                            <input id="metricsEnd" type="date" />
-                        </div>
-                    </div>
-                    <div class="quick-filter">
-                        <button class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                        <button class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                        <button class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                        <button class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
-                    </div>
-                </div>
-            </div>
-
         <div class="dash-card">
             <div class="dash-card-head">
-                <div class="dash-card-title"><i class="bi bi-bar-chart"></i> Budget Trend</div>
+                <div class="dash-card-title"><i class="bi bi-bar-chart"></i> Budget by Category</div>
             </div>
             <div class="dash-card-body">
                 <div class="chart-wrap">
@@ -599,7 +711,7 @@ function setDefaultMonthFilter(){
         {
             <div class="dash-card">
                 <div class="dash-card-head">
-                    <div class="dash-card-title"><i class="bi bi-pie-chart"></i> Budget Overview</div>
+                    <div class="dash-card-title"><i class="bi bi-pie-chart"></i> Category Usage</div>
                 </div>
                 <div class="dash-card-body">
                     <p class="text-muted mb-3" style="font-size:.85rem;">Budgets set by management. Expenses exceeding limits are flagged automatically.</p>

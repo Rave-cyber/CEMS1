@@ -626,22 +626,14 @@
 <div class="reports-wrapper">
     <div class="container-fluid px-4">
 
-        <!-- Header -->
-        <div class="reports-header">
-            <div>
-                <h1 class="reports-title">My Expense Reports</h1>
-                <p class="reports-subtitle">Track the status of all your submitted expense reports</p>
-            </div>
-            <div class="header-controls">
-                <select id="statusFilter" class="form-select form-select-sm">
-                    <option value="">All statuses</option>
-                    @if (filterStatus == "Submitted") { <option value="Submitted" selected>Submitted</option> } else { <option value="Submitted">Submitted</option> }
-                    @if (filterStatus == "PendingCEOApproval") { <option value="PendingCEOApproval" selected>Pending CEO</option> } else { <option value="PendingCEOApproval">Pending CEO</option> }
-                    @if (filterStatus == "Approved") { <option value="Approved" selected>Approved</option> } else { <option value="Approved">Approved</option> }
-                    @if (filterStatus == "Rejected") { <option value="Rejected" selected>Rejected</option> } else { <option value="Rejected">Rejected</option> }
-                </select>
-            </div>
-        </div>
+        <select id="statusFilter" class="form-select form-select-sm" style="max-width: 200px;">
+            <option value="">All statuses</option>
+            @if (filterStatus == "Submitted") { <option value="Submitted" selected>Submitted</option> } else { <option value="Submitted">Submitted</option> }
+            @if (filterStatus == "PendingCEOApproval") { <option value="PendingCEOApproval" selected>Pending CEO</option> } else { <option value="PendingCEOApproval">Pending CEO</option> }
+            @if (filterStatus == "Approved") { <option value="Approved" selected>Approved</option> } else { <option value="Approved">Approved</option> }
+            @if (filterStatus == "Rejected") { <option value="Rejected" selected>Rejected</option> } else { <option value="Rejected">Rejected</option> }
+        </select>
+        <div style="margin-bottom: 20px;"></div>
 
         @if (reports.Any())
         {

@@ -33,6 +33,13 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
+// ✅ Configure Authorization
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Home/AccessDenied";
+    options.LoginPath = "/Identity/Account/Login";
+});
+
 // ✅ Ensure SignInManager is available
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
 

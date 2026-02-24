@@ -93,7 +93,7 @@ namespace CEMS.Controllers
             for (int i = 0; i < 4; i++)
             {
                 var weekStart = startDate.AddDays(i * 7);
-                var weekEnd = weekStart.AddDays(6);
+                var weekEnd = weekStart.AddDays(6); 
                 var weekTotal = allReports
                     .Where(r => r.SubmissionDate >= weekStart && r.SubmissionDate <= weekEnd)
                     .Sum(r => r.TotalAmount);
