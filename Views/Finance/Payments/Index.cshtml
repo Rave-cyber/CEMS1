@@ -63,6 +63,30 @@
     .btn-sync { padding: 3px 8px; font-size: .75rem; border-radius: 5px; }
     .link-id-cell { font-family: monospace; font-size: .78rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    /* Quick filter button styles (consistent across all pages) */
+    .quick-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        color: var(--d-text);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .quick-filter-btn:hover {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+    }
+    .quick-filter-btn.active {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+    }
+
     @@media (max-width: 768px) {
         .page-wrapper { padding: 20px 0 32px; }
         .page-title { font-size: 1.4rem; }
@@ -113,10 +137,10 @@
                     </div>
                     <div class="col-md-3 d-flex gap-2 align-items-center">
                         <div class="quick-filter ms-auto">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today">Today</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week">Week</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month">Month</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year">Year</button>
+                            <button type="button" class="quick-filter-btn" data-range="today">Today</button>
+                            <button type="button" class="quick-filter-btn" data-range="week">Week</button>
+                            <button type="button" class="quick-filter-btn" data-range="month">Month</button>
+                            <button type="button" class="quick-filter-btn" data-range="year">Year</button>
                         </div>
                     </div>
                 </div>
@@ -291,13 +315,53 @@
 </script>
 
 <script>
-    // Auto-apply filter and quick-range buttons
+    // Auto-apply filter, quick-range buttons, and highlight active quick-filter
+    function highlightPaymentsActiveFilter() {
+        var form = document.querySelector('.filter-card form');
+        if(!form) return;
+        var s = form.querySelector('[name="start"]');
+        var e = form.querySelector('[name="end"]');
+        if (!s || !e) return;
+
+        var start = new Date(s.value);
+        var end = new Date(e.value);
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        document.querySelectorAll('.quick-filter-btn').forEach(function(btn){ btn.classList.remove('active'); });
+
+        var matching = null;
+        if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) matching = 'today';
+        else {
+            var weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) matching = 'week';
+        }
+        if (!matching) {
+            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) matching = 'month';
+        }
+        if (!matching) {
+            var yearStart = new Date(now.getFullYear(), 0, 1);
+            if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) matching = 'year';
+        }
+
+        if (matching) {
+            var btn = document.querySelector('.quick-filter-btn[data-range="' + matching + '"]');
+            if (btn) btn.classList.add('active');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function(){
         var form = document.querySelector('.filter-card form');
         if(!form) return;
+
         ['search','status','start','end'].forEach(function(name){
             var el = form.querySelector('[name="'+name+'"]');
-            if(el) el.addEventListener('change', function(){ if(window._deb) clearTimeout(window._deb); window._deb = setTimeout(function(){ form.submit(); }, 200); });
+            if(el) el.addEventListener('change', function(){
+                if(window._deb) clearTimeout(window._deb);
+                window._deb = setTimeout(function(){ highlightPaymentsActiveFilter(); form.submit(); }, 200);
+            });
         });
 
         document.querySelectorAll('.quick-filter [data-range]').forEach(function(btn){
@@ -313,8 +377,11 @@
                 var e = form.querySelector('[name="end"]');
                 if(s && start) s.value = start.toISOString().slice(0,10);
                 if(e) e.value = now.toISOString().slice(0,10);
-                setTimeout(function(){ form.submit(); }, 150);
+                setTimeout(function(){ highlightPaymentsActiveFilter(); form.submit(); }, 150);
             });
         });
+
+        // apply initial highlight based on current inputs
+        highlightPaymentsActiveFilter();
     });
 </script>

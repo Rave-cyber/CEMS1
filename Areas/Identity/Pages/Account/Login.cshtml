@@ -722,16 +722,7 @@
                     <p class="form-subtitle">Enter your credentials to access your dashboard</p>
                 </div>
 
-                <div class="temp-credentials" aria-hidden="false">
-                    <div class="cred-title">Temporary demo accounts</div>
-                    <ul class="list-unstyled mb-0">
-                        <li><strong>CEO</strong>: <code>ceo@expense.com</code> / <code>Test@123</code></li>
-                        <li><strong>Manager</strong>: <code>manager@expense.com</code> / <code>Test@123</code></li>
-                        <li><strong>Driver</strong>: <code>driver@expense.com</code> / <code>Test@123</code></li>
-                        <li><strong>Finance</strong>: <code>finance@expense.com</code> / <code>Test@123</code></li>
-                    </ul>
-                    <div class="cred-note">Visible for demo/testing only — remove before production.</div>
-                </div>
+                <!-- Demo credentials removed for production -->
 
                 <form id="account" method="post">
                     <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
@@ -771,7 +762,7 @@
 
                     <div class="form-links">
                         <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="form-link">Register as a new user</a>
+                        @* Registration disabled: link removed *@
                         <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
                     </div>
                 </form>

@@ -95,9 +95,18 @@
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s ease;
     }
     .quick-filter-btn:hover {
-        background: var(--d-border);
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+    }
+    .quick-filter-btn.active {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
     }
 
     .table-card {
@@ -348,6 +357,7 @@
             var inputs = filtersForm.querySelectorAll('input, select');
             inputs.forEach(function(input){
                 input.addEventListener('change', function(){
+                    highlightReimActiveFilter();
                     filtersForm.submit();
                 });
             });
@@ -368,8 +378,44 @@
                 var e = document.getElementById('reimEnd');
                 if(s && start) s.value = start.toISOString().slice(0,10);
                 if(e) e.value = now.toISOString().slice(0,10);
-                setTimeout(function(){ filtersForm.submit(); }, 150);
+                setTimeout(function(){ highlightReimActiveFilter(); filtersForm.submit(); }, 150);
             });
         });
+
+        // Highlight active quick filter on load
+        highlightReimActiveFilter();
     });
+
+    function highlightReimActiveFilter() {
+        var startInput = document.getElementById('reimStart');
+        var endInput = document.getElementById('reimEnd');
+        if (!startInput || !endInput) return;
+
+        var start = new Date(startInput.value);
+        var end = new Date(endInput.value);
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        document.querySelectorAll('.quick-filter-btn').forEach(function(btn) { btn.classList.remove('active'); });
+
+        var matchingRange = null;
+        if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) matchingRange = 'today';
+        else {
+            var weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) matchingRange = 'week';
+        }
+        if (!matchingRange) {
+            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) matchingRange = 'month';
+        }
+        if (!matchingRange) {
+            var yearStart = new Date(now.getFullYear(), 0, 1);
+            if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) matchingRange = 'year';
+        }
+        if (matchingRange) {
+            var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+    }
 </script>

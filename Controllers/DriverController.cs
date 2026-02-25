@@ -392,8 +392,9 @@ namespace CEMS.Controllers
         [HttpGet("Expenses")]
         public async Task<IActionResult> Expenses()
         {
-            // Load categories from CEO-configured budgets so drivers can only select allowed categories
+            // Load active categories from CEO-configured budgets so drivers can only select allowed categories
             var categories = await _db.Budgets
+                .Where(b => b.IsActive)
                 .OrderBy(b => b.Category)
                 .Select(b => b.Category)
                 .Distinct()

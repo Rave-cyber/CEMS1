@@ -70,6 +70,53 @@
     .stat-value { font-size: 1.55rem; font-weight: 700; color: var(--d-text); line-height: 1.2; }
     .stat-sub   { font-size: .8rem; color: var(--d-muted); margin-top: 2px; }
 
+    /* Filter card styles (consistent across all pages) */
+    .filter-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: 8px;
+        padding: 12px 12px;
+        margin-bottom: 12px;
+    }
+    .filter-card .form-label {
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        margin-bottom: 4px;
+    }
+    .filter-card .form-control {
+        border-color: var(--d-border);
+        border-radius: 6px;
+        font-size: .88rem;
+        padding: 6px 8px;
+    }
+    .filter-card .form-control:focus {
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
+    }
+    .quick-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--d-border);
+        background: var(--d-card);
+        color: var(--d-text);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .quick-filter-btn:hover {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+    }
+    .quick-filter-btn.active {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+    }
+
     .dash-card {
         background: var(--d-card);
         border: 1px solid var(--d-border);
@@ -162,23 +209,23 @@
         </div>
 
         <!-- Filter Card -->
-        <div style="background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 20px;">
+        <div class="filter-card">
             <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; justify-content: space-between;">
                 <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardStart" class="form-label" style="margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--d-muted);">From</label>
-                        <input type="date" id="dashboardStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd"))" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem; width: 100%;" />
+                        <label for="dashboardStart" class="form-label">From</label>
+                        <input type="date" id="dashboardStart" class="form-control" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd"))" />
                     </div>
                     <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardEnd" class="form-label" style="margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--d-muted);">To</label>
-                        <input type="date" id="dashboardEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem; width: 100%;" />
+                        <label for="dashboardEnd" class="form-label">To</label>
+                        <input type="date" id="dashboardEnd" class="form-control" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
                     </div>
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Today</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Week</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Month</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Year</button>
+                    <button type="button" class="quick-filter-btn" data-range="today">Today</button>
+                    <button type="button" class="quick-filter-btn" data-range="week">Week</button>
+                    <button type="button" class="quick-filter-btn" data-range="month">Month</button>
+                    <button type="button" class="quick-filter-btn" data-range="year">Year</button>
                 </div>
             </div>
         </div>
@@ -284,7 +331,7 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="dash-card">
+               @*  <div class="dash-card">
                     <div class="dash-card-head">
                         <div class="dash-card-title"><i class="bi bi-lightning"></i> Quick Actions</div>
                     </div>
@@ -301,7 +348,7 @@
                             </a>
                         </div>
                     </div>
-                </div>
+                </div> *@
 
                 <!-- Top Drivers -->
                 <div class="dash-card mt-3">
@@ -529,8 +576,65 @@
         }
     }
 
+    function highlightActiveFilter() {
+        var startInput = document.getElementById('dashboardStart');
+        var endInput = document.getElementById('dashboardEnd');
+        if (!startInput || !endInput) return;
+
+        var start = new Date(startInput.value);
+        var end = new Date(endInput.value);
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Remove active class from all buttons
+        document.querySelectorAll('.quick-filter-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+
+        // Determine which range matches current filter
+        var matchingRange = null;
+
+        // Check if it's today range
+        if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
+            matchingRange = 'today';
+        }
+        // Check if it's week range (Sunday to today)
+        else {
+            var weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'week';
+            }
+        }
+
+        // Check if it's month range (1st to today)
+        if (!matchingRange) {
+            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'month';
+            }
+        }
+
+        // Check if it's year range (Jan 1 to today)
+        if (!matchingRange) {
+            var yearStart = new Date(now.getFullYear(), 0, 1);
+            if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'year';
+            }
+        }
+
+        // Apply active class to matching button
+        if (matchingRange) {
+            var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         loadManagerMetrics();
+        highlightActiveFilter();
 
         document.getElementById('dashboardStart')?.addEventListener('change', applyDashboardFilter);
         document.getElementById('dashboardEnd')?.addEventListener('change', applyDashboardFilter);

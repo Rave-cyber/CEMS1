@@ -162,9 +162,18 @@
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s ease;
     }
     .quick-filter-btn:hover {
-        background: var(--d-border);
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+    }
+    .quick-filter-btn.active {
+        background: var(--d-primary);
+        color: #fff;
+        border-color: var(--d-primary);
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
     }
 
     @@media (max-width: 768px) {
@@ -423,9 +432,66 @@ async function loadFinanceMetrics(){
     }
 }
 
+function highlightActiveFilter() {
+    var startInput = document.getElementById('filterStart');
+    var endInput = document.getElementById('filterEnd');
+    if (!startInput || !endInput) return;
+
+    var start = new Date(startInput.value);
+    var end = new Date(endInput.value);
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Remove active class from all buttons
+    document.querySelectorAll('.quick-filter-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+    });
+
+    // Determine which range matches current filter
+    var matchingRange = null;
+
+    // Check if it's today range
+    if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
+        matchingRange = 'today';
+    }
+    // Check if it's week range (Sunday to today)
+    else {
+        var weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
+            matchingRange = 'week';
+        }
+    }
+
+    // Check if it's month range (1st to today)
+    if (!matchingRange) {
+        var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
+            matchingRange = 'month';
+        }
+    }
+
+    // Check if it's year range (Jan 1 to today)
+    if (!matchingRange) {
+        var yearStart = new Date(now.getFullYear(), 0, 1);
+        if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
+            matchingRange = 'year';
+        }
+    }
+
+    // Apply active class to matching button
+    if (matchingRange) {
+        var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     // initial load
     loadFinanceMetrics();
+    highlightActiveFilter();
 
     // auto-apply when form fields change
     var filtersForm = document.getElementById('financeFilters');
@@ -433,6 +499,7 @@ document.addEventListener('DOMContentLoaded', function(){
         var inputs = filtersForm.querySelectorAll('input, select');
         inputs.forEach(function(input){
             input.addEventListener('change', function(){
+                highlightActiveFilter();
                 loadFinanceMetrics();
             });
         });
@@ -453,7 +520,10 @@ document.addEventListener('DOMContentLoaded', function(){
             var e = document.getElementById('filterEnd');
             if(s && start) s.value = start.toISOString().slice(0,10);
             if(e) e.value = now.toISOString().slice(0,10);
-            setTimeout(loadFinanceMetrics, 150);
+            setTimeout(function(){
+                highlightActiveFilter();
+                loadFinanceMetrics();
+            }, 150);
         });
     });
 });
