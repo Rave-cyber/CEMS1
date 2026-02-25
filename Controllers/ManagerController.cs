@@ -124,11 +124,40 @@ namespace CEMS.Controllers
                 .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
 
             var overBudgetCount = await _db.ExpenseReports
-                .Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget && r.Status == ReportStatus.Approved && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
                 .CountAsync();
 
-            // budget per category
-            var budgets = await _db.Budgets.Select(b => new { b.Category, b.Allocated, b.Spent }).ToListAsync();
+            // Approved by this manager in the date range
+            var approvedByManagerRaw = await _db.Approvals
+                .Include(a => a.Report)
+                .Where(a => a.Stage == "Manager" && a.Status == ApprovalStatus.Approved && 
+                       a.DecisionDate.HasValue && a.DecisionDate.Value >= start && a.DecisionDate.Value <= end.Value.AddDays(1))
+                .ToListAsync();
+            var approvedTodayCount = approvedByManagerRaw.Count;
+            var approvedTodayTotal = approvedByManagerRaw.Sum(a => a.Report != null ? a.Report.TotalAmount : 0m);
+
+            // Budget per category with spent amounts for the date range (only approved reports)
+            var allBudgets = await _db.Budgets.ToListAsync();
+
+            // Get IDs of approved reports in the date range
+            var approvedReportIds = await _db.ExpenseReports
+                .Where(r => (r.Status == ReportStatus.Approved || r.Status == ReportStatus.PendingCEOApproval) &&
+                       r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            // Sum expense items per category from those approved reports only
+            var spentByCategory = await _db.ExpenseItems
+                .Where(ei => approvedReportIds.Contains(ei.ReportId))
+                .GroupBy(ei => ei.Category)
+                .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
+                .ToListAsync();
+
+            var budgets = allBudgets.Select(b => new {
+                category = b.Category,
+                allocated = b.Allocated,
+                spent = spentByCategory.FirstOrDefault(s => s.Category == b.Category)?.Total ?? 0m
+            }).ToList();
 
             // Top submitters (by number of reports)
             var topSubmittersRaw = await _db.ExpenseReports
@@ -156,13 +185,24 @@ namespace CEMS.Controllers
             var topReimbursedUsers = await _userManager.Users.Where(u => topReimbursedIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
             var topReimbursed = topReimbursedRaw.Select(t => new { username = t.UserId != null && topReimbursedUsers.ContainsKey(t.UserId) ? topReimbursedUsers[t.UserId] : "Unknown", total = t.Total }).ToList();
 
-            return Json(new { totalPending, approved, rejected, overBudgetCount, budgets, topSubmitters, topReimbursed });
+            return Json(new { totalPending, approved, rejected, overBudgetCount, approvedTodayCount, approvedTodayTotal, budgets, topSubmitters, topReimbursed });
         }
 
-        public async Task<IActionResult> OverBudget()
+        public async Task<IActionResult> OverBudget(DateTime? start, DateTime? end)
         {
+            // Set default date range if not provided
+            if (!start.HasValue) start = DateTime.UtcNow.AddMonths(-1).Date;
+            if (!end.HasValue) end = DateTime.UtcNow.Date;
+
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
+
+            // Only get approved over-budget reports (not rejected ones)
             var reports = await _db.ExpenseReports
-                .Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget)
+                .Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget &&
+                            r.Status == ReportStatus.Approved &&
+                            r.SubmissionDate >= start && 
+                            r.SubmissionDate <= end.Value.AddDays(1))
                 .OrderByDescending(r => r.SubmissionDate)
                 .ToListAsync();
 
@@ -172,26 +212,40 @@ namespace CEMS.Controllers
             var list = new List<OverBudgetReportDto>();
             foreach(var r in reports)
             {
-                // compute exceed amount roughly: sum of items - budget allocated
+                // Get items from this report only
                 var items = await _db.ExpenseItems.Where(i => i.ReportId == r.Id).ToListAsync();
                 decimal exceed = 0m;
+
                 foreach(var group in items.GroupBy(i => i.Category))
                 {
                     var cat = group.Key;
                     var total = group.Sum(i => i.Amount);
                     var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == cat);
+
                     if (budget != null)
                     {
-                        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-                        var currentMonthSpent = await _db.ExpenseItems.Where(ii => ii.Category == cat && ii.Date >= monthStart).SumAsync(ii => (decimal?)ii.Amount) ?? 0m;
-                        if (currentMonthSpent + total > budget.Allocated)
+                        // Calculate spent amount ONLY from approved over-budget reports in the date range
+                        var currentSpent = await _db.ExpenseItems
+                            .Where(ii => ii.Category == cat && 
+                                         ii.Date >= start && 
+                                         ii.Date <= end.Value.AddDays(1) &&
+                                         ii.Report.Status == ReportStatus.Approved &&
+                                         ii.Report.BudgetCheck == BudgetCheckStatus.OverBudget)
+                            .SumAsync(ii => (decimal?)ii.Amount) ?? 0m;
+
+                        if (currentSpent > budget.Allocated)
                         {
-                            exceed += (currentMonthSpent + total) - budget.Allocated;
+                            exceed += currentSpent - budget.Allocated;
                         }
                     }
                 }
 
-                list.Add(new OverBudgetReportDto { Report = r, UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] : "Unknown", ExceedAmount = exceed });
+                list.Add(new OverBudgetReportDto 
+                { 
+                    Report = r, 
+                    UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] : "Unknown", 
+                    ExceedAmount = exceed 
+                });
             }
 
             ViewBag.OverBudget = list;

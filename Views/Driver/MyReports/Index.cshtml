@@ -38,16 +38,72 @@
     .reports-wrapper {
         background: var(--d-bg);
         min-height: calc(100vh - 80px);
-        padding: 28px 0 40px;
+        padding: 32px 20px 40px;
         transition: background 0.3s ease;
+    }
+
+    /* Filter & Search Bar */
+    .reports-filter-bar {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        padding: 18px 24px;
+        margin-bottom: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .reports-filter-bar {
+        background: #2d3748;
+        border-color: #3a4452;
+    }
+
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+        min-width: 160px;
+    }
+
+    .filter-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: color 0.3s ease;
+    }
+
+    .filter-item input,
+    .filter-item select {
+        padding: 8px 12px;
+        border: 1px solid var(--d-border);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--d-text);
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .filter-item input:focus,
+    .filter-item select:focus {
+        border-color: var(--d-primary);
+        background: transparent;
+        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+        outline: none;
     }
 
     /* Header */
     .reports-header {
-        margin-bottom: 28px;
+        margin-bottom: 24px;
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: flex-start;
         flex-wrap: wrap;
         gap: 16px;
     }
@@ -82,30 +138,32 @@
 
     /* Report Card */
     .report-card {
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--d-border);
-        padding: 16px 0;
-        margin-bottom: 8px;
-        transition: background .15s, transform .15s, border-color 0.3s ease;
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        padding: 0;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
     }
 
     .report-card:hover {
-        background: rgba(0,0,0,0.02);
+        box-shadow: 0 8px 16px rgba(26, 107, 181, 0.12);
+        transform: translateY(-2px);
     }
 
     body.dark-mode .report-card:hover {
-        background: rgba(255,255,255,0.04);
+        box-shadow: 0 8px 16px rgba(46, 196, 182, 0.15);
     }
 
     .report-card--overbudget {
         border-left: 4px solid var(--d-danger);
-        background: rgba(220,38,38,0.02);
-        padding-left: 12px;
+        background: rgba(220, 38, 38, 0.01);
     }
 
     body.dark-mode .report-card--overbudget {
-        background: rgba(220,38,38,0.08);
+        background: rgba(220, 38, 38, 0.05);
     }
 
     /* Summary Card */
@@ -586,10 +644,10 @@
             color: var(--d-primary);
         }
 
-    /* Controls Bottom */
+    /* Controls Bottom - Modern Pagination */
     .controls-bottom {
-        margin-top: 28px;
-        padding: 8px 0;
+        margin-top: 40px;
+        padding: 12px 0;
         background: transparent;
         border: none;
         display: flex;
@@ -599,75 +657,80 @@
         flex-wrap: wrap;
     }
 
-    .controls-filter {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 250px;
-    }
-
-    .control-label {
-        font-weight: 600;
-        font-size: .9rem;
-        color: var(--d-text);
-        margin: 0;
-        white-space: nowrap;
-        transition: color 0.3s ease;
-    }
-
-    .controls-filter .form-select {
-        min-width: 180px;
-        border-color: var(--d-border);
-        background-color: var(--d-card);
-        color: var(--d-text);
-        transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    }
-
     .controls-pagination {
         margin: 0;
     }
 
     .controls-pagination .pagination {
         margin: 0;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .controls-pagination .page-item {
+        margin: 0;
     }
 
     .controls-pagination .page-link {
         color: var(--d-primary);
         border-color: var(--d-border);
-        font-size: 1rem;
-        padding: 8px 12px;
-        min-width: 44px;
+        background: var(--d-card);
+        font-size: 0.9rem;
+        padding: 8px 11px;
+        min-width: 40px;
         display: inline-flex;
         justify-content: center;
         align-items: center;
-        border-radius: 8px;
-        transition: all 0.2s;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
-    .controls-pagination .page-link:hover {
-        background-color: rgba(0,102,204,0.08);
-        color: var(--d-primary);
+    .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(26, 107, 181, 0.08);
+        color: #155a9a;
+        border-color: var(--d-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(26, 107, 181, 0.15);
     }
 
     body.dark-mode .controls-pagination .page-link {
-        border-color: var(--d-border);
-        background-color: transparent;
+        background: #2d3748;
     }
 
-    body.dark-mode .controls-pagination .page-link:hover {
-        background-color: rgba(46, 196, 182, .15);
+    body.dark-mode .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(46, 196, 182, 0.12);
+        color: #5eead4;
+    }
+
+    .controls-pagination .page-item.disabled .page-link {
+        background: #f1f5f9;
+        color: #cbd5e1;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    body.dark-mode .controls-pagination .page-item.disabled .page-link {
+        background: #374151;
+        color: #6b7280;
     }
 
     .controls-pagination .page-item.active .page-link {
-        background-color: var(--d-primary);
+        background: linear-gradient(135deg, var(--d-primary) 0%, #0a5a9f 100%);
         border-color: var(--d-primary);
         color: white;
         font-weight: 700;
+        box-shadow: 0 2px 8px rgba(26, 107, 181, 0.3);
     }
 
-    .controls-pagination .page-num {
-        font-size: 1.05rem;
-        padding: 10px 14px;
+    .controls-pagination .page-item.active .page-link:hover {
+        background: linear-gradient(135deg, #155a9a 0%, #094085 100%);
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: var(--d-muted);
+        transition: color 0.3s ease;
     }
 
     /* Fix text-muted for dark mode */
@@ -676,31 +739,28 @@
     }
 
     @@media (max-width: 768px) {
-        .controls-bottom {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-        }
-
-        .controls-filter {
-            width: 100%;
-            flex-direction: column;
-        }
-
-        .controls-filter .form-select {
-            width: 100%;
-        }
-
-        .controls-pagination {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-    }
-
-    @@media (max-width: 768px) {
         .reports-wrapper {
-            padding: 20px 0 32px;
+            padding: 20px 12px 32px;
+        }
+
+        .reports-filter-bar {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .filter-item {
+            width: 100%;
+            min-width: unset;
+        }
+
+        .filter-actions {
+            width: 100%;
+            gap: 8px;
+        }
+
+        .filter-btn,
+        .filter-btn-reset {
+            flex: 1;
         }
 
         .reports-header {
@@ -710,10 +770,10 @@
         }
 
         .report-card-header {
-            padding: 16px 20px;
+            padding: 14px 16px;
             flex-direction: column;
             align-items: flex-start;
-            gap: 12px;
+            gap: 10px;
         }
 
         .report-card-info {
@@ -722,6 +782,7 @@
 
         .report-amount {
             margin-left: 0;
+            width: 100%;
         }
 
         .items-table {
@@ -730,26 +791,64 @@
 
             .items-table thead th,
             .items-table tbody td {
-                padding: 12px 16px;
+                padding: 10px 12px;
             }
 
         .approval-trail {
-            padding: 16px 20px;
+            padding: 14px 16px;
+        }
+
+        .controls-pagination .pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls-pagination .page-link {
+            padding: 6px 9px;
+            min-width: 36px;
+            font-size: 0.85rem;
         }
     }
 </style>
 
 <div class="reports-wrapper">
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-3 px-md-4">
 
-        <select id="statusFilter" class="form-select form-select-sm" style="max-width: 200px;">
-            <option value="">All statuses</option>
-            @if (filterStatus == "Submitted") { <option value="Submitted" selected>Submitted</option> } else { <option value="Submitted">Submitted</option> }
-            @if (filterStatus == "PendingCEOApproval") { <option value="PendingCEOApproval" selected>Pending CEO</option> } else { <option value="PendingCEOApproval">Pending CEO</option> }
-            @if (filterStatus == "Approved") { <option value="Approved" selected>Approved</option> } else { <option value="Approved">Approved</option> }
-            @if (filterStatus == "Rejected") { <option value="Rejected" selected>Rejected</option> } else { <option value="Rejected">Rejected</option> }
-        </select>
-        <div style="margin-bottom: 20px;"></div>
+        <!-- Modern Filter Bar -->
+        <div class="reports-filter-bar">
+            <div class="filter-item">
+                <label class="filter-label">Search</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Report #, amount, date..." />
+            </div>
+
+            <div class="filter-item">
+                <label class="filter-label">Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="PendingCEOApproval">Pending CEO</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="filter-item">
+                <label class="filter-label">Budget Status</label>
+                <select id="budgetFilter" class="form-select">
+                    <option value="">All</option>
+                    <option value="over">Over Budget</option>
+                    <option value="ok">Within Budget</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Results Count -->
+        @if (reports.Any())
+        {
+            <div class="pagination-info" style="margin-bottom: 16px;">
+                <i class="bi bi-info-circle"></i> Showing @reports.Count() reports
+            </div>
+        }
 
         @if (reports.Any())
         {
@@ -782,7 +881,7 @@
                     _ => r.Status.ToString()
                 };
 
-                <div class="report-card @(isOver ? "report-card--overbudget" : "")">
+                <div class="report-card @(isOver ? "report-card--overbudget" : "")" data-status="@r.Status" data-budget="@(isOver ? "over" : "ok")" data-report-id="@r.Id">
                     <!-- Report Header -->
                     <div class="report-card-header">
                         <div class="report-card-info">
@@ -967,20 +1066,47 @@
             <div class="controls-bottom">
                 @if (totalPages > 1)
                 {
-                    <nav aria-label="Report pages" class="controls-pagination w-100 d-flex justify-content-center">
+                    <nav aria-label="Report pages" class="controls-pagination">
                         <ul class="pagination mb-0">
                             <li class="page-item @(page == 1 ? "disabled" : "")">
-                                <a class="page-link" href="?page=@(page-1)&pageSize=@pageSize&status=@filterStatus">Previous</a>
+                                <a class="page-link" href="?page=@(page-1)&pageSize=@pageSize&status=@filterStatus" @(page == 1 ? "disabled" : "")>
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
                             </li>
-                            @for (int p = 1; p <= totalPages; p++)
+                            @{
+                                int startPage = Math.Max(1, page - 2);
+                                int endPage = Math.Min(totalPages, page + 2);
+                            }
+                            @if (startPage > 1)
+                            {
+                                <li class="page-item"><a class="page-link" href="?page=1&pageSize=@pageSize&status=@filterStatus">1</a></li>
+                                @if (startPage > 2)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+                            @for (int p = startPage; p <= endPage; p++)
                             {
                                 <li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="?page=@p&pageSize=@pageSize&status=@filterStatus">@p</a></li>
                             }
+                            @if (endPage < totalPages)
+                            {
+                                @if (endPage < totalPages - 1)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                                <li class="page-item"><a class="page-link" href="?page=@totalPages&pageSize=@pageSize&status=@filterStatus">@totalPages</a></li>
+                            }
                             <li class="page-item @(page == totalPages ? "disabled" : "")">
-                                <a class="page-link" href="?page=@(page+1)&pageSize=@pageSize&status=@filterStatus">Next</a>
+                                <a class="page-link" href="?page=@(page+1)&pageSize=@pageSize&status=@filterStatus" @(page == totalPages ? "disabled" : "")>
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
                             </li>
                         </ul>
                     </nav>
+                    <div class="pagination-info">
+                        Page <strong>@Html.Raw(page)</strong> of <strong>@Html.Raw(totalPages)</strong>
+                    </div>
                 }
             </div>
         }
@@ -990,17 +1116,82 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function(){
-        var statusEl = document.getElementById('statusFilter');
-        if(statusEl) {
-            statusEl.addEventListener('change', function(){
-                var s = statusEl.value;
-                var q = new URLSearchParams(window.location.search);
-                if(s) q.set('status', s); else q.delete('status');
-                q.set('page', '1');
-                q.set('pageSize', '@pageSize');
-                window.location.search = q.toString();
-            });
+        const statusFilter = document.getElementById('statusFilter');
+        const budgetFilter = document.getElementById('budgetFilter');
+        const searchInput = document.getElementById('searchInput');
+
+        // Restore filter values from URL
+        const params = new URLSearchParams(window.location.search);
+        if(params.get('status')) statusFilter.value = params.get('status');
+        if(params.get('budget')) budgetFilter.value = params.get('budget');
+        if(params.get('search')) searchInput.value = params.get('search');
+
+        // Function to apply filters and navigate
+        function applyFilters(){
+            const status = statusFilter.value;
+            const budget = budgetFilter.value;
+            const search = searchInput.value.trim();
+
+            const q = new URLSearchParams();
+            if(status) q.set('status', status);
+            if(budget) q.set('budget', budget);
+            if(search) q.set('search', search);
+            q.set('page', '1');
+            q.set('pageSize', '@pageSize');
+
+            window.location.search = q.toString();
         }
+
+        // Auto-apply filters on change
+        statusFilter?.addEventListener('change', applyFilters);
+        budgetFilter?.addEventListener('change', applyFilters);
+        searchInput?.addEventListener('input', function(e){
+            // Debounce search input for better performance
+            clearTimeout(searchInput._debounce);
+            searchInput._debounce = setTimeout(applyFilters, 500);
+        });
+
+        // Client-side filtering for instant visual feedback
+        const reports = document.querySelectorAll('.report-card');
+        function filterReports(){
+            const statusVal = statusFilter.value.toLowerCase();
+            const budgetVal = budgetFilter.value.toLowerCase();
+            const searchVal = searchInput.value.toLowerCase();
+            let visibleCount = 0;
+
+            reports.forEach(card => {
+                let matches = true;
+
+                if(statusVal){
+                    const cardStatus = card.getAttribute('data-status')?.toLowerCase();
+                    matches = matches && (cardStatus === statusVal || cardStatus?.includes(statusVal));
+                }
+
+                if(budgetVal){
+                    const cardBudget = card.getAttribute('data-budget')?.toLowerCase();
+                    matches = matches && cardBudget === budgetVal;
+                }
+
+                if(searchVal){
+                    const cardText = card.textContent.toLowerCase();
+                    matches = matches && cardText.includes(searchVal);
+                }
+
+                card.style.display = matches ? '' : 'none';
+                if(matches) visibleCount++;
+            });
+
+            // Show/hide empty state
+            const emptyState = document.querySelector('.empty-state');
+            if(visibleCount === 0 && !emptyState){
+                console.log('No matches found');
+            }
+        }
+
+        // Add real-time filtering on input
+        searchInput?.addEventListener('input', filterReports);
+        statusFilter?.addEventListener('change', filterReports);
+        budgetFilter?.addEventListener('change', filterReports);
     });
 </script>
 

@@ -14,401 +14,1038 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
 <style>
-    :root {
-        --d-primary: #1a6bb5;
-        --d-accent: #2ec4b6;
-        --d-bg: #f7fbfc;
-        --d-card: #ffffff;
-        --d-border: #e9eef6;
-        --d-text: #0f1724;
-        --d-muted: #6b7280;
-        --d-radius: 8px;
-        --d-radius-sm: 6px;
+    /* Balanced Compact Design - matching driver dashboard */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
+
+    body {
+        background: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+        body.dark-mode {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
 
     .dash-wrapper {
-        background: var(--d-bg);
+        padding: 16px;
         min-height: calc(100vh - 80px);
-        padding: 28px 0 40px;
     }
 
-    .dash-header { margin-bottom: 32px; }
-    .dash-greeting { font-size: 1.65rem; font-weight: 700; color: var(--d-text); }
-    .dash-greeting span { color: var(--d-primary); }
-    .dash-date { color: var(--d-muted); font-size: .92rem; margin-top: 2px; }
-
-    .stat-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 10px;
-        padding: 18px;
+    /* TOP BAR - matching driver dashboard */
+    .top-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
         display: flex;
         align-items: center;
-        gap: 14px;
-        transition: transform .12s ease;
-        text-decoration: none !important;
-        color: inherit !important;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        border: 1px solid #f0f3f7;
     }
-    .stat-card:hover { transform: translateY(-2px); }
 
-    .stat-icon {
-        width: 44px; height: 44px;
-        border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.1rem; flex-shrink: 0;
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        min-width: 300px;
     }
-    .stat-icon--pending  { background: rgba(26,107,181,.08);  color: #1a6bb5; }
-    .stat-icon--approved { background: rgba(16,185,129,.08);  color: #10b981; }
-    .stat-icon--warning  { background: rgba(245,158,11,.08);  color: #f59e0b; }
-    .stat-icon--budget   { background: rgba(139,92,246,.08);  color: #8b5cf6; }
 
-    .stat-label {
-        font-size: .76rem; font-weight: 600;
-        text-transform: uppercase; letter-spacing: .5px;
-        color: var(--d-muted); margin-bottom: 4px;
+    .greeting {
+        font-size: 1rem;
+        color: #1e293b;
     }
-    .stat-value { font-size: 1.55rem; font-weight: 700; color: var(--d-text); line-height: 1.2; }
-    .stat-sub   { font-size: .8rem; color: var(--d-muted); margin-top: 2px; }
 
-    /* Filter card styles (consistent across all pages) */
-    .filter-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 8px;
-        padding: 12px 12px;
-        margin-bottom: 12px;
+        .greeting strong {
+            color: #0288d1;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+    .date-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 5px 14px;
+        border-radius: 30px;
+        border: 1px solid #edf2f7;
+        color: #475569;
+        font-size: 0.9rem;
     }
-    .filter-card .form-label {
-        font-size: .85rem;
-        font-weight: 600;
-        color: var(--d-muted);
-        margin-bottom: 4px;
+
+        .date-badge i {
+            color: #0288d1;
+            font-size: 0.85rem;
+        }
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-left: auto;
     }
-    .filter-card .form-control {
-        border-color: var(--d-border);
-        border-radius: 6px;
-        font-size: .88rem;
-        padding: 6px 8px;
-    }
-    .filter-card .form-control:focus {
-        border-color: var(--d-primary);
-        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
-    }
-    .quick-filter-btn {
+
+    .date-range {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8fafc;
         padding: 6px 12px;
-        border: 1px solid var(--d-border);
-        background: var(--d-card);
-        color: var(--d-text);
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .date-field {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .date-field span {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .date-field input {
+            width: 120px;
+            padding: 6px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #1e293b;
+            background: white;
+            border: none;
+            background: transparent;
+            font-weight: 500;
+            text-align: center;
+        }
+
+    .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .filter-btn {
+        padding: 6px 14px;
+        border: none;
+        background: transparent;
         border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #475569;
         cursor: pointer;
         transition: all 0.2s ease;
-    }
-    .quick-filter-btn:hover {
-        background: var(--d-primary);
-        color: #fff;
-        border-color: var(--d-primary);
-    }
-    .quick-filter-btn.active {
-        background: var(--d-primary);
-        color: #fff;
-        border-color: var(--d-primary);
-        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+        white-space: nowrap;
     }
 
-    .dash-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 10px;
-        overflow: hidden;
+        .filter-btn:hover {
+            background: #e2e8f0;
+            color: #0288d1;
+        }
+
+        .filter-btn.active {
+            background: #0288d1;
+            color: white;
+        }
+
+            .filter-btn.active:hover {
+                background: #01579b;
+            }
+
+    .review-btn {
+        background: #0288d1;
+        color: white;
+        border: none;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+        .review-btn:hover {
+            background: #01579b;
+            color: white;
+        }
+
+    body.dark-mode .top-bar {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    body.dark-mode .greeting {
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .date-badge {
+        background: #0f172a;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
+    body.dark-mode .date-range {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .date-field input {
+        background: transparent;
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .quick-filters {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .filter-btn {
+        color: #94a3b8;
+    }
+
+        body.dark-mode .filter-btn:hover {
+            background: #334155;
+            color: #4fc3f7;
+        }
+
+    /* Stats row - matching driver dashboard */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
         margin-bottom: 20px;
     }
-    .dash-card-head {
-        padding: 14px 18px;
-        display: flex; align-items: center; justify-content: space-between;
-        border-bottom: 1px solid var(--d-border);
-    }
-    .dash-card-title {
-        font-size: .95rem; font-weight: 600; color: var(--d-text);
-        display: flex; align-items: center; gap: 8px;
-    }
-    .dash-card-title i { color: var(--d-primary); font-size: 1rem; }
-    .dash-card-body { padding: 16px 18px; }
 
-    .budget-item { padding: 14px 0; }
-    .budget-item + .budget-item { border-top: 1px solid var(--d-border); }
-    .budget-label { font-weight: 600; color: var(--d-text); font-size: .9rem; }
-    .budget-remain { font-size: .8rem; font-weight: 500; }
-    .budget-remain--ok   { color: #0d8b7d; }
-    .budget-remain--over { color: #dc2626; }
-    .budget-bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top: 8px; overflow: hidden; }
-    .budget-bar-fill { height: 100%; border-radius: 3px; }
-    .budget-bar-fill--ok     { background: var(--d-primary); }
-    .budget-bar-fill--warn   { background: #f59e0b; }
-    .budget-bar-fill--danger { background: #ef4444; }
-    .budget-amounts { font-size: .76rem; color: var(--d-muted); margin-top: 4px; }
-
-    .chart-wrap { height: 260px; }
-    .chart-wrap canvas { width: 100% !important; height: 100% !important; }
-
-    .dash-table { width: 100%; margin-bottom: 0; }
-    .dash-table thead th {
-        background: #f8fafc; color: var(--d-muted);
-        font-weight: 600; font-size: .76rem; text-transform: uppercase;
-        letter-spacing: .5px; padding: 11px 16px; border: none;
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        transition: transform 0.15s, box-shadow 0.15s;
     }
-    .dash-table tbody td {
-        padding: 13px 16px; border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle; color: var(--d-text); font-size: .88rem;
-    }
-    .dash-table tbody tr:last-child td { border-bottom: none; }
-    .dash-table tbody tr:hover { background: #f8fafc; }
 
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+    body.dark-mode .stat-card {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+        .stat-icon.blue {
+            background: #e1f5fe;
+            color: #0288d1;
+        }
+
+        .stat-icon.green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .stat-icon.orange {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .stat-icon.purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+    body.dark-mode .stat-icon.blue {
+        background: #0a2a3a;
+        color: #4fc3f7;
+    }
+
+    body.dark-mode .stat-icon.green {
+        background: #1a2e1a;
+        color: #81c784;
+    }
+
+    body.dark-mode .stat-icon.orange {
+        background: #2a1e0a;
+        color: #ffb74d;
+    }
+
+    body.dark-mode .stat-icon.purple {
+        background: #1a0f2a;
+        color: #b39ddb;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 4px;
+        letter-spacing: 0.4px;
+        font-weight: 700;
+    }
+
+    .stat-number {
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .stat-sub {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+
+    /* Two column layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    /* Chart card - matching driver dashboard */
+    .chart-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
+    }
+
+    body.dark-mode .chart-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .chart-header {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 0 12px 0;
+        border-bottom: 1px solid #e9eef2;
+        margin-bottom: 12px;
+    }
+
+        .chart-header i {
+            color: #0288d1;
+            font-size: 1rem;
+        }
+
+    .chart-container {
+        height: 160px;
+        width: 100%;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: block;
+        line-height: 0;
+        font-size: 0;
+    }
+
+        .chart-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0;
+            padding: 0;
+            vertical-align: bottom;
+        }
+
+    /* Summary card */
+    .summary-card {
+        background: white;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        height: fit-content;
+    }
+
+    body.dark-mode .summary-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .summary-header {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e9eef2;
+        margin-bottom: 12px;
+    }
+
+        .summary-header i {
+            color: #2e7d32;
+            font-size: 1rem;
+        }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9eef2;
+        gap: 12px;
+    }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-row .label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .summary-row .value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+    body.dark-mode .summary-row .value {
+        color: #e2e8f0;
+    }
+
+    .value.positive {
+        color: #2e7d32;
+    }
+
+    .value.negative {
+        color: #d32f2f;
+    }
+
+    /* Budget list */
+    .budget-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .budget-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 0;
+    }
+
+    .budget-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .budget-category {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        min-width: 80px;
+    }
+
+    body.dark-mode .budget-category {
+        color: #e2e8f0;
+    }
+
+    .budget-numbers {
+        color: #64748b;
+        font-size: 0.75rem;
+        text-align: right;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+
+    .progress-bar {
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 4px 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #0288d1;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+        .progress-fill.warning {
+            background: #f57c00;
+        }
+
+        .progress-fill.danger {
+            background: #d32f2f;
+        }
+
+    .budget-percent {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-align: right;
+        font-weight: 500;
+    }
+
+    /* Tables */
+    .table-card {
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+    }
+
+    body.dark-mode .table-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .table-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e9eef2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        font-size: 0.9rem;
+        font-weight: 700;
+        gap: 12px;
+    }
+
+    body.dark-mode .table-header {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    .compact-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+        .compact-table th {
+            text-align: left;
+            padding: 10px 16px;
+            background: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .compact-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9eef2;
+        }
+
+    body.dark-mode .compact-table th {
+        background: #0f172a;
+        color: #94a3b8;
+    }
+
+    .compact-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .compact-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    body.dark-mode .compact-table tbody tr:hover {
+        background: #2d3748;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    /* Status badge */
     .status-badge {
-        display: inline-block; padding: 3px 9px; border-radius: 5px;
-        font-size: .72rem; font-weight: 700; text-transform: uppercase;
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
     }
-    .status-badge--pending { background: rgba(245,158,11,.1); color: #d97706; }
-    .status-badge--over    { background: rgba(239,68,68,.1);  color: #ef4444; }
-    .status-badge--within  { background: rgba(16,185,129,.1); color: #10b981; }
 
+        .status-badge.within {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-badge.over {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+    body.dark-mode .status-badge.within {
+        background: #1a2e1a;
+        color: #81c784;
+    }
+
+    body.dark-mode .status-badge.over {
+        background: #2a1a1a;
+        color: #ef9a9a;
+    }
+
+    /* View link */
+    .view-link {
+        color: #0288d1;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(2, 136, 209, 0.1);
+    }
+
+        .view-link:hover {
+            background: #0288d1;
+            color: white;
+        }
+
+    /* Action button */
     .action-btn {
-        font-size: .82rem; padding: 5px 12px; border-radius: 5px;
-        text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
-        background: var(--d-primary); color: #fff; transition: background .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #0288d1;
+        color: white;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-decoration: none;
     }
-    .action-btn:hover { background: #154a8a; color: #fff; text-decoration: none; }
 
-    .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--d-border); }
-    .summary-row:last-child { border-bottom: none; }
-    .summary-row .label { font-size: .85rem; color: var(--d-muted); font-weight: 500; }
-    .summary-row .val   { font-size: .95rem; font-weight: 700; color: var(--d-text); }
+        .action-btn:hover {
+            background: #01579b;
+            color: white;
+        }
+
+    /* Scrollable container */
+    .scrollable {
+        max-height: 260px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    /* Driver list item */
+    .driver-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9eef2;
+    }
+
+        .driver-item:last-child {
+            border-bottom: none;
+        }
+
+    .driver-name {
+        font-weight: 500;
+        font-size: 0.8rem;
+        color: #1e293b;
+    }
+
+    body.dark-mode .driver-name {
+        color: #e2e8f0;
+    }
+
+    .driver-value {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+        .driver-value.highlight {
+            color: #0288d1;
+            font-weight: 600;
+        }
+
+    /* Empty state */
+    .empty-state {
+        color: #94a3b8;
+        text-align: center;
+        padding: 16px;
+        font-size: 0.8rem;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-section {
+            min-width: auto;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quick-filters,
+        .date-range {
+            width: 100%;
+        }
+    }
 
     @@media (max-width: 768px) {
-        .dash-wrapper { padding: 20px 0 32px; }
+        .top-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px 16px;
+        }
+
+        .welcome-section {
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+            min-width: auto;
+        }
+
+        .filter-section {
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+            min-width: auto;
+        }
+
+        .date-range {
+            width: 100%;
+            flex-direction: row;
+            gap: 8px;
+        }
+
+        .date-field {
+            flex: 1;
+            gap: 4px;
+        }
+
+        .date-field input {
+            width: 80px;
+        }
+
+        .quick-filters {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .review-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 12px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .chart-container {
+            height: 140px;
+        }
+
+        .budget-list {
+            max-height: 240px;
+        }
+
+        .compact-table th,
+        .compact-table td {
+            padding: 8px 12px;
+            font-size: 0.75rem;
+        }
+
+        .table-header {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 10px 12px;
+        }
+
+        .scrollable {
+            max-height: 200px;
+        }
     }
+
+    @@media (max-width: 480px) {
+        .stats-row {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+        }
+
+        .stat-number {
+            font-size: 1.1rem;
+        }
+
+        .date-field input {
+            width: 70px;
+        }
+
+        .filter-btn {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+    }
+
 </style>
 
 <div class="dash-wrapper">
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-2">
 
-        <!-- Header -->
-        <div class="dash-header d-flex justify-content-between align-items-end flex-wrap gap-2">
-            <div>
-                <h1 class="dash-greeting">Welcome back, <span>@User.Identity?.Name</span></h1>
-                <p class="dash-date mb-0">
-                    <i class="bi bi-calendar3 me-1"></i>
-                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
-                </p>
+        <!-- TOP BAR - matching driver dashboard -->
+        <div class="top-bar">
+            <div class="welcome-section">
+                <div class="greeting">
+                    Welcome back, <strong>@User.Identity?.Name</strong>
+                </div>
             </div>
-            <a href="@Url.Action("Reports", "Manager")" class="btn px-4 py-2 text-white"
-               style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
-                <i class="bi bi-file-earmark-check me-1"></i> Review Reports
+
+            <div class="filter-section">
+                <div class="date-range">
+                    <div class="date-field">
+                        <span>From</span>
+                        <input type="date" id="dashboardStart"
+                               value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd"))">
+                    </div>
+                    <div class="date-field">
+                        <span>To</span>
+                        <input type="date" id="dashboardEnd"
+                               value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))">
+                    </div>
+                </div>
+
+                <div class="quick-filters">
+                    <button class="filter-btn" data-range="today">Today</button>
+                    <button class="filter-btn" data-range="week">Week</button>
+                    <button class="filter-btn" data-range="month">Month</button>
+                    <button class="filter-btn" data-range="year">Year</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <a href="@Url.Action("Reports", "Manager")" class="stat-card">
+                <div class="stat-icon blue"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Pending Review</div>
+                    <div class="stat-number"><span id="mgrPendingCount">—</span></div>
+                    <div class="stat-sub">awaiting approval</div>
+                </div>
             </a>
-        </div>
-
-        <!-- Filter Card -->
-        <div class="filter-card">
-            <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; justify-content: space-between;">
-                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardStart" class="form-label">From</label>
-                        <input type="date" id="dashboardStart" class="form-control" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd"))" />
-                    </div>
-                    <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardEnd" class="form-label">To</label>
-                        <input type="date" id="dashboardEnd" class="form-control" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
-                    </div>
+            <a href="@Url.Action("Reports", "Manager")" class="stat-card">
+                <div class="stat-icon green"><i class="bi bi-check2-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Approve</div>
+                    <div class="stat-number" id="mgrApprovedTotal">₱@approvedTodayTotal.ToString("N0")</div>
+                    <div class="stat-sub"><span id="mgrApprovedCount">@approvedTodayCount</span> report(s)</div>
                 </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button type="button" class="quick-filter-btn" data-range="today">Today</button>
-                    <button type="button" class="quick-filter-btn" data-range="week">Week</button>
-                    <button type="button" class="quick-filter-btn" data-range="month">Month</button>
-                    <button type="button" class="quick-filter-btn" data-range="year">Year</button>
+            </a>
+            <a href="@Url.Action("OverBudget", "Manager")" class="stat-card">
+                <div class="stat-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Over Budget</div>
+                    <div class="stat-number"><span id="mgrOverBudget">—</span></div>
+                    <div class="stat-sub">reports flagged</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Stat Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-3 col-sm-6">
-                <a href="@Url.Action("Reports", "Manager")" class="stat-card">
-                    <div class="stat-icon stat-icon--pending"><i class="bi bi-hourglass-split"></i></div>
-                    <div>
-                        <div class="stat-label">Pending Review</div>
-                        <div class="stat-value"><span id="mgrPendingCount">—</span></div>
-                        <div class="stat-sub">Expense requests</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <a href="@Url.Action("Reports", "Manager")" class="stat-card">
-                    <div class="stat-icon stat-icon--approved"><i class="bi bi-check2-circle"></i></div>
-                    <div>
-                        <div class="stat-label">Approved Today</div>
-                        <div class="stat-value">₱@approvedTodayTotal.ToString("N2")</div>
-                        <div class="stat-sub">@approvedTodayCount report(s)</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <a href="@Url.Action("OverBudget", "Manager")" class="stat-card">
-                    <div class="stat-icon stat-icon--warning"><i class="bi bi-exclamation-triangle"></i></div>
-                    <div>
-                        <div class="stat-label">Over Budget</div>
-                        <div class="stat-value"><span id="mgrOverBudget">—</span></div>
-                        <div class="stat-sub">Reports flagged</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--budget"><i class="bi bi-cash-coin"></i></div>
-                    <div>
-                        <div class="stat-label">Team Budget</div>
-                        <div class="stat-value">₱@totalBudget.ToString("N2")</div>
-                        <div class="stat-sub">
-                            @Math.Round((totalBudget > 0 ? totalSpent / totalBudget : 0) * 100)% utilized
-                        </div>
+            </a>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="bi bi-cash-coin"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Team Budget</div>
+                    <div class="stat-number">₱@totalBudget.ToString("N0")</div>
+                    <div class="stat-sub">
+                        @Math.Round((totalBudget > 0 ? totalSpent / totalBudget : 0) * 100)% utilized
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts + Summary Row -->
-        <div class="row g-3 mb-4">
-            <div class="col-lg-8">
-                <!-- Budget Trend Chart -->
-                <div class="dash-card mb-3" style="margin-bottom:20px!important;">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-bar-chart"></i> Budget by Category</div>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="chart-wrap"><canvas id="managerBudgetChart"></canvas></div>
-                    </div>
+        <!-- Two Column Layout -->
+        <div class="dashboard-grid">
+            <!-- Budget Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-bar-chart-fill"></i> Budget by Category
                 </div>
-
-                <!-- Budget Usage Bars -->
-                <div class="dash-card">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-graph-up"></i> Category Usage</div>
-                    </div>
-                    <div class="dash-card-body">
-                        <div id="budgetOverview">
-                            <p class="text-center py-3" style="color:var(--d-muted);">Loading...</p>
-                        </div>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="managerBudgetChart"></canvas>
                 </div>
             </div>
 
-            <div class="col-lg-4">
-                <!-- Budget Summary -->
-                <div class="dash-card mb-3" style="margin-bottom:20px!important;">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-calculator"></i> Budget Summary</div>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="summary-row">
-                            <span class="label">Total Allocated</span>
-                            <span class="val">₱@totalBudget.ToString("N2")</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="label">Total Spent</span>
-                            <span class="val">₱@totalSpent.ToString("N2")</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="label">Remaining</span>
-                            <span class="val" style="color:@(totalRemaining < 0 ? "#dc2626" : "#0d8b7d");">
-                                ₱@totalRemaining.ToString("N2")
-                            </span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="label">Active Drivers</span>
-                            <span class="val">@activeDrivers</span>
-                        </div>
-                    </div>
+            <!-- Budget Summary -->
+            <div class="summary-card">
+                <div class="summary-header">
+                    <i class="bi bi-calculator-fill"></i> Budget Summary
                 </div>
-
-                <!-- Quick Actions -->
-               @*  <div class="dash-card">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-lightning"></i> Quick Actions</div>
-                    </div>
-                    <div class="dash-card-body" style="padding:12px 14px;">
-                        <div class="d-flex flex-column gap-2">
-                            <a href="@Url.Action("Reports", "Manager")" class="btn btn-outline-primary btn-sm w-100 text-start">
-                                <i class="bi bi-file-earmark-check me-2"></i> Review All Reports
-                            </a>
-                            <a href="@Url.Action("OverBudget", "Manager")" class="btn btn-sm w-100 text-start" style="border:1px solid #f59e0b;color:#92400e;background:rgba(245,158,11,.06);">
-                                <i class="bi bi-exclamation-triangle me-2"></i> Over-Budget Reports
-                            </a>
-                            <a href="@Url.Action("Budget", "Manager")" class="btn btn-outline-primary btn-sm w-100 text-start">
-                                <i class="bi bi-graph-up me-2"></i> Budget Details
-                            </a>
-                        </div>
-                    </div>
-                </div> *@
-
-                <!-- Top Drivers -->
-                <div class="dash-card mt-3">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-person-lines-fill"></i> Top Submitters</div>
-                    </div>
-                    <div class="dash-card-body" style="padding:12px 14px;">
-                        <div id="topSubmittersList">
-                            <p class="text-center py-3" style="color:var(--d-muted);">Loading...</p>
-                        </div>
-                    </div>
+                <div class="summary-row">
+                    <span class="label">Total Allocated</span>
+                    <span class="value">₱@totalBudget.ToString("N0")</span>
                 </div>
+                <div class="summary-row">
+                    <span class="label">Total Spent</span>
+                    <span class="value">₱@totalSpent.ToString("N0")</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Remaining</span>
+                    <span class="value @(totalRemaining < 0 ? "negative" : "positive")">
+                        ₱@totalRemaining.ToString("N0")
+                    </span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Active Drivers</span>
+                    <span class="value">@activeDrivers</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Utilization</span>
+                    <span class="value">@Math.Round((totalBudget > 0 ? totalSpent / totalBudget : 0) * 100)%</span>
+                </div>
+            </div>
+        </div>
 
-                <div class="dash-card mt-3">
-                    <div class="dash-card-head">
-                        <div class="dash-card-title"><i class="bi bi-wallet2"></i> Top Reimbursed Drivers</div>
-                    </div>
-                    <div class="dash-card-body" style="padding:12px 14px;">
-                        <div id="topReimbursedList">
-                            <p class="text-center py-3" style="color:var(--d-muted);">Loading...</p>
-                        </div>
-                    </div>
+        <!-- Category Usage -->
+        <div class="table-card">
+            <div class="table-header">
+                <span><i class="bi bi-pie-chart-fill" style="color:#0288d1;"></i> Category Usage</span>
+            </div>
+            <div id="budgetOverview" style="padding: 12px 16px;">
+                <p class="empty-state">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Two Column Layout for Driver Stats -->
+        <div class="dashboard-grid" style="margin-bottom: 16px;">
+            <!-- Top Submitters -->
+            <div class="summary-card">
+                <div class="summary-header">
+                    <i class="bi bi-person-lines-fill"></i> Top Submitters
+                </div>
+                <div class="scrollable" id="topSubmittersList">
+                    <p class="empty-state">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Top Reimbursed -->
+            <div class="summary-card">
+                <div class="summary-header">
+                    <i class="bi bi-wallet2"></i> Top Reimbursed
+                </div>
+                <div class="scrollable" id="topReimbursedList">
+                    <p class="empty-state">Loading...</p>
                 </div>
             </div>
         </div>
 
         <!-- Pending Reports Table -->
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <div class="dash-card-title"><i class="bi bi-hourglass-split"></i> Pending Reports</div>
-                <a href="@Url.Action("Reports", "Manager")" style="font-size:.82rem;color:var(--d-primary);text-decoration:none;font-weight:600;">
-                    View all <i class="bi bi-arrow-right"></i>
-                </a>
+        <div class="table-card">
+            <div class="table-header">
+                <span><i class="bi bi-hourglass-split me-1" style="color:#0288d1;"></i> Pending Reports</span>
+                <a href="@Url.Action("Reports", "Manager")" class="view-link">View All</a>
             </div>
-            @if (pendingReports.Any())
-            {
-                <div class="table-responsive">
-                    <table class="dash-table">
-                        <thead>
-                            <tr>
-                                <th>Report ID</th>
-                                <th>Driver</th>
-                                <th>Amount</th>
-                                <th>Submitted</th>
-                                <th>Budget Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var dto in pendingReports)
+            <div class="scrollable" style="max-height: 240px;">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Driver</th>
+                            <th class="text-right">Amount</th>
+                            <th>Submitted</th>
+                            <th>Budget</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (pendingReports.Any())
+                        {
+                            @foreach (var dto in pendingReports.Take(5))
                             {
                                 var r = dto.Report;
                                 <tr>
-                                    <td><strong>#@r.Id</strong></td>
+                                    <td>#@r.Id</td>
                                     <td>@(dto.UserName ?? "Unknown")</td>
-                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
-                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td class="text-right">₱@r.TotalAmount.ToString("N0")</td>
+                                    <td>@r.SubmissionDate.ToLocalTime().ToString("MM/dd")</td>
                                     <td>
-                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "status-badge--within" : "status-badge--over")">
-                                            @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "Within Budget" : "Over Budget")
+                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "within" : "over")">
+                                            @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "OK" : "Over")
                                         </span>
                                     </td>
                                     <td>
@@ -418,17 +1055,16 @@
                                     </td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="dash-card-body" style="text-align:center;padding:32px;color:var(--d-muted);">
-                    <i class="bi bi-check2-all" style="font-size:2rem;display:block;margin-bottom:8px;color:var(--d-border);"></i>
-                    No pending reports — all caught up!
-                </div>
-            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="empty-state">No pending reports — all caught up!</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
@@ -436,233 +1072,264 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-(function () {
-    var managerBudgetChart;
+    (function () {
+        var managerBudgetChart;
 
-    function renderManagerBudgetChart(budgets) {
-        var canvas = document.getElementById('managerBudgetChart');
-        if (!canvas || !window.Chart) return;
+        function renderManagerBudgetChart(budgets) {
+            var canvas = document.getElementById('managerBudgetChart');
+            if (!canvas || !window.Chart) return;
 
-        var labels    = (budgets || []).map(function (b) { return b.category; });
-        var allocated = (budgets || []).map(function (b) { return b.allocated || 0; });
-        var spent     = (budgets || []).map(function (b) { return b.spent || 0; });
+            var labels    = (budgets || []).map(function (b) { return b.category; });
+            var allocated = (budgets || []).map(function (b) { return b.allocated || 0; });
+            var spent     = (budgets || []).map(function (b) { return b.spent || 0; });
 
-        if (managerBudgetChart) managerBudgetChart.destroy();
+            if (managerBudgetChart) managerBudgetChart.destroy();
 
-        managerBudgetChart = new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Allocated',
-                        data: allocated,
-                        backgroundColor: 'rgba(26,107,181,0.2)',
-                        borderColor: '#1a6bb5',
-                        borderWidth: 1.5,
-                        borderRadius: 4
+            managerBudgetChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Budget',
+                            data: allocated,
+                            backgroundColor: 'rgba(2, 136, 209, 0.7)',
+                            borderColor: '#0288d1',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Spent',
+                            data: spent,
+                            backgroundColor: 'rgba(46, 125, 50, 0.7)',
+                            borderColor: '#2e7d32',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 0, bottom: 0, left: 0, right: 0 }
                     },
-                    {
-                        label: 'Spent',
-                        data: spent,
-                        backgroundColor: 'rgba(239,68,68,0.2)',
-                        borderColor: '#ef4444',
-                        borderWidth: 1.5,
-                        borderRadius: 4
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                font: { size: 9 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false },
+                            ticks: { font: { size: 9 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9 } }
+                        }
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function getDateFilters() {
+            var start = document.getElementById('dashboardStart')?.value;
+            var end = document.getElementById('dashboardEnd')?.value;
+            var params = new URLSearchParams();
+            if (start) { params.append('start', start); }
+            if (end) { params.append('end', end); }
+            var query = params.toString();
+            return query ? '?' + query : '';
+        }
+
+        function highlightActiveFilterAndLoadMetrics() {
+            highlightActiveFilter();
+            loadManagerMetrics();
+        }
+
+        function highlightActiveFilter() {
+            var startInput = document.getElementById('dashboardStart');
+            var endInput = document.getElementById('dashboardEnd');
+            if (!startInput || !endInput) return;
+
+            var start = new Date(startInput.value);
+            var end = new Date(endInput.value);
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            document.querySelectorAll('.filter-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+
+            var matchingRange = null;
+
+            if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'today';
             }
-        });
-    }
+            else {
+                var weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'week';
+                }
+            }
 
-    function getDateFilters() {
-        var start = document.getElementById('dashboardStart')?.value;
-        var end = document.getElementById('dashboardEnd')?.value;
-        var params = new URLSearchParams();
-        if (start) { params.append('start', start); }
-        if (end) { params.append('end', end); }
-        var query = params.toString();
-        return query ? '?' + query : '';
-    }
+            if (!matchingRange) {
+                var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'month';
+                }
+            }
 
-    async function loadManagerMetrics() {
-        try {
-            var res = await fetch('@Url.Action("Metrics","Manager")' + getDateFilters());
-            var data = await res.json();
+            if (!matchingRange) {
+                var yearStart = new Date(now.getFullYear(), 0, 1);
+                if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'year';
+                }
+            }
 
-            var pendingEl = document.getElementById('mgrPendingCount');
-            if (pendingEl) pendingEl.textContent = data.totalPending ?? 0;
+            if (matchingRange) {
+                var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+        }
 
-            var overEl = document.getElementById('mgrOverBudget');
-            if (overEl) overEl.textContent = data.overBudgetCount ?? 0;
+        async function loadManagerMetrics() {
+            try {
+                var res = await fetch('@Url.Action("Metrics", "Manager")' + getDateFilters());
+                var data = await res.json();
 
-            var container = document.getElementById('budgetOverview');
-            if (container && data.budgets && data.budgets.length > 0) {
-                container.innerHTML = '';
-                data.budgets.forEach(function (b) {
-                    var pct = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
-                    var fillClass = pct >= 100 ? 'budget-bar-fill--danger' : pct >= 75 ? 'budget-bar-fill--warn' : 'budget-bar-fill--ok';
-                    var remainClass = pct >= 100 ? 'budget-remain--over' : 'budget-remain--ok';
-                    var div = document.createElement('div');
-                    div.className = 'budget-item';
-                    div.innerHTML =
-                        '<div class="d-flex justify-content-between">' +
-                            '<div class="budget-label">' + b.category + '</div>' +
-                            '<div class="budget-remain ' + remainClass + '">₱' + b.spent.toFixed(2) + ' / ₱' + b.allocated.toFixed(2) + '</div>' +
-                        '</div>' +
-                        '<div class="budget-bar"><div class="budget-bar-fill ' + fillClass + '" style="width:' + pct + '%"></div></div>' +
-                        '<div class="budget-amounts">' + pct + '% used</div>';
-                    container.appendChild(div);
+                var pendingEl = document.getElementById('mgrPendingCount');
+                if (pendingEl) pendingEl.textContent = data.totalPending ?? 0;
+
+                var overEl = document.getElementById('mgrOverBudget');
+                if (overEl) overEl.textContent = data.overBudgetCount ?? 0;
+
+                var approvedTotalEl = document.getElementById('mgrApprovedTotal');
+                if (approvedTotalEl && data.approvedTodayTotal !== undefined) {
+                    approvedTotalEl.textContent = '₱' + (data.approvedTodayTotal || 0).toFixed(0);
+                }
+
+                var approvedCountEl = document.getElementById('mgrApprovedCount');
+                if (approvedCountEl && data.approvedTodayCount !== undefined) {
+                    approvedCountEl.textContent = data.approvedTodayCount ?? 0;
+                }
+
+                var container = document.getElementById('budgetOverview');
+                if (container && data.budgets && data.budgets.length > 0) {
+                    container.innerHTML = '';
+                    data.budgets.forEach(function (b) {
+                        var pct = b.allocated === 0 ? 0 : Math.min(100, Math.round((b.spent / b.allocated) * 100));
+                        var fillClass = pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : '';
+                        var div = document.createElement('div');
+                        div.className = 'budget-item';
+                        div.innerHTML =
+                            '<div class="budget-row">' +
+                                '<span class="budget-category">' + b.category + '</span>' +
+                                '<span class="budget-numbers">₱' + b.spent.toFixed(0) + ' / ₱' + b.allocated.toFixed(0) + '</span>' +
+                            '</div>' +
+                            '<div class="progress-bar"><div class="progress-fill ' + fillClass + '" style="width:' + pct + '%"></div></div>' +
+                            '<div class="budget-percent">' + pct + '% used</div>';
+                        container.appendChild(div);
+                    });
+                } else if (container) {
+                    container.innerHTML = '<p class="empty-state">No budget categories found.</p>';
+                }
+
+                renderManagerBudgetChart(data.budgets || []);
+
+                var tsContainer = document.getElementById('topSubmittersList');
+                if (tsContainer) {
+                    tsContainer.innerHTML = '';
+                    if (data.topSubmitters && data.topSubmitters.length > 0) {
+                        data.topSubmitters.forEach(function (t, idx) {
+                            var div = document.createElement('div');
+                            div.className = 'driver-item';
+                            div.innerHTML =
+                                '<span class="driver-name">' + (idx+1) + '. ' + (t.username || 'Unknown') + '</span>' +
+                                '<span class="driver-value highlight">' + (t.count || 0) + ' reports</span>';
+                            tsContainer.appendChild(div);
+                        });
+                    } else {
+                        tsContainer.innerHTML = '<p class="empty-state">No submitters yet.</p>';
+                    }
+                }
+
+                var trContainer = document.getElementById('topReimbursedList');
+                if (trContainer) {
+                    trContainer.innerHTML = '';
+                    if (data.topReimbursed && data.topReimbursed.length > 0) {
+                        data.topReimbursed.forEach(function (t, idx) {
+                            var div = document.createElement('div');
+                            div.className = 'driver-item';
+                            div.innerHTML =
+                                '<span class="driver-name">' + (idx+1) + '. ' + (t.username || 'Unknown') + '</span>' +
+                                '<span class="driver-value highlight">₱' + (t.total || 0).toFixed(0) + '</span>';
+                            trContainer.appendChild(div);
+                        });
+                    } else {
+                        trContainer.innerHTML = '<p class="empty-state">No reimbursed reports yet.</p>';
+                    }
+                }
+            } catch (e) {
+                console.error('Manager metrics error:', e);
+            }
+        }
+
+        function applyDashboardFilter() {
+            var start = document.getElementById('dashboardStart')?.value;
+            var end = document.getElementById('dashboardEnd')?.value;
+            if (start && end) {
+                window.location.href = '@Url.Action("Dashboard", "Manager")?start=' + start + '&end=' + end;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadManagerMetrics();
+            highlightActiveFilter();
+
+            document.getElementById('dashboardStart')?.addEventListener('change', function() {
+                highlightActiveFilterAndLoadMetrics();
+                applyDashboardFilter();
+            });
+
+            document.getElementById('dashboardEnd')?.addEventListener('change', function() {
+                highlightActiveFilterAndLoadMetrics();
+                applyDashboardFilter();
+            });
+
+            document.querySelectorAll('[data-range]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var range = this.getAttribute('data-range');
+                    var now = new Date();
+                    var start, end = now;
+
+                    if (range === 'today') {
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    } else if (range === 'week') {
+                        var day = now.getDay();
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                    } else if (range === 'month') {
+                        start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    } else if (range === 'year') {
+                        start = new Date(now.getFullYear(), 0, 1);
+                    }
+
+                    var startStr = start.toISOString().split('T')[0];
+                    var endStr = end.toISOString().split('T')[0];
+
+                    window.location.href = '@Url.Action("Dashboard", "Manager")?start=' + startStr + '&end=' + endStr;
                 });
-            } else if (container) {
-                container.innerHTML = '<p class="text-center py-3" style="color:var(--d-muted);">No budget categories found.</p>';
-            }
-
-            renderManagerBudgetChart(data.budgets || []);
-
-            // render top submitters
-            var tsContainer = document.getElementById('topSubmittersList');
-            if (tsContainer) {
-                tsContainer.innerHTML = '';
-                if (data.topSubmitters && data.topSubmitters.length > 0) {
-                    data.topSubmitters.forEach(function (t, idx) {
-                        var div = document.createElement('div');
-                        div.style.display = 'flex';
-                        div.style.justifyContent = 'space-between';
-                        div.style.padding = '6px 0';
-                        div.style.borderBottom = idx < data.topSubmitters.length - 1 ? '1px solid var(--d-border)' : 'none';
-                        div.innerHTML = '<div style="font-weight:600">' + (idx+1) + '. ' + (t.username || 'Unknown') + '</div><div style="color:var(--d-muted)">' + (t.count || 0) + ' reports</div>';
-                        tsContainer.appendChild(div);
-                    });
-                } else {
-                    tsContainer.innerHTML = '<p class="text-center py-2" style="color:var(--d-muted);">No submitters yet.</p>';
-                }
-            }
-
-            // render top reimbursed
-            var trContainer = document.getElementById('topReimbursedList');
-            if (trContainer) {
-                trContainer.innerHTML = '';
-                if (data.topReimbursed && data.topReimbursed.length > 0) {
-                    data.topReimbursed.forEach(function (t, idx) {
-                        var div = document.createElement('div');
-                        div.style.display = 'flex';
-                        div.style.justifyContent = 'space-between';
-                        div.style.padding = '6px 0';
-                        div.style.borderBottom = idx < data.topReimbursed.length - 1 ? '1px solid var(--d-border)' : 'none';
-                        div.innerHTML = '<div style="font-weight:600">' + (idx+1) + '. ' + (t.username || 'Unknown') + '</div><div style="color:var(--d-muted)">₱' + (t.total || 0).toFixed(2) + '</div>';
-                        trContainer.appendChild(div);
-                    });
-                } else {
-                    trContainer.innerHTML = '<p class="text-center py-2" style="color:var(--d-muted);">No reimbursed reports yet.</p>';
-                }
-            }
-        } catch (e) {
-            console.error('Manager metrics error:', e);
-        }
-    }
-
-    function applyDashboardFilter() {
-        var start = document.getElementById('dashboardStart')?.value;
-        var end = document.getElementById('dashboardEnd')?.value;
-        if (start && end) {
-            window.location.href = '@Url.Action("Dashboard", "Manager")?start=' + start + '&end=' + end;
-        }
-    }
-
-    function highlightActiveFilter() {
-        var startInput = document.getElementById('dashboardStart');
-        var endInput = document.getElementById('dashboardEnd');
-        if (!startInput || !endInput) return;
-
-        var start = new Date(startInput.value);
-        var end = new Date(endInput.value);
-        var now = new Date();
-        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        // Remove active class from all buttons
-        document.querySelectorAll('.quick-filter-btn').forEach(function(btn) {
-            btn.classList.remove('active');
-        });
-
-        // Determine which range matches current filter
-        var matchingRange = null;
-
-        // Check if it's today range
-        if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
-            matchingRange = 'today';
-        }
-        // Check if it's week range (Sunday to today)
-        else {
-            var weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay());
-            if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
-                matchingRange = 'week';
-            }
-        }
-
-        // Check if it's month range (1st to today)
-        if (!matchingRange) {
-            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
-                matchingRange = 'month';
-            }
-        }
-
-        // Check if it's year range (Jan 1 to today)
-        if (!matchingRange) {
-            var yearStart = new Date(now.getFullYear(), 0, 1);
-            if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
-                matchingRange = 'year';
-            }
-        }
-
-        // Apply active class to matching button
-        if (matchingRange) {
-            var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        loadManagerMetrics();
-        highlightActiveFilter();
-
-        document.getElementById('dashboardStart')?.addEventListener('change', applyDashboardFilter);
-        document.getElementById('dashboardEnd')?.addEventListener('change', applyDashboardFilter);
-
-        document.querySelectorAll('[data-range]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var range = this.getAttribute('data-range');
-                var now = new Date();
-                var start, end = now;
-
-                if (range === 'today') {
-                    start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                } else if (range === 'week') {
-                    var day = now.getDay();
-                    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
-                } else if (range === 'month') {
-                    start = new Date(now.getFullYear(), now.getMonth(), 1);
-                } else if (range === 'year') {
-                    start = new Date(now.getFullYear(), 0, 1);
-                }
-
-                var startStr = start.toISOString().split('T')[0];
-                var endStr = end.toISOString().split('T')[0];
-
-                window.location.href = '@Url.Action("Dashboard", "Manager")?start=' + startStr + '&end=' + endStr;
             });
         });
-    });
-})();
+    })();
 </script>
-

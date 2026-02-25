@@ -28,11 +28,76 @@
         var pageTitle = ViewData["Title"]?.ToString() ?? "Dashboard";
     }
 
+    <!-- ══ Top Navigation Bar (mobile + desktop) ══ -->
+    <header class="driver-topbar">
+        <!-- Mobile: hamburger -->
+        <button class="driver-topbar-toggle d-md-none" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas"
+                aria-controls="sidebarOffcanvas" aria-label="Toggle navigation">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <!-- Mobile: logo -->
+        <a class="d-flex d-md-none align-items-center text-decoration-none ms-2"
+           asp-controller="SuperAdmin" asp-action="Dashboard">
+            <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-topbar-logo-img" />
+        </a>
+
+        <!-- Breadcrumbs/Title (left side desktop) -->
+        <div class="d-none d-md-flex align-items-center" style="margin-left: 20px; gap: 8px; font-size: 0.9rem; color: #475569;">
+            <i class="bi bi-house-door" style="color: #0288d1;"></i>
+            <span style="font-weight: 600; color: #1e293b;">@(ViewData["Title"] ?? "Super Admin")</span>
+        </div>
+
+        <!-- Spacer for desktop -->
+        <div class="d-none d-md-flex flex-grow-1"></div>
+
+        <!-- Date Display (beside profile) -->
+        <div class="d-none d-md-flex align-items-center me-3" style="gap: 8px; font-size: 0.85rem; color: #64748b;">
+            <i class="bi bi-calendar3" style="color: #0288d1;"></i>
+            <span>@DateTime.Now.ToString("ddd, MMM d")</span>
+        </div>
+
+        <!-- Profile dropdown -->
+        <div>
+            <div class="dropdown">
+                <button class="driver-profile-btn dropdown-toggle" type="button"
+                        id="superAdminProfileDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        data-bs-offset="0,8">
+                    <div class="driver-avatar">@initial</div>
+                    <div class="driver-profile-info d-none d-sm-flex">
+                        <span class="driver-profile-name">@userName</span>
+                        <span class="driver-profile-role">Super Admin</span>
+                    </div>
+                    <i class="bi bi-chevron-down driver-profile-caret d-none d-sm-inline-block"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end driver-profile-dropdown"
+                    aria-labelledby="superAdminProfileDropdown">
+                    <li>
+                        <div class="driver-dropdown-header">
+                            <div class="driver-avatar driver-avatar--lg">@initial</div>
+                            <div class="driver-dropdown-info">
+                                <div class="driver-dropdown-name">@userName</div>
+                                <span class="driver-dropdown-badge">
+                                    <i class="bi bi-shield-check me-1"></i>Super Admin
+                                </span>
+                            </div>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider my-0"></li>
+                    <li><partial name="_LoginPartial" /></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
     <!-- ══ Desktop Sidebar ══ -->
     <aside class="driver-sidebar d-none d-md-flex flex-column">
-        <div class="brand p-3 d-flex align-items-center">
+        <div class="brand">
             <a class="d-flex align-items-center text-decoration-none" asp-controller="SuperAdmin" asp-action="Dashboard">
-                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo" />
             </a>
         </div>
         <nav class="nav flex-column p-3">
@@ -57,7 +122,11 @@
     <!-- ══ Mobile Offcanvas Sidebar ══ -->
     <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">CEMS SuperAdmin</h5>
+            <a class="d-flex align-items-center text-decoration-none"
+               asp-controller="SuperAdmin" asp-action="Dashboard">
+                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS"
+                     style="height:48px;width:auto;object-fit:contain;" />
+            </a>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0 d-flex flex-column">

@@ -15,292 +15,671 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
 <style>
-    .chart-wrap {
-        height: 240px;
-        position: relative;
-    }
-    .chart-wrap canvas {
-        width: 100% !important;
-        height: 100% !important;
+    /* Balanced Compact Design - matching all dashboards */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
 
+    body {
+        background: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+        body.dark-mode {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+    .dash-wrapper {
+        padding: 16px;
+        min-height: calc(100vh - 60px);
+    }
+
+    /* TOP BAR - matching all dashboards */
+    .top-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 14px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        border: 1px solid #f0f3f7;
+    }
+
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+
+    .greeting {
+        font-size: 1rem;
+        color: #1e293b;
+    }
+
+        .greeting strong {
+            color: #0288d1;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+    .date-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 5px 14px;
+        border-radius: 30px;
+        border: 1px solid #edf2f7;
+        color: #475569;
+        font-size: 0.9rem;
+    }
+
+        .date-badge i {
+            color: #0288d1;
+            font-size: 0.85rem;
+        }
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .date-range {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f8fafc;
+        padding: 4px 12px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .date-field {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .date-field span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .date-field input {
+            width: 100px;
+            padding: 5px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #1e293b;
+            background: white;
+            border: none;
+            background: transparent;
+            font-weight: 500;
+        }
+
+    .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .filter-btn {
+        padding: 6px 16px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .filter-btn:hover {
+            background: #e2e8f0;
+            color: #0288d1;
+        }
+
+        .filter-btn.active {
+            background: #0288d1;
+            color: white;
+        }
+
+            .filter-btn.active:hover {
+                background: #01579b;
+            }
+
+    body.dark-mode .top-bar {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    body.dark-mode .greeting {
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .date-badge {
+        background: #0f172a;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
+    body.dark-mode .date-range {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .date-field input {
+        background: transparent;
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .quick-filters {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .filter-btn {
+        color: #94a3b8;
+    }
+
+        body.dark-mode .filter-btn:hover {
+            background: #334155;
+            color: #4fc3f7;
+        }
+
+    /* Stats row - matching all dashboards */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 14px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+    body.dark-mode .stat-card {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+        .stat-icon.blue {
+            background: #e1f5fe;
+            color: #0288d1;
+        }
+
+        .stat-icon.green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .stat-icon.orange {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .stat-icon.purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+    body.dark-mode .stat-icon.blue {
+        background: #0a2a3a;
+        color: #4fc3f7;
+    }
+
+    body.dark-mode .stat-icon.green {
+        background: #1a2e1a;
+        color: #81c784;
+    }
+
+    body.dark-mode .stat-icon.orange {
+        background: #2a1e0a;
+        color: #ffb74d;
+    }
+
+    body.dark-mode .stat-icon.purple {
+        background: #1a0f2a;
+        color: #b39ddb;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 2px;
+        letter-spacing: 0.3px;
+    }
+
+    .stat-number {
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .stat-sub {
+        font-size: 0.65rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    /* Charts grid - 3 columns */
     .charts-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 12px;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
+    /* Chart card - matching all dashboards */
     .chart-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
+        background: white;
         border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.2s;
+        padding: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
     }
 
-    .chart-card:hover {
-        border-color: #3b82f6;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+    body.dark-mode .chart-card {
+        background: #1e293b;
+        border-color: #334155;
     }
 
-    .chart-card-head {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(34, 197, 94, 0.08));
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--d-border);
+    .chart-header {
+        font-size: 0.85rem;
         font-weight: 600;
-        color: var(--d-text);
+        color: #334155;
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
+        gap: 6px;
+        padding: 0 0 8px 0;
+        border-bottom: 1px solid #e9eef2;
+        margin-bottom: 8px;
     }
 
-    .chart-card-body {
-        padding: 12px 14px;
-    }
-
-    .chart-card-head i {
-        color: #3b82f6;
-        font-size: 1.1rem;
-    }
-
-    .chart-card-head i {
-        color: #3b82f6;
-        font-size: 1.1rem;
-    }
-
-    .table-card-head {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(34, 197, 94, 0.08));
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--d-border);
-        font-weight: 600;
-        color: var(--d-text);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-    }
-
-    .table-card-head i {
-        color: #3b82f6;
-        font-size: 1.1rem;
-    }
-
-    /* Blue & Green Theme for Stat Icons */
-    .stat-icon--primary {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08)) !important;
-        color: #3b82f6 !important;
-    }
-
-    .stat-icon--success {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.08)) !important;
-        color: #22c55e !important;
-    }
-
-    .stat-icon--warning {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(96, 165, 250, 0.08)) !important;
-        color: #60a5fa !important;
-    }
-
-    .stat-icon--info {
-        background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(34, 211, 238, 0.08)) !important;
-        color: #22d3ee !important;
-    }
-
-    .stat-icon--primary i,
-    .stat-icon--success i,
-    .stat-icon--warning i,
-    .stat-icon--info i {
-        color: inherit !important;
-    }
-
-    @@media (max-width: 768px) {
-        .page-wrapper { padding: 16px 0 24px; }
-        .page-title { font-size: 1.4rem; margin-bottom: 12px; }
-        .charts-grid {
-            grid-template-columns: 1fr;
-            gap: 12px;
+        .chart-header i {
+            color: #0288d1;
         }
+
+    .chart-container {
+        height: 160px;
+        width: 100%;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: block;
+        line-height: 0;
+        font-size: 0;
+    }
+
+        .chart-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0;
+            padding: 0;
+            vertical-align: bottom;
+        }
+
+    /* Table card */
+    .table-card {
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+    }
+
+    body.dark-mode .table-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .table-header {
+        padding: 10px 14px;
+        border-bottom: 1px solid #e9eef2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    body.dark-mode .table-header {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    .compact-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+        .compact-table th {
+            text-align: left;
+            padding: 8px 10px;
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+        }
+
+        .compact-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e9eef2;
+        }
+
+    body.dark-mode .compact-table th {
+        background: #0f172a;
+        color: #94a3b8;
+    }
+
+    .compact-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .compact-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    body.dark-mode .compact-table tbody tr:hover {
+        background: #2d3748;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    /* Badge styles */
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .badge-danger {
+        background: #ffebee;
+        color: #d32f2f;
+    }
+
+    .badge-warning {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    body.dark-mode .badge-danger {
+        background: #2a1a1a;
+        color: #ef9a9a;
+    }
+
+    body.dark-mode .badge-warning {
+        background: #2a1e0a;
+        color: #ffb74d;
+    }
+
+    /* Action button */
+    .action-link {
+        color: #0288d1;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(2, 136, 209, 0.1);
+    }
+
+        .action-link:hover {
+            background: #0288d1;
+            color: white;
+        }
+
+    /* Empty state */
+    .empty-state {
+        color: #94a3b8;
+        text-align: center;
+        padding: 24px;
+        font-size: 0.85rem;
+    }
+
+        .empty-state i {
+            font-size: 2rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+    /* Scrollable container */
+    .scrollable {
+        max-height: 240px;
+        overflow-y: auto;
     }
 </style>
 
-<div class="page-wrapper">
-    <div class="container-fluid px-4">
-        <div class="page-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1 class="page-title">
-                    <i class="bi bi-building"></i>
-                    CEO Dashboard
-                </h1>
-                <p class="page-subtitle">Welcome back, <strong>@User.Identity?.Name</strong></p>
-            </div>
-        </div>
+<div class="dash-wrapper">
+    <div class="container-fluid px-2">
 
-        <!-- Filter Card -->
-        <div class="filter-card">
-            <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; justify-content: space-between;">
-                <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardStart" class="form-label" style="margin-bottom: 4px;">From</label>
-                        <input type="date" id="dashboardStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem;" />
-                    </div>
-                    <div style="flex: 1; min-width: 160px;">
-                        <label for="dashboardEnd" class="form-label" style="margin-bottom: 4px;">To</label>
-                        <input type="date" id="dashboardEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" style="padding: 8px 10px; border: 1px solid var(--d-border); border-radius: 6px; font-size: 0.9rem;" />
-                    </div>
+        <!-- TOP BAR - matching all dashboards -->
+        <div class="top-bar">
+            <div class="welcome-section">
+                <div class="greeting">
+                    Welcome back, <strong>@User.Identity?.Name</strong>
                 </div>
-                <div class="quick-filter">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="today" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Today</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="week" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Week</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="month" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Month</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-range="year" style="padding: 6px 12px; border: 1px solid var(--d-border); background: var(--d-card); color: var(--d-text); border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Year</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Key Metrics -->
-        <div class="row g-3 mb-3">
-            <div class="col-xl-3 col-md-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--primary">
-                        <i class="bi bi-cash-coin"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="stat-label">Total Budget</div>
-                        <div class="stat-value">₱@totalBudget.ToString("N0")</div>
-                        <div class="stat-sub">All Categories</div>
-                    </div>
+                <div class="date-badge">
+                    <i class="bi bi-calendar3"></i>
+                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
                 </div>
             </div>
 
-            <div class="col-xl-3 col-md-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--success">
-                        <i class="bi bi-graph-up-arrow"></i>
+            <div class="filter-section">
+                <div class="date-range">
+                    <div class="date-field">
+                        <span>From</span>
+                        <input type="text" id="dashboardStartDisplay"
+                               value="@(ViewBag.FilterStart != null ? DateTime.Parse(ViewBag.FilterStart).ToString("MM/dd/yyyy") : DateTime.UtcNow.ToString("MM/01/yyyy"))"
+                               readonly>
+                        <input type="date" id="dashboardStart"
+                               value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))"
+                               style="display:none;">
                     </div>
-                    <div style="flex: 1;">
-                        <div class="stat-label">Utilized</div>
-                        <div class="stat-value">₱@totalSpent.ToString("N0")</div>
-                        <div class="stat-sub">@usagePct% of Budget</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--warning">
-                        <i class="bi bi-exclamation-circle"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="stat-label">Pending Review</div>
-                        <div class="stat-value">₱@pendingCEOTotal.ToString("N0")</div>
-                        <div class="stat-sub">@pendingCEOCount Over-Budget Request@(pendingCEOCount != 1 ? "s" : "")</div>
+                    <div class="date-field">
+                        <span>To</span>
+                        <input type="text" id="dashboardEndDisplay"
+                               value="@(ViewBag.FilterEnd != null ? DateTime.Parse(ViewBag.FilterEnd).ToString("MM/dd/yyyy") : DateTime.UtcNow.ToString("MM/dd/yyyy"))"
+                               readonly>
+                        <input type="date" id="dashboardEnd"
+                               value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
+                               style="display:none;">
                     </div>
                 </div>
-            </div>
 
-            <div class="col-xl-3 col-md-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--info">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="stat-label">Active Drivers</div>
-                        <div class="stat-value">@activeDrivers</div>
-                        <div class="stat-sub">Registered</div>
-                    </div>
+                <div class="quick-filters">
+                    <button class="filter-btn" data-range="today">Today</button>
+                    <button class="filter-btn" data-range="week">Week</button>
+                    <button class="filter-btn" data-range="month">Month</button>
+                    <button class="filter-btn" data-range="year">Year</button>
                 </div>
             </div>
         </div>
 
-        <!-- Charts Grid -->
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="bi bi-cash-coin"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Total Budget</div>
+                    <div class="stat-number">₱@totalBudget.ToString("N0")</div>
+                    <div class="stat-sub">all categories</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Utilized</div>
+                    <div class="stat-number">₱@totalSpent.ToString("N0")</div>
+                    <div class="stat-sub">@usagePct% of budget</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="bi bi-exclamation-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Pending Review</div>
+                    <div class="stat-number">₱@pendingCEOTotal.ToString("N0")</div>
+                    <div class="stat-sub">@pendingCEOCount over-budget request@(pendingCEOCount != 1 ? "s" : "")</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="bi bi-people"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Active Drivers</div>
+                    <div class="stat-number">@activeDrivers</div>
+                    <div class="stat-sub">registered</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid - 3 columns -->
         <div class="charts-grid">
-            <!-- Budget Breakdown Pie Chart -->
+            <!-- Budget Breakdown -->
             <div class="chart-card">
-                <div class="chart-card-head">
-                    <i class="bi bi-pie-chart"></i>
-                    Budget Breakdown
+                <div class="chart-header">
+                    <i class="bi bi-pie-chart-fill"></i> Budget Breakdown
                 </div>
-                <div class="chart-card-body">
-                    <div class="chart-wrap">
-                        <canvas id="ceoBudgetChart"></canvas>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="ceoBudgetChart"></canvas>
                 </div>
             </div>
 
             <!-- Spending Trend -->
             <div class="chart-card">
-                <div class="chart-card-head">
-                    <i class="bi bi-graph-up"></i>
-                    Spending Trend
+                <div class="chart-header">
+                    <i class="bi bi-graph-up"></i> Spending Trend
                 </div>
-                <div class="chart-card-body">
-                    <div class="chart-wrap">
-                        <canvas id="ceoTrendChart"></canvas>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="ceoTrendChart"></canvas>
                 </div>
             </div>
 
-            <!-- Report Status Distribution -->
+            <!-- Report Status -->
             <div class="chart-card">
-                <div class="chart-card-head">
-                    <i class="bi bi-bar-chart"></i>
-                    Report Status
+                <div class="chart-header">
+                    <i class="bi bi-bar-chart-fill"></i> Report Status
                 </div>
-                <div class="chart-card-body">
-                    <div class="chart-wrap">
-                        <canvas id="ceoStatusChart"></canvas>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="ceoStatusChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Recent Over-Budget Requests -->
         <div class="table-card">
-            <div class="table-card-head">
-                <i class="bi bi-list-check"></i>
-                Recent Over-Budget Requests
+            <div class="table-header">
+                <span><i class="bi bi-exclamation-triangle me-1" style="color:#f57c00;"></i> Recent Over-Budget Requests</span>
+                @if (recentOB.Any())
+                {
+                    <a href="@Url.Action("OverBudgetRequests", "CEO")" class="action-link">View All</a>
+                }
             </div>
+
             @if (recentOB.Any())
             {
-                <div class="table-responsive">
-                    <table class="dash-table">
+                <div class="scrollable">
+                    <table class="compact-table">
                         <thead>
                             <tr>
-                                <th>Report #</th>
+                                <th>ID</th>
                                 <th>Driver</th>
                                 <th>Date</th>
-                                <th>Amount</th>
-                                <th>Exceeded</th>
+                                <th class="text-right">Amount</th>
+                                <th class="text-right">Exceeded</th>
                                 <th>Status</th>
-                                <th>Action</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var item in recentOB)
+                            @foreach (var item in recentOB.Take(5))
                             {
                                 <tr>
-                                    <td><strong>#@item.Report.Id</strong></td>
+                                    <td>#@item.Report.Id</td>
                                     <td>@item.UserName</td>
-                                    <td>@item.Report.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
-                                    <td><strong>₱@item.Report.TotalAmount.ToString("N2")</strong></td>
-                                    <td>
+                                    <td>@item.Report.SubmissionDate.ToLocalTime().ToString("MM/dd")</td>
+                                    <td class="text-right">₱@item.Report.TotalAmount.ToString("N0")</td>
+                                    <td class="text-right">
                                         @if (item.ExceedAmount > 0)
                                         {
-                                            <span class="badge badge-danger">
-                                                <i class="bi bi-exclamation-circle-fill"></i>
-                                                +₱@item.ExceedAmount.ToString("N2")
-                                            </span>
+                                            <span class="badge badge-danger">+₱@item.ExceedAmount.ToString("N0")</span>
                                         }
                                         else
                                         {
-                                            <span class="status-text">—</span>
+                                            <span>—</span>
                                         }
                                     </td>
-                                    <td><span class="badge badge-warning"><i class="bi bi-clock-fill"></i> Pending CEO</span></td>
+                                    <td><span class="badge badge-warning">Pending CEO</span></td>
                                     <td>
-                                        <a class="view-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@item.Report.Id">View</a>
+                                        <a class="action-link" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@item.Report.Id">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
                                     </td>
                                 </tr>
                             }
@@ -311,155 +690,249 @@
             else
             {
                 <div class="empty-state">
-                    <i class="bi bi-check-circle"></i>
-                    <p class="empty-state-title">All Clear!</p>
-                    <p>No over-budget requests awaiting approval.</p>
+                    <i class="bi bi-check-circle-fill"></i>
+                    <p>No over-budget requests pending review</p>
                 </div>
             }
         </div>
-    </div>
-</div>
-                    <i class="bi bi-check-circle"></i>
-                    <p>No over-budget requests pending your review.</p>
-                </div>
-            }
-        </div>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-let trendChartInstance, statusChartInstance;
+    (function() {
+        let trendChartInstance, statusChartInstance;
 
-function loadDashboardCharts() {
-    if(!window.Chart) return;
+        function updateDisplayInputs() {
+            var startInput = document.getElementById('dashboardStart');
+            var endInput = document.getElementById('dashboardEnd');
+            var startDisplay = document.getElementById('dashboardStartDisplay');
+            var endDisplay = document.getElementById('dashboardEndDisplay');
 
-    const totalSpent = Number('@totalSpent.ToString(System.Globalization.CultureInfo.InvariantCulture)');
-    const totalRemaining = Number('@totalRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)');
-    const weeklySpending = @Html.Raw(ViewBag.WeeklySpending ?? "[]");
-    const submittedCount = @(ViewBag.SubmittedCount ?? 0);
-    const approvedCount = @(ViewBag.ApprovedCount ?? 0);
-    const rejectedCount = @(ViewBag.RejectedCount ?? 0);
-    const pendingApprovalCount = @(ViewBag.PendingApprovalCount ?? 0);
-
-    // Budget Pie Chart
-    const budgetCanvas = document.getElementById('ceoBudgetChart');
-    if(budgetCanvas){
-        new Chart(budgetCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['Spent', 'Remaining'],
-                datasets: [{
-                    data: [totalSpent, Math.max(0, totalRemaining)],
-                    backgroundColor: ['#3b82f6', '#22c55e'],
-                    borderColor: ['#3b82f6', '#22c55e'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
+            if (startInput && startDisplay && startInput.value) {
+                var startDate = new Date(startInput.value);
+                startDisplay.value = startDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
             }
-        });
-    }
-
-    // Spending Trend Chart (Real Data)
-    const trendCanvas = document.getElementById('ceoTrendChart');
-    if(trendCanvas){
-        if(trendChartInstance) trendChartInstance.destroy();
-        trendChartInstance = new Chart(trendCanvas, {
-            type: 'line',
-            data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets: [{
-                    label: 'Weekly Spending',
-                    data: weeklySpending,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#3b82f6',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
+            if (endInput && endDisplay && endInput.value) {
+                var endDate = new Date(endInput.value);
+                endDisplay.value = endDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
             }
-        });
-    }
+        }
 
-    // Report Status Bar Chart (Real Data)
-    const statusCanvas = document.getElementById('ceoStatusChart');
-    if(statusCanvas){
-        if(statusChartInstance) statusChartInstance.destroy();
-        statusChartInstance = new Chart(statusCanvas, {
-            type: 'bar',
-            data: {
-                labels: ['Submitted', 'Approved', 'Rejected', 'Pending CEO'],
-                datasets: [{
-                    label: 'Reports',
-                    data: [submittedCount, approvedCount, rejectedCount, pendingApprovalCount],
-                    backgroundColor: ['#60a5fa', '#22c55e', '#3b82f6', '#06b6d4'],
-                    borderColor: ['#60a5fa', '#22c55e', '#3b82f6', '#06b6d4'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        function highlightActiveFilter() {
+            var startInput = document.getElementById('dashboardStart');
+            var endInput = document.getElementById('dashboardEnd');
+            if (!startInput || !endInput) return;
+
+            var start = new Date(startInput.value);
+            var end = new Date(endInput.value);
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            document.querySelectorAll('.filter-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+
+            var matchingRange = null;
+
+            if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'today';
             }
-        });
-    }
-}
-
-function applyDashboardFilter() {
-    const start = document.getElementById('dashboardStart')?.value;
-    const end = document.getElementById('dashboardEnd')?.value;
-    if(start && end) {
-        window.location.href = `@Url.Action("Dashboard", "CEO")?start=${start}&end=${end}`;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboardCharts();
-
-    // Auto-apply filter when dates change
-    document.getElementById('dashboardStart')?.addEventListener('change', applyDashboardFilter);
-    document.getElementById('dashboardEnd')?.addEventListener('change', applyDashboardFilter);
-
-    // Quick-range filter buttons
-    document.querySelectorAll('.quick-filter [data-range]').forEach(btn => {
-        btn.addEventListener('click', function(){
-            const range = this.getAttribute('data-range');
-            const now = new Date();
-            let start, end = now;
-
-            if(range === 'today'){
-                start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            } else if(range === 'week'){
-                const day = now.getDay();
-                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
-            } else if(range === 'month'){
-                start = new Date(now.getFullYear(), now.getMonth(), 1);
-            } else if(range === 'year'){
-                start = new Date(now.getFullYear(), 0, 1);
+            else {
+                var weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'week';
+                }
             }
 
-            const startStr = start.toISOString().split('T')[0];
-            const endStr = end.toISOString().split('T')[0];
+            if (!matchingRange) {
+                var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'month';
+                }
+            }
 
-            window.location.href = `@Url.Action("Dashboard", "CEO")?start=${startStr}&end=${endStr}`;
+            if (!matchingRange) {
+                var yearStart = new Date(now.getFullYear(), 0, 1);
+                if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'year';
+                }
+            }
+
+            if (matchingRange) {
+                var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+        }
+
+        function loadDashboardCharts() {
+            if(!window.Chart) return;
+
+            const totalSpent = Number('@totalSpent.ToString(System.Globalization.CultureInfo.InvariantCulture)');
+            const totalRemaining = Number('@totalRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)');
+            const weeklySpending = @Html.Raw(ViewBag.WeeklySpending ?? "[0,0,0,0]");
+            const submittedCount = @(ViewBag.SubmittedCount ?? 0);
+            const approvedCount = @(ViewBag.ApprovedCount ?? 0);
+            const rejectedCount = @(ViewBag.RejectedCount ?? 0);
+            const pendingApprovalCount = @(ViewBag.PendingApprovalCount ?? 0);
+
+            // Budget Pie Chart
+            const budgetCanvas = document.getElementById('ceoBudgetChart');
+            if(budgetCanvas){
+                new Chart(budgetCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Spent', 'Remaining'],
+                        datasets: [{
+                            data: [totalSpent, Math.max(0, totalRemaining)],
+                            backgroundColor: ['#0288d1', '#2e7d32'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { font: { size: 9 }, boxWidth: 8, boxHeight: 8 }
+                            }
+                        },
+                        layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } }
+                    }
+                });
+            }
+
+            // Spending Trend Chart
+            const trendCanvas = document.getElementById('ceoTrendChart');
+            if(trendCanvas){
+                if(trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(trendCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: ['W1', 'W2', 'W3', 'W4'],
+                        datasets: [{
+                            label: 'Weekly Spending',
+                            data: weeklySpending,
+                            borderColor: '#0288d1',
+                            backgroundColor: 'rgba(2, 136, 209, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#0288d1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { drawBorder: false },
+                                ticks: { font: { size: 9 } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 9 } }
+                            }
+                        },
+                        layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } }
+                    }
+                });
+            }
+
+            // Report Status Bar Chart
+            const statusCanvas = document.getElementById('ceoStatusChart');
+            if(statusCanvas){
+                if(statusChartInstance) statusChartInstance.destroy();
+                statusChartInstance = new Chart(statusCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Submitted', 'Approved', 'Rejected', 'Pending CEO'],
+                        datasets: [{
+                            label: 'Reports',
+                            data: [submittedCount, approvedCount, rejectedCount, pendingApprovalCount],
+                            backgroundColor: ['#0288d1', '#2e7d32', '#d32f2f', '#f57c00'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, font: { size: 9 } },
+                                grid: { drawBorder: false }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 9 } }
+                            }
+                        },
+                        layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } }
+                    }
+                });
+            }
+        }
+
+        function applyDashboardFilter() {
+            const start = document.getElementById('dashboardStart')?.value;
+            const end = document.getElementById('dashboardEnd')?.value;
+            if(start && end) {
+                window.location.href = `@Url.Action("Dashboard", "CEO")?start=${start}&end=${end}`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDisplayInputs();
+            loadDashboardCharts();
+            highlightActiveFilter();
+
+            document.getElementById('dashboardStart')?.addEventListener('change', function() {
+                updateDisplayInputs();
+                applyDashboardFilter();
+            });
+
+            document.getElementById('dashboardEnd')?.addEventListener('change', function() {
+                updateDisplayInputs();
+                applyDashboardFilter();
+            });
+
+            document.querySelectorAll('[data-range]').forEach(btn => {
+                btn.addEventListener('click', function(){
+                    const range = this.getAttribute('data-range');
+                    const now = new Date();
+                    let start;
+
+                    if(range === 'today'){
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    } else if(range === 'week'){
+                        const day = now.getDay();
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                    } else if(range === 'month'){
+                        start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    } else if(range === 'year'){
+                        start = new Date(now.getFullYear(), 0, 1);
+                    }
+
+                    const startStr = start.toISOString().split('T')[0];
+                    const endStr = now.toISOString().split('T')[0];
+
+                    document.getElementById('dashboardStart').value = startStr;
+                    document.getElementById('dashboardEnd').value = endStr;
+
+                    updateDisplayInputs();
+                    applyDashboardFilter();
+                });
+            });
         });
-    });
-});
-</script>
+    })();
 </script>

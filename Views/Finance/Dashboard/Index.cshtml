@@ -6,324 +6,710 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
 <style>
-    :root {
-        --d-primary: #1a6bb5;
-        --d-accent: #2ec4b6;
-        --d-bg: #f7fbfc;
-        --d-card: #ffffff;
-        --d-border: #e9eef6;
-        --d-text: #0f1724;
-        --d-muted: #6b7280;
-        --d-radius: 8px;
-        --d-radius-sm: 6px;
+    /* Balanced Compact Design - matching driver/manager dashboards */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
+
+    body {
+        background: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+        body.dark-mode {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
 
     .dash-wrapper {
-        background: var(--d-bg);
+        padding: 20px 16px;
         min-height: calc(100vh - 60px);
-        padding: 12px 0 16px;
     }
 
-    /* ── Header ── */
-    .dash-header {
-        margin-bottom: 10px;
-    }
-    .dash-greeting {
-        font-size: 1.65rem;
-        font-weight: 700;
-        color: var(--d-text);
-    }
-    .dash-greeting span {
-        color: var(--d-primary);
-        font-weight: 700;
-    }
-    .dash-date {
-        color: var(--d-muted);
-        font-size: .92rem;
-        margin-top: 2px;
-    }
-
-    /* ── Stat Cards ── */
-    .stat-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 8px;
-        padding: 10px 12px;
+    /* TOP BAR - matching driver/manager */
+    .top-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        transition: transform .08s ease;
-        text-decoration: none !important;
-        color: inherit !important;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        border: 1px solid #f0f3f7;
     }
-    .stat-card:hover { transform: translateY(-2px); }
+
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        min-width: 300px;
+    }
+
+    .greeting {
+        font-size: 1rem;
+        color: #1e293b;
+    }
+
+        .greeting strong {
+            color: #0288d1;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+    .date-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 5px 14px;
+        border-radius: 30px;
+        border: 1px solid #edf2f7;
+        color: #475569;
+        font-size: 0.9rem;
+    }
+
+        .date-badge i {
+            color: #0288d1;
+            font-size: 0.85rem;
+        }
+
+    .filter-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .date-range {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f8fafc;
+        padding: 4px 12px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .date-field {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .date-field span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .date-field input {
+            width: 100px;
+            padding: 5px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #1e293b;
+            background: white;
+            border: none;
+            background: transparent;
+            font-weight: 500;
+        }
+
+    .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+
+    .filter-btn {
+        padding: 6px 16px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .filter-btn:hover {
+            background: #e2e8f0;
+            color: #0288d1;
+        }
+
+        .filter-btn.active {
+            background: #0288d1;
+            color: white;
+        }
+
+            .filter-btn.active:hover {
+                background: #01579b;
+            }
+
+    .action-btn {
+        background: #0288d1;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+        .action-btn:hover {
+            background: #01579b;
+            color: white;
+        }
+
+    body.dark-mode .top-bar {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    body.dark-mode .greeting {
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .date-badge {
+        background: #0f172a;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
+    body.dark-mode .date-range {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .date-field input {
+        background: transparent;
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .quick-filters {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    body.dark-mode .filter-btn {
+        color: #94a3b8;
+    }
+
+        body.dark-mode .filter-btn:hover {
+            background: #334155;
+            color: #4fc3f7;
+        }
+
+    /* Stats row - matching driver/manager */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 14px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+    body.dark-mode .stat-card {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
     .stat-icon {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.1rem;
-        flex-shrink: 0;
+        font-size: 1.2rem;
     }
-    .stat-icon--pending  { background: rgba(26,107,181,.06);  color: #1a6bb5; }
-    .stat-icon--approved { background: rgba(16,185,129,.06);  color: #10b981; }
-    .stat-icon--money    { background: rgba(99,102,241,.06);  color: #6366f1; }
-    .stat-icon--warning  { background: rgba(245,158,11,.06);  color: #f59e0b; }
+
+        .stat-icon.blue {
+            background: #e1f5fe;
+            color: #0288d1;
+        }
+
+        .stat-icon.green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .stat-icon.purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .stat-icon.orange {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+    body.dark-mode .stat-icon.blue {
+        background: #0a2a3a;
+        color: #4fc3f7;
+    }
+
+    body.dark-mode .stat-icon.green {
+        background: #1a2e1a;
+        color: #81c784;
+    }
+
+    body.dark-mode .stat-icon.purple {
+        background: #1a0f2a;
+        color: #b39ddb;
+    }
+
+    body.dark-mode .stat-icon.orange {
+        background: #2a1e0a;
+        color: #ffb74d;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
     .stat-label {
-        font-size: .78rem;
-        font-weight: 600;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: .5px;
-        color: var(--d-muted);
-        margin-bottom: 4px;
+        color: #64748b;
+        margin-bottom: 2px;
+        letter-spacing: 0.3px;
     }
-    .stat-value {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: var(--d-text);
+
+    .stat-number {
+        font-size: 1.25rem;
+        font-weight: 600;
         line-height: 1.2;
     }
+
     .stat-sub {
-        font-size: .82rem;
-        color: var(--d-muted);
+        font-size: 0.65rem;
+        color: #94a3b8;
         margin-top: 2px;
     }
 
-    /* ── Section Cards ── */
-    .dash-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 10px;
-    }
-    .dash-card-head {
-        padding: 8px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid var(--d-border);
-    }
-    .dash-card-title {
-        font-size: .98rem;
-        font-weight: 600;
-        color: var(--d-text);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0;
-    }
-    .dash-card-title i { color: var(--d-primary); font-size: 1.1rem; }
-    .dash-card-body { padding: 8px 12px; }
-
-    /* ── Chart ── */
-    .chart-wrap {
-        height: 200px;
-    }
-    .chart-wrap canvas {
-        width: 100% !important;
-        height: 100% !important;
+    /* Two column layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
     }
 
-    /* ── Filter Card ── */
-    .filter-card {
-        background: var(--d-card);
-        border: 1px solid var(--d-border);
-        border-radius: 8px;
-        padding: 12px 12px;
-        margin-bottom: 8px;
+    /* Chart card - matching driver/manager */
+    .chart-card {
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
     }
-    .filter-card .form-label {
-        font-size: .85rem;
-        font-weight: 600;
-        color: var(--d-muted);
-        margin-bottom: 4px;
+
+    body.dark-mode .chart-card {
+        background: #1e293b;
+        border-color: #334155;
     }
-    .filter-card .form-control,
-    .filter-card .form-select {
-        border-color: var(--d-border);
-        border-radius: 6px;
-        font-size: .88rem;
-        padding: 6px 8px;
-    }
-    .filter-card .form-control:focus,
-    .filter-card .form-select:focus {
-        border-color: var(--d-primary);
-        box-shadow: 0 0 0 0.2rem rgba(26, 107, 181, 0.1);
-    }
-    .quick-filter-btn {
-        padding: 6px 12px;
-        border: 1px solid var(--d-border);
-        background: var(--d-card);
-        color: var(--d-text);
-        border-radius: 6px;
+
+    .chart-header {
         font-size: 0.85rem;
         font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 0 8px 0;
+        border-bottom: 1px solid #e9eef2;
+        margin-bottom: 8px;
     }
-    .quick-filter-btn:hover {
-        background: var(--d-primary);
-        color: #fff;
-        border-color: var(--d-primary);
+
+        .chart-header i {
+            color: #0288d1;
+        }
+
+    .chart-container {
+        height: 160px;
+        width: 100%;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        display: block;
+        line-height: 0;
+        font-size: 0;
     }
-    .quick-filter-btn.active {
-        background: var(--d-primary);
-        color: #fff;
-        border-color: var(--d-primary);
-        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
+
+        .chart-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0;
+            padding: 0;
+            vertical-align: bottom;
+        }
+
+    /* Table card */
+    .table-card {
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+    }
+
+    body.dark-mode .table-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .table-header {
+        padding: 10px 14px;
+        border-bottom: 1px solid #e9eef2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    body.dark-mode .table-header {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    /* Monthly breakdown */
+    .monthly-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 8px 0;
+    }
+
+    .monthly-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 12px;
+        border: 1px solid #e9eef2;
+    }
+
+    body.dark-mode .monthly-section {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    .section-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .section-title i {
+            color: #0288d1;
+        }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+        .data-table td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #e9eef2;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table .amount {
+            text-align: right;
+            font-weight: 600;
+        }
+
+    /* Empty state */
+    .empty-state {
+        color: #94a3b8;
+        text-align: center;
+        padding: 16px;
+        font-size: 0.8rem;
+    }
+
+    /* Scrollable container */
+    .scrollable {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    /* Value colors */
+    .text-positive {
+        color: #2e7d32;
+    }
+
+    .text-negative {
+        color: #d32f2f;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-section {
+            min-width: auto;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quick-filters,
+        .date-range {
+            width: 100%;
+        }
     }
 
     @@media (max-width: 768px) {
-        .dash-wrapper { padding: 20px 0 32px; }
-        .stat-card { padding: 18px; }
-        .dash-card-body { padding: 16px 18px; }
-        .filter-card { flex-direction: column; }
-        .filter-card input,
-        .filter-actions .btn { width: 100%; }
+        .dash-wrapper {
+            padding: 12px 12px;
+        }
+
+        .top-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px 16px;
+        }
+
+        .welcome-section {
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+            min-width: auto;
+        }
+
+        .filter-section {
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+            min-width: auto;
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 12px;
+        }
+
+        .stats-row {
+            margin-bottom: 16px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .chart-wrap {
+            height: 200px;
+        }
+
+        .monthly-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .stats-row {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+        }
+
+        .stat-number {
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+        }
+
+        .data-table {
+            font-size: 0.75rem;
+        }
     }
 </style>
 
 <div class="dash-wrapper">
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-2">
 
-        <!-- ── Header ── -->
-        <div class="dash-header d-flex justify-content-between align-items-end flex-wrap gap-2">
-            <div>
-                <h1 class="dash-greeting">Welcome back, <span>@User.Identity?.Name</span></h1>
-                <p class="dash-date mb-0">
-                    <i class="bi bi-calendar3 me-1"></i>
+        <!-- TOP BAR - matching driver/manager -->
+        <div class="top-bar">
+            <div class="welcome-section">
+                <div class="greeting">
+                    Welcome back, <strong>@User.Identity?.Name</strong>
+                </div>
+                <div class="date-badge">
+                    <i class="bi bi-calendar3"></i>
                     @DateTime.Now.ToString("dddd, MMMM d yyyy")
-                </p>
+                </div>
             </div>
-        </div>
 
-        <!-- ── Filter Card ── -->
-        <div class="filter-card">
-            <form id="financeFilters" class="row g-3" method="get" action="@Context.Request.Path">
-                <div class="col-md-3">
-                    <label class="form-label">From</label>
-                    <input type="date" name="start" id="filterStart" class="form-control form-control-sm" value="@(string.IsNullOrEmpty((string)Context.Request.Query["start"]) ? (string)ViewBag.FilterStart : (string)Context.Request.Query["start"])" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">To</label>
-                    <input type="date" name="end" id="filterEnd" class="form-control form-control-sm" value="@(string.IsNullOrEmpty((string)Context.Request.Query["end"]) ? (string)ViewBag.FilterEnd : (string)Context.Request.Query["end"])" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Quick Filter</label>
-                    <div class="d-flex gap-2" style="flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="today">Today</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="week">Week</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="month">Month</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm quick-filter-btn" data-range="year">Year</button>
+            <div class="filter-section">
+                <div class="date-range">
+                    <div class="date-field">
+                        <span>From</span>
+                        <input type="text" id="filterStartDisplay"
+                               value="@(string.IsNullOrEmpty((string)Context.Request.Query["start"]) ? (string)ViewBag.FilterStart?.Substring(0, 10) : ((string)Context.Request.Query["start"])?.Substring(0, 10))"
+                               readonly>
+                        <input type="date" id="filterStart" name="start"
+                               value="@(string.IsNullOrEmpty((string)Context.Request.Query["start"]) ? (string)ViewBag.FilterStart : (string)Context.Request.Query["start"])"
+                               style="display:none;">
+                    </div>
+                    <div class="date-field">
+                        <span>To</span>
+                        <input type="text" id="filterEndDisplay"
+                               value="@(string.IsNullOrEmpty((string)Context.Request.Query["end"]) ? (string)ViewBag.FilterEnd?.Substring(0, 10) : ((string)Context.Request.Query["end"])?.Substring(0, 10))"
+                               readonly>
+                        <input type="date" id="filterEnd" name="end"
+                               value="@(string.IsNullOrEmpty((string)Context.Request.Query["end"]) ? (string)ViewBag.FilterEnd : (string)Context.Request.Query["end"])"
+                               style="display:none;">
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <a href="@Url.Action("Reimbursements", "Finance")" class="btn text-white btn-sm w-100" style="background:var(--d-primary);border:none;border-radius:var(--d-radius-sm);font-weight:600;">
-                        <i class="bi bi-plus-lg me-1"></i> Process Reimbursement
-                    </a>
-                </div>
-            </form>
-        </div>
 
-        <!-- ── Stats Row ── -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-3 col-sm-6">
-                <a href="@Url.Action("ApprovedReports", "Finance")" class="stat-card">
-                    <div class="stat-icon stat-icon--pending">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                    <div>
-                        <div class="stat-label">To Process</div>
-                        <div class="stat-value">₱<span id="toProcessVal">@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("0.00"))</span></div>
-                        <div class="stat-sub">@((int?)ViewBag.PendingCount ?? 0) reports</div>
-                    </div>
+                <div class="quick-filters">
+                    <button class="filter-btn" data-range="today">Today</button>
+                    <button class="filter-btn" data-range="week">Week</button>
+                    <button class="filter-btn" data-range="month">Month</button>
+                    <button class="filter-btn" data-range="year">Year</button>
+                </div>
+
+                <a href="@Url.Action("Reimbursements", "Finance")" class="action-btn">
+                    <i class="bi bi-plus-lg"></i> Process Reimbursement
                 </a>
             </div>
-            <div class="col-xl-3 col-sm-6">
-                <a href="@Url.Action("Payments", "Finance")" class="stat-card">
-                    <div class="stat-icon stat-icon--approved">
-                        <i class="bi bi-check2-circle"></i>
-                    </div>
-                    <div>
-                        <div class="stat-label">Processed Today</div>
-                        <div class="stat-value">₱<span id="processedVal">@(((decimal?)ViewBag.ProcessedTodayTotal ?? 0m).ToString("0.00"))</span></div>
-                        <div class="stat-sub"><span id="processedCount">@((int?)ViewBag.ProcessedTodayCount ?? 0)</span> transactions</div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--money">
-                        <i class="bi bi-cash-coin"></i>
-                    </div>
-                    <div>
-                        <div class="stat-label">Month Total</div>
-                        <div class="stat-value">₱<span id="monthlyVal">@(((decimal?)ViewBag.MonthlyTotal ?? 0m).ToString("0.00"))</span></div>
-                        <div class="stat-sub"><span id="monthlyCount">@((int?)ViewBag.MonthlyCount ?? 0)</span> processed</div>
-                    </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <a href="@Url.Action("ApprovedReports", "Finance")" class="stat-card">
+                <div class="stat-icon blue"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">To Process</div>
+                    <div class="stat-number">₱<span id="toProcessVal">@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("0.00"))</span></div>
+                    <div class="stat-sub"><span id="pendingCount">@((int?)ViewBag.PendingCount ?? 0)</span> reports</div>
+                </div>
+            </a>
+            <a href="@Url.Action("Payments", "Finance")" class="stat-card">
+                <div class="stat-icon green"><i class="bi bi-check2-circle"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Processed Today</div>
+                    <div class="stat-number">₱<span id="processedVal">@(((decimal?)ViewBag.ProcessedTodayTotal ?? 0m).ToString("0.00"))</span></div>
+                    <div class="stat-sub"><span id="processedCount">@((int?)ViewBag.ProcessedTodayCount ?? 0)</span> transactions</div>
+                </div>
+            </a>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="bi bi-cash-coin"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Month Total</div>
+                    <div class="stat-number">₱<span id="monthlyVal">@(((decimal?)ViewBag.MonthlyTotal ?? 0m).ToString("0.00"))</span></div>
+                    <div class="stat-sub"><span id="monthlyCount">@((int?)ViewBag.MonthlyCount ?? 0)</span> processed</div>
                 </div>
             </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon--warning">
-                        <i class="bi bi-credit-card"></i>
-                    </div>
-                    <div>
-                        <div class="stat-label">Payment Status</div>
-                        <div class="stat-value" style="color:#10b981;font-size:1.35rem;">✓</div>
-                        <div class="stat-sub">Gateway Ready</div>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="bi bi-credit-card"></i></div>
+                <div class="stat-content">
+                    <div class="stat-label">Payment Status</div>
+                    <div class="stat-number" style="color:#2e7d32;">Active</div>
+                    <div class="stat-sub">Gateway Ready</div>
                 </div>
             </div>
         </div>
 
-        <!-- ── Charts Row ── -->
-        <div class="row g-3 mb-4">
-            <div class="col-lg-6">
-                <div class="dash-card">
-                    <div class="dash-card-head">
-                        <h4 class="dash-card-title">
-                            <i class="bi bi-bar-chart"></i> Reimbursement Trend
-                        </h4>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="chart-wrap">
-                            <canvas id="financeTrendChart"></canvas>
-                        </div>
-                    </div>
+        <!-- Charts Row - Two Column -->
+        <div class="dashboard-grid">
+            <!-- Reimbursement Trend -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-bar-chart-fill"></i> Reimbursement Trend
+                </div>
+                <div class="chart-container">
+                    <canvas id="financeTrendChart"></canvas>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="dash-card">
-                    <div class="dash-card-head">
-                        <h4 class="dash-card-title">
-                            <i class="bi bi-pie-chart"></i> Expense Categories
-                        </h4>
-                    </div>
-                    <div class="dash-card-body">
-                        <div class="chart-wrap">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                    </div>
+
+            <!-- Expense Categories -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-pie-chart-fill"></i> Expense Categories
+                </div>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- ── Monthly Breakdown ── -->
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <h4 class="dash-card-title">
-                    <i class="bi bi-clipboard-data"></i> Monthly Analytics
-                </h4>
+        <!-- Monthly Analytics -->
+        <div class="table-card">
+            <div class="table-header">
+                <span><i class="bi bi-clipboard-data me-1" style="color:#0288d1;"></i> Monthly Analytics</span>
             </div>
-            <div class="dash-card-body">
-                <div id="monthlyBreakdown" style="min-height:120px;">
-                    <p class="text-center py-4" style="color:var(--d-muted);font-size:.9rem;">Loading analytics...</p>
-                </div>
+            <div class="dash-card-body" id="monthlyBreakdown">
+                <p class="empty-state">Loading analytics...</p>
             </div>
         </div>
 
@@ -332,199 +718,258 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-let financeTrendChart;
+    (function() {
+        let financeTrendChart;
+        let categoryChart;
 
-function renderFinanceTrendChart(toProcess, processedToday, monthlyTotal){
-    const canvas = document.getElementById('financeTrendChart');
-    if(!canvas || !window.Chart) return;
+        function renderFinanceTrendChart(toProcess, processedToday, monthlyTotal) {
+            const canvas = document.getElementById('financeTrendChart');
+            if (!canvas || !window.Chart) return;
 
-    if(financeTrendChart) financeTrendChart.destroy();
+            if (financeTrendChart) financeTrendChart.destroy();
 
-    financeTrendChart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: ['To Process', 'Processed Today', 'Monthly Total'],
-            datasets: [{
-                label: 'Amount (₱)',
-                data: [toProcess, processedToday, monthlyTotal],
-                backgroundColor: ['rgba(26,107,181,0.25)', 'rgba(16,185,129,0.25)', 'rgba(99,102,241,0.25)'],
-                borderColor: ['#1a6bb5', '#10b981', '#6366f1'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
+            financeTrendChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: ['To Process', 'Processed Today', 'Monthly Total'],
+                    datasets: [{
+                        label: 'Amount (₱)',
+                        data: [toProcess, processedToday, monthlyTotal],
+                        backgroundColor: [
+                            'rgba(2, 136, 209, 0.7)',
+                            'rgba(46, 125, 50, 0.7)',
+                            'rgba(123, 31, 162, 0.7)'
+                        ],
+                        borderColor: ['#0288d1', '#2e7d32', '#7b1fa2'],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false },
+                            ticks: { font: { size: 9 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9 } }
+                        }
+                    }
+                }
+            });
         }
-    });
-}
 
-let categoryChart;
-function renderCategoryChart(categories){
-    const canvas = document.getElementById('categoryChart');
-    if(!canvas || !window.Chart) return;
-    const labels = categories.map(c => c.category || c.Category);
-    const data = categories.map(c => parseFloat((c.total || c.Total || 0).toString()));
-    if(categoryChart) categoryChart.destroy();
-    categoryChart = new Chart(canvas, {
-        type: 'doughnut',
-        data: { 
-            labels, 
-            datasets: [{ 
-                data, 
-                backgroundColor: ['#1a6bb5','#2ec4b6','#6366f1','#f59e0b','#ef4444','#10b981','#8b5cf6','#f97316']
-            }] 
-        },
-        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}} }
-    });
-}
+        function renderCategoryChart(categories) {
+            const canvas = document.getElementById('categoryChart');
+            if (!canvas || !window.Chart) return;
 
-function renderMonthlyBreakdown(monthlyData, categories) {
-    const el = document.getElementById('monthlyBreakdown');
-    if (!el) return;
-    if ((!monthlyData || monthlyData.length === 0) && (!categories || categories.length === 0)) {
-        el.innerHTML = '<p class="text-center py-4" style="color:var(--d-muted);font-size:.9rem;">No data available for the selected period.</p>';
-        return;
-    }
-    let html = '<div class="row g-4">';
-    html += '<div class="col-md-6"><h6 style="font-size:.85rem;font-weight:700;color:var(--d-text);margin-bottom:14px;">Monthly Totals</h6><table style="width:100%;font-size:.88rem;"><thead><tr style="border-bottom:2px solid var(--d-border);"><th style="padding:8px;color:var(--d-muted);font-weight:600;">Month</th><th style="padding:8px;color:var(--d-muted);font-weight:600;text-align:right;">Amount</th></tr></thead><tbody>';
-    (monthlyData || []).forEach(function(m) {
-        html += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 8px;">' + m.label + '</td><td style="padding:10px 8px;text-align:right;font-weight:600;">₱' + (m.total || 0).toFixed(2) + '</td></tr>';
-    });
-    html += '</tbody></table></div>';
-    html += '<div class="col-md-6"><h6 style="font-size:.85rem;font-weight:700;color:var(--d-text);margin-bottom:14px;">Top Categories</h6><table style="width:100%;font-size:.88rem;"><thead><tr style="border-bottom:2px solid var(--d-border);"><th style="padding:8px;color:var(--d-muted);font-weight:600;">Category</th><th style="padding:8px;color:var(--d-muted);font-weight:600;text-align:right;">Total</th></tr></thead><tbody>';
-    (categories || []).forEach(function(c) {
-        html += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 8px;">' + (c.category || c.Category) + '</td><td style="padding:10px 8px;text-align:right;font-weight:600;">₱' + parseFloat(c.total || c.Total || 0).toFixed(2) + '</td></tr>';
-    });
-    html += '</tbody></table></div></div>';
-    el.innerHTML = html;
-}
+            const labels = categories.map(c => c.category || c.Category);
+            const data = categories.map(c => parseFloat((c.total || c.Total || 0).toString()));
 
-async function loadFinanceMetrics(){
-    try{
-        var start = document.getElementById('filterStart')?.value;
-        var end = document.getElementById('filterEnd')?.value;
-        var params = new URLSearchParams();
-        if(start) params.append('start', start);
-        if(end) params.append('end', end);
-        var query = params.toString();
-        var url = '@Url.Action("Metrics","Finance")' + (query ? '?' + query : '');
+            if (categoryChart) categoryChart.destroy();
 
-        const res = await fetch(url);
-        const data = await res.json();
-
-        // Update stat cards dynamically
-        document.getElementById('toProcessVal').textContent = ((data.toProcess ?? 0).toFixed(2));
-        document.getElementById('processedVal').textContent = ((data.processedToday ?? 0).toFixed(2));
-        document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
-        document.getElementById('monthlyVal').textContent = ((data.monthlyTotal ?? 0).toFixed(2));
-        document.getElementById('monthlyCount').textContent = (data.monthlyCount ?? 0);
-
-        // render trend using dynamic toProcess value from API
-        var toProcess = data.toProcess ?? 0;
-        renderFinanceTrendChart(toProcess, data.processedToday ?? 0, data.monthlyTotal ?? 0);
-        renderCategoryChart(data.categories || []);
-        renderMonthlyBreakdown(data.monthlyData || [], data.categories || []);
-    }catch(e){
-        console.error('Failed to load metrics:', e);
-    }
-}
-
-function highlightActiveFilter() {
-    var startInput = document.getElementById('filterStart');
-    var endInput = document.getElementById('filterEnd');
-    if (!startInput || !endInput) return;
-
-    var start = new Date(startInput.value);
-    var end = new Date(endInput.value);
-    var now = new Date();
-    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // Remove active class from all buttons
-    document.querySelectorAll('.quick-filter-btn').forEach(function(btn) {
-        btn.classList.remove('active');
-    });
-
-    // Determine which range matches current filter
-    var matchingRange = null;
-
-    // Check if it's today range
-    if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
-        matchingRange = 'today';
-    }
-    // Check if it's week range (Sunday to today)
-    else {
-        var weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
-            matchingRange = 'week';
+            categoryChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: ['#0288d1', '#2e7d32', '#7b1fa2', '#f57c00', '#d32f2f', '#2ec4b6', '#8b5cf6', '#f97316'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { font: { size: 9 }, boxWidth: 8, boxHeight: 8 }
+                        }
+                    },
+                    layout: { padding: { top: 0, bottom: 0, left: 0, right: 0 } }
+                }
+            });
         }
-    }
 
-    // Check if it's month range (1st to today)
-    if (!matchingRange) {
-        var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
-            matchingRange = 'month';
+        function renderMonthlyBreakdown(monthlyData, categories) {
+            const el = document.getElementById('monthlyBreakdown');
+            if (!el) return;
+
+            if ((!monthlyData || monthlyData.length === 0) && (!categories || categories.length === 0)) {
+                el.innerHTML = '<p class="empty-state">No data available for the selected period.</p>';
+                return;
+            }
+
+            let html = '<div class="monthly-grid">';
+
+            // Monthly Totals
+            html += '<div class="monthly-section">';
+            html += '<div class="section-title"><i class="bi bi-calendar-check"></i> Monthly Totals</div>';
+            html += '<table class="data-table">';
+            (monthlyData || []).slice(0, 5).forEach(function(m) {
+                html += '<tr>' +
+                    '<td>' + m.label + '</td>' +
+                    '<td class="amount">₱' + (m.total || 0).toFixed(0) + '</td>' +
+                    '</tr>';
+            });
+            html += '</table></div>';
+
+            // Top Categories
+            html += '<div class="monthly-section">';
+            html += '<div class="section-title"><i class="bi bi-tags"></i> Top Categories</div>';
+            html += '<table class="data-table">';
+            (categories || []).slice(0, 5).forEach(function(c) {
+                html += '<tr>' +
+                    '<td>' + (c.category || c.Category) + '</td>' +
+                    '<td class="amount">₱' + parseFloat(c.total || c.Total || 0).toFixed(0) + '</td>' +
+                    '</tr>';
+            });
+            html += '</table></div></div>';
+
+            el.innerHTML = html;
         }
-    }
 
-    // Check if it's year range (Jan 1 to today)
-    if (!matchingRange) {
-        var yearStart = new Date(now.getFullYear(), 0, 1);
-        if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
-            matchingRange = 'year';
+        function updateDisplayInputs() {
+            var startInput = document.getElementById('filterStart');
+            var endInput = document.getElementById('filterEnd');
+            var startDisplay = document.getElementById('filterStartDisplay');
+            var endDisplay = document.getElementById('filterEndDisplay');
+
+            if (startInput && startDisplay && startInput.value) {
+                var startDate = new Date(startInput.value);
+                startDisplay.value = startDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+            }
+            if (endInput && endDisplay && endInput.value) {
+                var endDate = new Date(endInput.value);
+                endDisplay.value = endDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+            }
         }
-    }
 
-    // Apply active class to matching button
-    if (matchingRange) {
-        var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
-        if (activeBtn) {
-            activeBtn.classList.add('active');
+        function highlightActiveFilter() {
+            var startInput = document.getElementById('filterStart');
+            var endInput = document.getElementById('filterEnd');
+            if (!startInput || !endInput) return;
+
+            var start = new Date(startInput.value);
+            var end = new Date(endInput.value);
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            document.querySelectorAll('.filter-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+
+            var matchingRange = null;
+
+            if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) {
+                matchingRange = 'today';
+            }
+            else {
+                var weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'week';
+                }
+            }
+
+            if (!matchingRange) {
+                var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'month';
+                }
+            }
+
+            if (!matchingRange) {
+                var yearStart = new Date(now.getFullYear(), 0, 1);
+                if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) {
+                    matchingRange = 'year';
+                }
+            }
+
+            if (matchingRange) {
+                var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+                if (activeBtn) activeBtn.classList.add('active');
+            }
         }
-    }
-}
 
-document.addEventListener('DOMContentLoaded', function(){
-    // initial load
-    loadFinanceMetrics();
-    highlightActiveFilter();
+        async function loadFinanceMetrics() {
+            try {
+                var start = document.getElementById('filterStart')?.value;
+                var end = document.getElementById('filterEnd')?.value;
+                var params = new URLSearchParams();
+                if (start) params.append('start', start);
+                if (end) params.append('end', end);
+                var query = params.toString();
+                var url = '@Url.Action("Metrics", "Finance")' + (query ? '?' + query : '');
 
-    // auto-apply when form fields change
-    var filtersForm = document.getElementById('financeFilters');
-    if(filtersForm){
-        var inputs = filtersForm.querySelectorAll('input, select');
-        inputs.forEach(function(input){
-            input.addEventListener('change', function(){
-                highlightActiveFilter();
+                const res = await fetch(url);
+                const data = await res.json();
+
+                document.getElementById('toProcessVal').textContent = (data.toProcess ?? 0).toFixed(2);
+                document.getElementById('pendingCount').textContent = data.pendingCount ?? 0;
+                document.getElementById('processedVal').textContent = (data.processedToday ?? 0).toFixed(2);
+                document.getElementById('processedCount').textContent = data.processedCount ?? 0;
+                document.getElementById('monthlyVal').textContent = (data.monthlyTotal ?? 0).toFixed(2);
+                document.getElementById('monthlyCount').textContent = data.monthlyCount ?? 0;
+
+                renderFinanceTrendChart(data.toProcess ?? 0, data.processedToday ?? 0, data.monthlyTotal ?? 0);
+                renderCategoryChart(data.categories || []);
+                renderMonthlyBreakdown(data.monthlyData || [], data.categories || []);
+            } catch (e) {
+                console.error('Failed to load metrics:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDisplayInputs();
+            loadFinanceMetrics();
+            highlightActiveFilter();
+
+            document.getElementById('filterStart')?.addEventListener('change', function() {
+                updateDisplayInputs();
                 loadFinanceMetrics();
             });
-        });
-    }
 
-    // quick-range buttons
-    document.querySelectorAll('.quick-filter-btn[data-range]').forEach(function(btn){
-        btn.addEventListener('click', function(){
-            var range = btn.getAttribute('data-range');
-            var now = new Date();
-            var start;
-            if(range === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            else if(range === 'week') start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-            else if(range === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
-            else if(range === 'year') start = new Date(now.getFullYear(), 0, 1);
-
-            var s = document.getElementById('filterStart');
-            var e = document.getElementById('filterEnd');
-            if(s && start) s.value = start.toISOString().slice(0,10);
-            if(e) e.value = now.toISOString().slice(0,10);
-            setTimeout(function(){
-                highlightActiveFilter();
+            document.getElementById('filterEnd')?.addEventListener('change', function() {
+                updateDisplayInputs();
                 loadFinanceMetrics();
-            }, 150);
+            });
+
+            document.querySelectorAll('[data-range]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var range = this.getAttribute('data-range');
+                    var now = new Date();
+                    var start;
+
+                    if (range === 'today') {
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    } else if (range === 'week') {
+                        var day = now.getDay();
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                    } else if (range === 'month') {
+                        start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    } else if (range === 'year') {
+                        start = new Date(now.getFullYear(), 0, 1);
+                    }
+
+                    var startStr = start.toISOString().split('T')[0];
+                    var endStr = now.toISOString().split('T')[0];
+
+                    document.getElementById('filterStart').value = startStr;
+                    document.getElementById('filterEnd').value = endStr;
+
+                    updateDisplayInputs();
+                    loadFinanceMetrics();
+                    highlightActiveFilter();
+                });
+            });
         });
-    });
-});
+    })();
 </script>

@@ -89,37 +89,41 @@ body {
 /* Sidebar layout for driver */
 .driver-sidebar {
   width: 240px;
-  background: #fafbfc;
-  border-right: 1px solid #e0e5ed;
+  background: #ffffff;
+  border-right: 1px solid #e9eef2;
   min-height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
-  padding-top: 4px;
+  padding-top: 0;
   z-index: 1020;
-  box-shadow: 3px 0 8px rgba(15, 23, 36, 0.04);
+  box-shadow: 2px 0 6px rgba(15, 23, 36, 0.05);
   transition: background 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .driver-sidebar .driver-logo {
-  height: 120px;
-  max-height: 120px;
+  height: 110px;
+  max-height: 110px;
   width: auto;
   display: block;
   margin: 0;
   padding: 0;
   object-fit: contain;
-  filter: drop-shadow(0 1px 3px rgba(26, 107, 181, 0.06));
+  filter: drop-shadow(0 2px 4px rgba(26, 107, 181, 0.08));
 }
 
 .driver-sidebar .brand {
-  border-bottom: 1px solid #e0e5ed;
-  padding: 8px 12px;
-  height: 120px;
+  border-bottom: 1px solid #e9eef2;
+  padding: 12px 12px;
+  height: 110px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  background: transparent;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(26, 107, 181, 0.02) 0%, rgba(46, 196, 182, 0.02) 100%);
+  flex-shrink: 0;
 }
 
 .driver-sidebar .nav-link {
@@ -141,7 +145,7 @@ body {
 .driver-sidebar .nav-link i {
   font-size: 18px;
   flex-shrink: 0;
-  color: #6b7280;
+  color: #64748b;
   transition: color 0.2s ease;
 }
 
@@ -149,6 +153,9 @@ body {
   flex: 1;
   margin: 0 8px;
   color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .driver-sidebar .nav-link .nav-indicator {
@@ -161,15 +168,37 @@ body {
 /* ensure nav list sits below fixed brand area and doesn't shift when logo changes */
 .driver-sidebar nav.nav {
   margin-top: 0;
-  padding-top: 0.5rem;
-  overflow: auto;
+  padding-top: 8px;
+  padding-bottom: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+}
+
+.driver-sidebar .nav-link {
+  color: #475569;
+  padding: 11px 14px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  margin-left: 6px;
+  margin-right: 6px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  font-weight: 500;
+  font-size: 0.95rem;
+  height: 42px;
 }
 
 .driver-sidebar .nav-link:hover {
   color: #1a6bb5;
-  background-color: rgba(26, 107, 181, 0.06);
+  background-color: rgba(26, 107, 181, 0.07);
   border-left-color: #1a6bb5;
   transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(26, 107, 181, 0.1);
 }
 
 .driver-sidebar .nav-link:hover i {
@@ -177,46 +206,54 @@ body {
 }
 
 .driver-sidebar .nav-link.active {
-  color: #1a6bb5;
-  background: rgba(26, 107, 181, 0.08);
-  border-left-color: #2ec4b6;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+  border-left-color: #ffffff;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(26, 107, 181, 0.25);
 }
 
 .driver-sidebar .nav-link.active i {
-  color: #1a6bb5;
+  color: #ffffff;
 }
 
 .driver-sidebar .nav-link.active .nav-indicator {
   display: inline-block;
+  color: #ffffff;
 }
 
 /* style LoginPartial nav items in sidebar */
 .driver-sidebar .navbar-nav {
   flex-direction: column;
-  border-top: 1px solid #e0e5ed;
-  margin-top: 8px;
-  padding-top: 8px;
+  border-top: 1px solid #e9eef2;
+  margin-top: auto;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 .driver-sidebar .navbar-nav .nav-link {
-  color: #4a5568;
-  padding: 8px 12px;
+  color: #475569;
+  padding: 10px 14px;
   font-size: 0.9rem;
-  display: block;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
   margin-bottom: 4px;
-  margin-left: 4px;
-  margin-right: 4px;
+  margin-left: 6px;
+  margin-right: 6px;
   transition: all 0.2s ease;
   font-weight: 500;
+  height: 36px;
+  align-items: center;
 }
 
 .driver-sidebar .navbar-nav .nav-link:hover {
   color: #1a6bb5 !important;
   text-decoration: none;
-  background: rgba(26, 107, 181, 0.06);
+  background: rgba(26, 107, 181, 0.07);
   transform: translateX(2px);
+  box-shadow: 0 1px 3px rgba(26, 107, 181, 0.1);
 }
 
 .driver-sidebar .navbar-nav .btn-link.nav-link {
@@ -776,11 +813,12 @@ body {
   body.dark-mode .driver-sidebar {
     background: var(--dm-bg-secondary);
     border-right-color: var(--dm-border);
-    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
   }
 
   body.dark-mode .driver-sidebar .brand {
     border-bottom-color: var(--dm-border);
+    background: linear-gradient(135deg, rgba(46, 196, 182, 0.08) 0%, rgba(26, 107, 181, 0.08) 100%);
   }
 
   body.dark-mode .driver-sidebar .nav-link {
@@ -792,8 +830,9 @@ body {
   }
 
   body.dark-mode .driver-sidebar .nav-link:hover {
-    background-color: rgba(26, 107, 181, 0.12);
+    background-color: rgba(46, 196, 182, 0.12);
     color: #2ec4b6;
+    border-left-color: #2ec4b6;
   }
 
   body.dark-mode .driver-sidebar .nav-link:hover i {
@@ -801,12 +840,14 @@ body {
   }
 
   body.dark-mode .driver-sidebar .nav-link.active {
-    background: rgba(46, 196, 182, 0.15);
-    color: #2ec4b6;
+    background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+    color: #ffffff;
+    border-left-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(46, 196, 182, 0.3);
   }
 
   body.dark-mode .driver-sidebar .nav-link.active i {
-    color: #2ec4b6;
+    color: #ffffff;
   }
 
   body.dark-mode .driver-sidebar .navbar-nav {
@@ -819,7 +860,8 @@ body {
 
   body.dark-mode .driver-sidebar .navbar-nav .nav-link:hover {
     color: #2ec4b6 !important;
-    background: rgba(46, 196, 182, 0.1);
+    background: rgba(46, 196, 182, 0.12);
+    border-left-color: #2ec4b6;
   }
 
   /* Topbar Dark Mode */

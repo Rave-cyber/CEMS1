@@ -41,8 +41,20 @@
             <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-topbar-logo-img" />
         </a>
 
+        <!-- Breadcrumbs/Title (left side desktop) -->
+        <div class="d-none d-md-flex align-items-center" style="margin-left: 20px; gap: 8px; font-size: 0.9rem; color: #475569;">
+            <i class="bi bi-house-door" style="color: #0288d1;"></i>
+            <span style="font-weight: 600; color: #1e293b;">@(ViewData["Title"] ?? "Manager")</span>
+        </div>
+
         <!-- Spacer for desktop -->
         <div class="d-none d-md-flex flex-grow-1"></div>
+
+        <!-- Date Display (beside profile) -->
+        <div class="d-none d-md-flex align-items-center me-3" style="gap: 8px; font-size: 0.85rem; color: #64748b;">
+            <i class="bi bi-calendar3" style="color: #0288d1;"></i>
+            <span>@DateTime.Now.ToString("ddd, MMM d")</span>
+        </div>
 
         <!-- Profile dropdown -->
         <div>
@@ -81,9 +93,9 @@
 
     <!-- ══ Desktop Sidebar ══ -->
     <aside class="driver-sidebar d-none d-md-flex flex-column">
-        <div class="brand p-3 d-flex align-items-center">
+        <div class="brand">
             <a class="d-flex align-items-center text-decoration-none" asp-controller="Manager" asp-action="Dashboard">
-                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo me-2" />
+                <img src="@(Url.Content("~/images/logo.png"))" alt="CEMS" class="driver-logo" />
             </a>
         </div>
         <nav class="nav flex-column p-3">
