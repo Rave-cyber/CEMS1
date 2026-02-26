@@ -19,84 +19,342 @@
     int totalCount = ViewBag.TotalCount ?? 0;
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    .page-wrapper {
+        background: #f1f5f9;
+        min-height: calc(100vh - 80px);
+        padding: 20px 0 40px;
+    }
+
+    .page-header {
+        padding: 0 16px;
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    /* Filter Section - matching dashboard design */
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        margin-left: 16px;
+        margin-right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        border: 1px solid #f0f3f7;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .filter-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 6px 10px;
+        border: 1px solid #e9eef2;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        background: white;
+        min-width: 140px;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        outline: none;
+        border-color: #0288d1;
+        box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
+    }
+
+    .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    .filter-btn {
+        padding: 6px 16px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .filter-btn:hover {
+        background: #e2e8f0;
+        color: #0288d1;
+    }
+
+    .filter-btn.active {
+        background: #0288d1;
+        color: white;
+    }
+
+    .filter-btn.active:hover {
+        background: #01579b;
+    }
+
+    /* Table Card */
+    .table-card {
+        background: white;
+        border-radius: 10px;
+        margin: 0 16px 16px 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #e9eef2;
+    }
+
+    .table-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e9eef2;
+        background: #f8fafc;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .dash-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+    .dash-table thead th {
+        text-align: left;
+        padding: 10px 14px;
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .dash-table tbody td {
+        padding: 10px 14px;
+        border-bottom: 1px solid #e9eef2;
+        vertical-align: middle;
+        color: #1e293b;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    /* Pagination */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        border-top: 1px solid #e9eef2;
+        background: white;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        margin: 0;
+    }
+
+    .pagination-btn {
+        padding: 6px 10px;
+        border: 1px solid #e9eef2;
+        border-radius: 6px;
+        background: white;
+        color: #0288d1;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+        background: #0288d1;
+        color: white;
+        border-color: #0288d1;
+    }
+
+    .pagination-btn.active {
+        background: #0288d1;
+        color: white;
+        border-color: #0288d1;
+    }
+
+    .pagination-btn.disabled {
+        color: #cbd5e1;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        color: #cbd5e1;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .empty-state-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #475569;
+        margin: 0 0 8px 0;
+    }
+</style>
+
 <div class="page-wrapper">
-    <div class="container-fluid px-4">
-        <div class="page-header" style="margin-bottom: 16px;">
-            <h1 class="page-title">
+    <div class="container-fluid px-2">
+        <!-- Page Header -->
+        <div class="page-header">
+            @* <h1 class="page-title">
                 <i class="bi bi-journal-text"></i>
                 Audit Logs
-            </h1>
+            </h1> *@
             <p class="page-subtitle">@totalCount total record(s)</p>
         </div>
 
-        <!-- Filters -->
-        <div class="filter-card">
-            <form method="get" asp-action="AuditLogs" class="row g-3 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Search User</label>
-                    <input type="text" name="user" class="form-control form-control-sm" placeholder="Email or username..." value="@filterUser" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Role</label>
-                    <select name="role" class="form-select form-select-sm">
-                        <option value="">All Roles</option>
-                        @foreach (var r in roles)
-                        {
-                            <option value="@r" selected="@(filterRole == r)">@r</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Action</label>
-                    <select name="actionType" class="form-select form-select-sm">
-                        <option value="">All Actions</option>
-                        @foreach (var a in actions)
-                        {
-                            <option value="@a" selected="@(filterAction == a)">@a</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Module</label>
-                    <select name="module" class="form-select form-select-sm">
-                        <option value="">All Modules</option>
-                        @foreach (var m in modules)
-                        {
-                            <option value="@m" selected="@(filterModule == m)">@m</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-1">
-                    <label class="form-label small fw-semibold">From</label>
-                    <input type="date" name="start" class="form-control form-control-sm" value="@(filterStart?.ToString("yyyy-MM-dd"))" />
-                </div>
-                <div class="col-md-1">
-                    <label class="form-label small fw-semibold">To</label>
-                    <input type="date" name="end" class="form-control form-control-sm" value="@(filterEnd?.ToString("yyyy-MM-dd"))" />
-                </div>
-                <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filter</button>
-                    <a asp-action="AuditLogs" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle"></i> Clear</a>
-                </div>
-            </form>
-        </div>
+        <!-- Filter Section - matching dashboard design -->
+        <div class="filter-section">
+            <!-- Search -->
+            <div class="filter-group">
+                <label>User</label>
+                <input type="text" id="filterUser" placeholder="Email or username..." value="@filterUser">
+            </div>
 
-        <!-- Logs Table -->
+            <!-- Role Dropdown -->
+            <div class="filter-group">
+                <label>Role</label>
+                <select id="filterRole">
+                    <option value="">All Roles</option>
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r" selected="@(filterRole == r)">@r</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Action Dropdown -->
+            <div class="filter-group">
+                <label>Action</label>
+                <select id="filterAction">
+                    <option value="">All Actions</option>
+                    @foreach (var a in actions)
+                    {
+                        <option value="@a" selected="@(filterAction == a)">@a</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Module Dropdown -->
+            <div class="filter-group">
+                <label>Module</label>
+                <select id="filterModule">
+                    <option value="">All Modules</option>
+                    @foreach (var m in modules)
+                    {
+                        <option value="@m" selected="@(filterModule == m)">@m</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Date Range -->
+            <div class="filter-group">
+                <label>From</label>
+                <input type="date" id="filterStart" value="@(filterStart?.ToString("yyyy-MM-dd"))">
+            </div>
+
+            <div class="filter-group">
+                <label>To</label>
+                <input type="date" id="filterEnd" value="@(filterEnd?.ToString("yyyy-MM-dd"))">
+            </div>
+
+            <!-- Export Button -->
+            <div style="display: flex; align-items: flex-end; gap: 8px; margin-left: auto;">
+                <button type="button" id="exportPdfBtn" class="filter-btn" title="Export as PDF" style="padding: 8px 14px; background: #0288d1; color: white; border: none;">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </button>
+            </div>
+        </div>
         <div class="table-card">
             @if (logs.Count == 0)
             {
                 <div class="empty-state">
                     <i class="bi bi-journal-x"></i>
                     <p class="empty-state-title">No audit logs found</p>
-                    <p class="empty-state">Try adjusting your filters to see results</p>
+                    <p style="margin: 0; font-size: 0.9rem;">Try adjusting your filters to see results</p>
                 </div>
             }
             else
             {
+                <div class="table-header">
+                    Showing page @currentPage of @totalPages (@totalCount total records)
+                </div>
+
                 <table class="dash-table">
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Action</th>
                             <th>Module</th>
                             <th>Role</th>
@@ -111,122 +369,260 @@
                         @foreach (var log in logs)
                         {
                             <tr>
-                                <td>@log.Id</td>
-                                <td><span style="color: #0f1724; font-weight: 600; font-size: 0.9rem;">@log.Action</span></td>
+                                <td><span style="color: #0f1724; font-weight: 600;">@log.Action</span></td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(log.Module))
                                     {
-                                        <span style="color: #0f1724; font-weight: 600; font-size: 0.9rem;">@log.Module</span>
+                                        <span style="color: #0f1724; font-weight: 600;">@log.Module</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">—</span>
+                                        <span style="color: #94a3b8;">—</span>
                                     }
                                 </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(log.Role))
-                                        {
-                                            <small class="fw-semibold">@log.Role</small>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (log.PerformedByUserId != null && logUsers.ContainsKey(log.PerformedByUserId))
-                                        {
-                                            @logUsers[log.PerformedByUserId]
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">System</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (log.TargetUserId != null && logUsers.ContainsKey(log.TargetUserId))
-                                        {
-                                            @logUsers[log.TargetUserId]
-                                        }
-                                        else if (log.TargetUserId != null)
-                                        {
-                                            <span class="text-muted">@log.TargetUserId</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (log.RelatedRecordId.HasValue)
-                                        {
-                                            <code>#@log.RelatedRecordId</code>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                    <td><small>@log.Details</small></td>
-                                    <td><small>@log.Timestamp.ToString("MMM dd, yyyy hh:mm tt")</small></td>
-                                </tr>
-                            }
+                                <td>
+                                    @if (!string.IsNullOrEmpty(log.Role))
+                                    {
+                                        <small style="font-weight: 600;">@log.Role</small>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: #94a3b8;">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (log.PerformedByUserId != null && logUsers.ContainsKey(log.PerformedByUserId))
+                                    {
+                                        @logUsers[log.PerformedByUserId]
+                                    }
+                                    else
+                                    {
+                                        <span style="color: #94a3b8;">System</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (log.TargetUserId != null && logUsers.ContainsKey(log.TargetUserId))
+                                    {
+                                        @logUsers[log.TargetUserId]
+                                    }
+                                    else if (log.TargetUserId != null)
+                                    {
+                                        <span style="color: #94a3b8;">@log.TargetUserId</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: #94a3b8;">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (log.RelatedRecordId.HasValue)
+                                    {
+                                        <code>#@log.RelatedRecordId</code>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: #94a3b8;">—</span>
+                                    }
+                                </td>
+                                <td><small>@log.Details</small></td>
+                                <td><small>@log.Timestamp.ToString("MMM dd, yyyy hh:mm tt")</small></td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
-
 
                 <!-- Pagination -->
                 @if (totalPages > 1)
                 {
-                    <div class=\"d-flex justify-content-between align-items-center px-3 py-3 border-top\">
-                        <small class=\"text-muted\">Page @currentPage of @totalPages (@totalCount records)</small>
-                        <nav>
-                            <ul class=\"pagination pagination-sm mb-0\">
-                                @if (currentPage > 1)
+                    <div class="pagination-wrapper">
+                        <div class="pagination-info">
+                            Page @currentPage of @totalPages (@totalCount records)
+                        </div>
+                        <div class="pagination">
+                            @if (currentPage > 1)
+                            {
+                                <a class="pagination-btn" href="@Url.Action("AuditLogs", new { page = currentPage - 1, user = filterUser, role = filterRole, actionType = filterAction, module = filterModule, start = filterStart?.ToString("yyyy-MM-dd"), end = filterEnd?.ToString("yyyy-MM-dd") })">
+                                    <i class="bi bi-chevron-left"></i> Prev
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="pagination-btn disabled">
+                                    <i class="bi bi-chevron-left"></i> Prev
+                                </span>
+                            }
+
+                            @{
+                                int startPage = Math.Max(1, currentPage - 2);
+                                int endPage = Math.Min(totalPages, startPage + 4);
+                                startPage = Math.Max(1, endPage - 4);
+                            }
+
+                            @for (int i = startPage; i <= endPage; i++)
+                            {
+                                @if (i == currentPage)
                                 {
-                                    <li class="page-item">
-                                        <a class="page-link" asp-action="AuditLogs" asp-route-page="@(currentPage - 1)" asp-route-actionType="@filterAction" asp-route-module="@filterModule" asp-route-role="@filterRole" asp-route-user="@filterUser" asp-route-start="@(filterStart?.ToString("yyyy-MM-dd"))" asp-route-end="@(filterEnd?.ToString("yyyy-MM-dd"))">‹</a>
-                                    </li>
+                                    <span class="pagination-btn active">@i</span>
                                 }
                                 else
                                 {
-                                    <li class="page-item disabled"><span class="page-link">‹</span></li>
+                                    <a class="pagination-btn" href="@Url.Action("AuditLogs", new { page = i, user = filterUser, role = filterRole, actionType = filterAction, module = filterModule, start = filterStart?.ToString("yyyy-MM-dd"), end = filterEnd?.ToString("yyyy-MM-dd") })">@i</a>
                                 }
+                            }
 
-                                @{
-                                    int startPage = Math.Max(1, currentPage - 2);
-                                    int endPage = Math.Min(totalPages, startPage + 4);
-                                    startPage = Math.Max(1, endPage - 4);
-                                }
-                                @for (int i = startPage; i <= endPage; i++)
-                                {
-                                    <li class="page-item @(i == currentPage ? "active" : "")">
-                                        @if (i == currentPage)
-                                        {
-                                            <span class="page-link">@i</span>
-                                        }
-                                        else
-                                        {
-                                            <a class="page-link" asp-action="AuditLogs" asp-route-page="@i" asp-route-actionType="@filterAction" asp-route-module="@filterModule" asp-route-role="@filterRole" asp-route-user="@filterUser" asp-route-start="@(filterStart?.ToString("yyyy-MM-dd"))" asp-route-end="@(filterEnd?.ToString("yyyy-MM-dd"))">@i</a>
-                                        }
-                                    </li>
-                                }
-
-                                @if (currentPage < totalPages)
-                                {
-                                    <li class="page-item">
-                                        <a class="page-link" asp-action="AuditLogs" asp-route-page="@(currentPage + 1)" asp-route-actionType="@filterAction" asp-route-module="@filterModule" asp-route-role="@filterRole" asp-route-user="@filterUser" asp-route-start="@(filterStart?.ToString("yyyy-MM-dd"))" asp-route-end="@(filterEnd?.ToString("yyyy-MM-dd"))">›</a>
-                                    </li>
-                                }
-                                else
-                                {
-                                    <li class="page-item disabled"><span class="page-link">›</span></li>
-                                }
-                            </ul>
-                        </nav>
+                            @if (currentPage < totalPages)
+                            {
+                                <a class="pagination-btn" href="@Url.Action("AuditLogs", new { page = currentPage + 1, user = filterUser, role = filterRole, actionType = filterAction, module = filterModule, start = filterStart?.ToString("yyyy-MM-dd"), end = filterEnd?.ToString("yyyy-MM-dd") })">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="pagination-btn disabled">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </span>
+                            }
+                        </div>
                     </div>
                 }
             }
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        function applyFilters() {
+            const user = document.getElementById('filterUser')?.value || '';
+            const role = document.getElementById('filterRole')?.value || '';
+            const action = document.getElementById('filterAction')?.value || '';
+            const module = document.getElementById('filterModule')?.value || '';
+            const start = document.getElementById('filterStart')?.value || '';
+            const end = document.getElementById('filterEnd')?.value || '';
+
+            let url = '@Url.Action("AuditLogs", "SuperAdmin")?';
+            const params = [];
+
+            if (user) params.push('user=' + encodeURIComponent(user));
+            if (role) params.push('role=' + encodeURIComponent(role));
+            if (action) params.push('actionType=' + encodeURIComponent(action));
+            if (module) params.push('module=' + encodeURIComponent(module));
+            if (start) params.push('start=' + start);
+            if (end) params.push('end=' + end);
+
+            window.location.href = url + params.join('&');
+        }
+
+        function highlightActiveFilter() {
+            const start = document.getElementById('filterStart')?.value;
+            const end = document.getElementById('filterEnd')?.value;
+            if (!start || !end) return;
+
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+
+            let matchingRange = null;
+
+            if (startDate.getTime() === today.getTime() && endDate.getTime() === today.getTime()) {
+                matchingRange = 'today';
+            } else {
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                if (startDate.getTime() === weekStart.getTime() && endDate.getTime() === today.getTime()) {
+                    matchingRange = 'week';
+                }
+            }
+
+            if (!matchingRange) {
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (startDate.getTime() === monthStart.getTime() && endDate.getTime() === today.getTime()) {
+                    matchingRange = 'month';
+                }
+            }
+
+            if (!matchingRange) {
+                const yearStart = new Date(now.getFullYear(), 0, 1);
+                if (startDate.getTime() === yearStart.getTime() && endDate.getTime() === today.getTime()) {
+                    matchingRange = 'year';
+                }
+            }
+
+            if (matchingRange) {
+                const activeBtn = document.querySelector('[data-range="' + matchingRange + '"]');
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            highlightActiveFilter();
+
+            // Auto-apply filters on any change
+            document.getElementById('filterUser')?.addEventListener('change', applyFilters);
+            document.getElementById('filterRole')?.addEventListener('change', applyFilters);
+            document.getElementById('filterAction')?.addEventListener('change', applyFilters);
+            document.getElementById('filterModule')?.addEventListener('change', applyFilters);
+            document.getElementById('filterStart')?.addEventListener('change', applyFilters);
+            document.getElementById('filterEnd')?.addEventListener('change', applyFilters);
+
+            // Quick filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const range = this.getAttribute('data-range');
+                    const now = new Date();
+                    let start;
+
+                    if (range === 'today') {
+                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    } else if (range === 'week') {
+                        start = new Date(now);
+                        start.setDate(now.getDate() - now.getDay());
+                    } else if (range === 'month') {
+                        start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    } else if (range === 'year') {
+                        start = new Date(now.getFullYear(), 0, 1);
+                    }
+
+                    document.getElementById('filterStart').value = start.toISOString().split('T')[0];
+                    document.getElementById('filterEnd').value = now.toISOString().split('T')[0];
+
+                    applyFilters();
+                });
+            });
+        });
+    })();
+</script>
+
+<script>
+    // PDF Export functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', function() {
+                const user = document.getElementById('filterUser')?.value || '';
+                const role = document.getElementById('filterRole')?.value || '';
+                const action = document.getElementById('filterAction')?.value || '';
+                const module = document.getElementById('filterModule')?.value || '';
+                const start = document.getElementById('filterStart')?.value || '';
+                const end = document.getElementById('filterEnd')?.value || '';
+
+                let url = '@Url.Action("ExportAuditLogsPdf", "SuperAdmin")?';
+                const params = [];
+
+                if (user) params.push('user=' + encodeURIComponent(user));
+                if (role) params.push('role=' + encodeURIComponent(role));
+                if (action) params.push('actionType=' + encodeURIComponent(action));
+                if (module) params.push('module=' + encodeURIComponent(module));
+                if (start) params.push('start=' + start);
+                if (end) params.push('end=' + end);
+
+                // Download the PDF
+                window.location.href = url + params.join('&');
+            });
+        }
+    });
+</script>

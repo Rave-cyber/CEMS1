@@ -139,29 +139,10 @@
             document.getElementById('metricsStart').value = toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
             document.getElementById('metricsEnd').value = toInputDate(now);
 
-            // Update display inputs
-            document.getElementById('metricsStartDisplay').value = new Date(document.getElementById('metricsStart').value).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-            document.getElementById('metricsEndDisplay').value = new Date(document.getElementById('metricsEnd').value).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-
-            // Make display inputs clickable to open date picker
-            document.getElementById('metricsStartDisplay')?.addEventListener('click', () => {
-                document.getElementById('metricsStart')?.click();
-            });
-            document.getElementById('metricsEndDisplay')?.addEventListener('click', () => {
-                document.getElementById('metricsEnd')?.click();
-            });
-
             loadDriverMetrics();
 
-            document.getElementById('metricsStart').addEventListener('change', function() {
-                document.getElementById('metricsStartDisplay').value = new Date(this.value).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                loadDriverMetrics();
-            });
-
-            document.getElementById('metricsEnd').addEventListener('change', function() {
-                document.getElementById('metricsEndDisplay').value = new Date(this.value).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                loadDriverMetrics();
-            });
+            document.getElementById('metricsStart').addEventListener('change', loadDriverMetrics);
+            document.getElementById('metricsEnd').addEventListener('change', loadDriverMetrics);
 
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.addEventListener('click', function(){
@@ -179,9 +160,6 @@
 
                     document.getElementById('metricsStart').value = toInputDate(start);
                     document.getElementById('metricsEnd').value = toInputDate(new Date());
-
-                    document.getElementById('metricsStartDisplay').value = new Date(start).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                    document.getElementById('metricsEndDisplay').value = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
                     loadDriverMetrics();
                 });
@@ -218,13 +196,13 @@
     .top-bar {
         background: white;
         border-radius: 12px;
-        padding: 14px 24px;
+        padding: 16px 20px;
         margin-bottom: 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 20px;
+        gap: 16px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         border: 1px solid #f0f3f7;
     }
@@ -232,8 +210,9 @@
     .welcome-section {
         display: flex;
         align-items: center;
-        gap: 24px;
-        flex-wrap: wrap;
+        gap: 0;
+        flex-wrap: nowrap;
+        min-width: auto;
     }
 
     .greeting {
@@ -268,7 +247,54 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .filter-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .filter-group input {
+        padding: 6px 10px;
+        border: 1px solid #e9eef2;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        background: white;
+        width: auto;
+        min-width: 120px;
+    }
+
+    .filter-group input:focus {
+        outline: none;
+        border-color: #0288d1;
+        box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1);
+    }
+
+    body.dark-mode .filter-group input {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    body.dark-mode .filter-group input:focus {
+        border-color: #0288d1;
+        box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.2);
     }
 
     .date-range {
@@ -316,6 +342,7 @@
         padding: 4px;
         border-radius: 8px;
         border: 1px solid #edf2f7;
+        flex-shrink: 0;
     }
 
     .filter-btn {
@@ -328,6 +355,8 @@
         color: #475569;
         cursor: pointer;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
         .filter-btn:hover {
@@ -765,26 +794,17 @@
                 <div class="greeting">
                     Welcome back, <strong>@User.Identity?.Name</strong>
                 </div>
-                <div class="date-badge">
-                    <i class="bi bi-calendar3"></i>
-                    @DateTime.Now.ToString("dddd, MMMM d yyyy")
-                </div>
             </div>
 
             <div class="filter-section">
-                <div class="date-range">
-                    <div class="date-field">
-                        <span>From</span>
-                        <input type="text" id="metricsStartDisplay" value="01/31/2026" readonly style="cursor:pointer;">
-                        <input type="date" id="metricsStart" style="display:none;">
-                    </div>
-                    <div class="date-field">
-                        <span>To</span>
-                        <input type="text" id="metricsEndDisplay" value="02/25/2026" readonly style="cursor:pointer;">
-                        <input type="date" id="metricsEnd" style="display:none;">
-                    </div>
+                <div class="filter-group">
+                    <label>From</label>
+                    <input type="date" id="metricsStart" value="@DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd")">
                 </div>
-
+                <div class="filter-group">
+                    <label>To</label>
+                    <input type="date" id="metricsEnd" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                </div>
                 <div class="quick-filters">
                     <button class="filter-btn" data-range="today">Today</button>
                     <button class="filter-btn" data-range="week">Week</button>

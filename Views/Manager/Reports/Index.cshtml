@@ -278,10 +278,10 @@
     <div class="container-fluid px-4">
         <!-- Page Header -->
         <div class="page-header">
-            <h1 class="page-title">
+            @* <h1 class="page-title">
                 <i class="bi bi-file-earmark-check"></i>
                 Expense Reports
-            </h1>
+            </h1> *@
         </div>
         
         <!-- filters removed for consistent manager view -->
@@ -310,7 +310,7 @@
                     <label class="form-label">To</label>
                     <input type="date" name="end" id="mgrEnd" class="form-control form-control-sm" value="@Context.Request.Query["end"]" />
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Status</label>
                     <select name="status" id="mgrStatus" class="form-select form-select-sm">
                         <option value="">All</option>
@@ -319,6 +319,11 @@
                         <option value="Approved" selected="@(Context.Request.Query["status"]=="Approved")">Approved</option>
                         <option value="Rejected" selected="@(Context.Request.Query["status"]=="Rejected")">Rejected</option>
                     </select>
+                </div>
+                <div class="col-md-1" style="display: flex; align-items: flex-end;">
+                    <button type="button" id="exportPdfBtn" class="btn btn-sm" style="background: #1a6bb5; color: white; font-weight: 600; width: 100%; padding: 0.375rem 0.75rem; border: none; border-radius: 6px;">
+                        <i class="bi bi-file-pdf"></i> PDF
+                    </button>
                 </div>
             </form>
         </div>
@@ -356,6 +361,28 @@
                     });
                 });
             });
+
+            // PDF Export functionality
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', function() {
+                    const driver = document.querySelector('input[name="driver"]').value || '';
+                    const start = document.getElementById('mgrStart').value || '';
+                    const end = document.getElementById('mgrEnd').value || '';
+                    const status = document.getElementById('mgrStatus').value || '';
+
+                    let url = '@Url.Action("ExportReportsPdf", "Manager")?';
+                    const params = [];
+
+                    if (driver) params.push('driver=' + encodeURIComponent(driver));
+                    if (start) params.push('start=' + start);
+                    if (end) params.push('end=' + end);
+                    if (status) params.push('status=' + encodeURIComponent(status));
+
+                    // Download the PDF
+                    window.location.href = url + params.join('&');
+                });
+            }
         </script>
 
         <!-- Reports Table -->

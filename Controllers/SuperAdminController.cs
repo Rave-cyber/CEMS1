@@ -3,6 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using System.Text;
 
 namespace CEMS.Controllers
 {
@@ -56,7 +61,7 @@ namespace CEMS.Controllers
         }
 
         // ───────────── User Management ─────────────
-        public async Task<IActionResult> Users()
+        public async Task<IActionResult> Users(string? q, string? role, string? status)
         {
             var allUsers = await _userManager.Users.OrderBy(u => u.Email).ToListAsync();
             var userDtos = new List<UserWithRolesDto>();
@@ -74,10 +79,153 @@ namespace CEMS.Controllers
                 });
             }
 
+            // Apply filters
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                userDtos = userDtos
+                    .Where(u => u.Email.Contains(q, StringComparison.OrdinalIgnoreCase) || 
+                                u.UserName.Contains(q, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                userDtos = userDtos
+                    .Where(u => u.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase))
+                {
+                    userDtos = userDtos.Where(u => !u.IsLockedOut).ToList();
+                }
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase))
+                {
+                    userDtos = userDtos.Where(u => u.IsLockedOut).ToList();
+                }
+            }
+
             ViewBag.Users = userDtos;
             ViewBag.AllRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            ViewBag.FilterQuery = q;
+            ViewBag.FilterRole = role;
+            ViewBag.FilterStatus = status;
 
             return View("Users/Index");
+        }
+
+        // ───────────── Export Users as PDF ─────────────
+        public async Task<IActionResult> ExportUsersPdf(string q, string role, string status)
+        {
+            var usersList = await _userManager.Users.OrderBy(u => u.Email).ToListAsync();
+            var userDtos = new List<UserWithRolesDto>();
+
+            foreach (var user in usersList)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                userDtos.Add(new UserWithRolesDto
+                {
+                    UserId = user.Id,
+                    Email = user.Email ?? "N/A",
+                    UserName = user.UserName ?? "N/A",
+                    Roles = roles.ToList(),
+                    IsLockedOut = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow
+                });
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var searchLower = q.ToLower();
+                userDtos = userDtos.Where(u => 
+                    u.Email.ToLower().Contains(searchLower) || 
+                    u.UserName.ToLower().Contains(searchLower)).ToList();
+            }
+
+            // Apply role filter
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                userDtos = userDtos.Where(u => u.Roles.Contains(role, StringComparer.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply status filter
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase))
+                {
+                    userDtos = userDtos.Where(u => !u.IsLockedOut).ToList();
+                }
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase))
+                {
+                    userDtos = userDtos.Where(u => u.IsLockedOut).ToList();
+                }
+            }
+
+            // Create PDF
+            using (var memoryStream = new MemoryStream())
+            {
+                var writer = new PdfWriter(memoryStream);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
+
+                // Title
+                var title = new Paragraph("User Management Report")
+                    .SetFontSize(18)
+                    .SetBold()
+                    .SetMarginBottom(10);
+                document.Add(title);
+
+                // Report info
+                var reportInfo = new Paragraph()
+                    .Add($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n")
+                    .Add($"Total Records: {userDtos.Count}\n")
+                    .SetFontSize(10)
+                    .SetMarginBottom(15);
+                if (!string.IsNullOrEmpty(q))
+                    reportInfo.Add($"Search: {q}\n");
+                if (!string.IsNullOrEmpty(role))
+                    reportInfo.Add($"Role Filter: {role}\n");
+                if (!string.IsNullOrEmpty(status))
+                    reportInfo.Add($"Status Filter: {status}\n");
+                document.Add(reportInfo);
+
+                // Table
+                var table = new Table(UnitValue.CreatePercentArray(new[] { 25f, 20f, 25f, 15f, 15f }));
+                table.SetWidth(UnitValue.CreatePercentValue(100));
+
+                // Table headers
+                var headers = new[] { "Email", "Username", "Roles", "Status", "Lock Status" };
+                foreach (var header in headers)
+                {
+                    var cell = new Cell()
+                        .Add(new Paragraph(header).SetBold())
+                        .SetBackgroundColor(new iText.Kernel.Colors.DeviceRgb(240, 243, 247))
+                        .SetPadding(8);
+                    table.AddHeaderCell(cell);
+                }
+
+                // Table rows
+                foreach (var user in userDtos)
+                {
+                    var rolesText = user.Roles.Count > 0 ? string.Join(", ", user.Roles) : "No Role";
+                    var statusText = user.IsLockedOut ? "Locked" : "Active";
+                    var lockStatus = user.IsLockedOut ? "Yes" : "No";
+
+                    table.AddCell(new Cell().Add(new Paragraph(user.Email).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(user.UserName).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(rolesText).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(statusText).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(lockStatus).SetFontSize(9)));
+                }
+
+                document.Add(table);
+                document.Close();
+
+                var bytes = memoryStream.ToArray();
+                return File(bytes, "application/pdf", $"UserManagement_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+            }
         }
 
         [HttpPost]
@@ -469,6 +617,112 @@ namespace CEMS.Controllers
             ViewBag.Roles = new List<string> { "SuperAdmin", "CEO", "Manager", "Finance", "Driver" };
 
             return View("AuditLogs/Index");
+        }
+
+        // ───────────── Export Audit Logs as PDF ─────────────
+        public async Task<IActionResult> ExportAuditLogsPdf(string? actionType, string? module, string? role, string? user, DateTime? start, DateTime? end)
+        {
+            var q = _db.AuditLogs.AsQueryable();
+            if (!string.IsNullOrEmpty(actionType))
+                q = q.Where(l => l.Action == actionType);
+            if (!string.IsNullOrEmpty(module))
+                q = q.Where(l => l.Module == module);
+            if (!string.IsNullOrEmpty(role))
+                q = q.Where(l => l.Role == role);
+            if (start.HasValue)
+                q = q.Where(l => l.Timestamp >= start.Value.Date);
+            if (end.HasValue)
+                q = q.Where(l => l.Timestamp < end.Value.Date.AddDays(1));
+
+            // User search — resolve matching user IDs then filter
+            if (!string.IsNullOrWhiteSpace(user))
+            {
+                var matchingUserIds = await _userManager.Users
+                    .Where(u => u.Email!.Contains(user) || u.UserName!.Contains(user))
+                    .Select(u => u.Id)
+                    .ToListAsync();
+                q = q.Where(l => matchingUserIds.Contains(l.PerformedByUserId));
+            }
+
+            var logs = await q.OrderByDescending(l => l.Timestamp).ToListAsync();
+
+            var userIds = logs
+                .SelectMany(l => new[] { l.PerformedByUserId, l.TargetUserId })
+                .Where(id => id != null)
+                .Distinct()
+                .ToList();
+            var users = await _userManager.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.UserName);
+
+            // Create PDF
+            using (var memoryStream = new MemoryStream())
+            {
+                var writer = new PdfWriter(memoryStream);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
+
+                // Title
+                var title = new Paragraph("Audit Logs Report")
+                    .SetFontSize(18)
+                    .SetBold()
+                    .SetMarginBottom(10);
+                document.Add(title);
+
+                // Report info
+                var reportInfo = new Paragraph()
+                    .Add($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n")
+                    .Add($"Total Records: {logs.Count}\n")
+                    .SetFontSize(10)
+                    .SetMarginBottom(15);
+                if (!string.IsNullOrEmpty(actionType))
+                    reportInfo.Add($"Action Filter: {actionType}\n");
+                if (!string.IsNullOrEmpty(module))
+                    reportInfo.Add($"Module Filter: {module}\n");
+                if (!string.IsNullOrEmpty(role))
+                    reportInfo.Add($"Role Filter: {role}\n");
+                if (start.HasValue)
+                    reportInfo.Add($"Date From: {start:yyyy-MM-dd}\n");
+                if (end.HasValue)
+                    reportInfo.Add($"Date To: {end:yyyy-MM-dd}\n");
+                document.Add(reportInfo);
+
+                // Table
+                var table = new Table(UnitValue.CreatePercentArray(new[] { 15f, 12f, 15f, 12f, 20f, 26f }));
+                table.SetWidth(UnitValue.CreatePercentValue(100));
+
+                // Table headers
+                var headers = new[] { "Timestamp", "Action", "Module", "Role", "User", "Details" };
+                foreach (var header in headers)
+                {
+                    var cell = new Cell()
+                        .Add(new Paragraph(header).SetBold())
+                        .SetBackgroundColor(new iText.Kernel.Colors.DeviceRgb(240, 243, 247))
+                        .SetPadding(8);
+                    table.AddHeaderCell(cell);
+                }
+
+                // Table rows
+                foreach (var log in logs)
+                {
+                    var userNamePerformed = log.PerformedByUserId != null && users.ContainsKey(log.PerformedByUserId)
+                        ? users[log.PerformedByUserId] ?? "Unknown"
+                        : "System";
+
+                    table.AddCell(new Cell().Add(new Paragraph(log.Timestamp.ToString("yyyy-MM-dd HH:mm")).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(log.Action).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(log.Module ?? "-").SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(log.Role ?? "-").SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(userNamePerformed).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(log.Details ?? "-").SetFontSize(9)));
+                }
+
+                document.Add(table);
+                document.Close();
+
+                var bytes = memoryStream.ToArray();
+                return File(bytes, "application/pdf", $"AuditLogs_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+            }
         }
 
         public IActionResult Index()

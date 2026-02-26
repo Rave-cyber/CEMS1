@@ -5,6 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 
 namespace CEMS.Controllers
 {
@@ -102,6 +106,109 @@ namespace CEMS.Controllers
             var dto = reports.Select(r => new PendingExpenseReportDto { Report = r, UserName = r.UserId != null && usersDict.ContainsKey(r.UserId) ? usersDict[r.UserId] : "Unknown" }).ToList();
             ViewBag.Reports = dto;
             return View("Reports/Index");
+        }
+
+        // ───────────── Export Reports as PDF ─────────────
+        public async Task<IActionResult> ExportReportsPdf(string driver, DateTime? start, DateTime? end, string status)
+        {
+            var q = _db.ExpenseReports.Include(r => r.User).AsQueryable();
+
+            if (!string.IsNullOrEmpty(driver))
+            {
+                var users = await _userManager.Users.Where(u => u.UserName.Contains(driver)).Select(u => u.Id).ToListAsync();
+                q = q.Where(r => r.UserId != null && users.Contains(r.UserId));
+            }
+            if (start.HasValue) q = q.Where(r => r.SubmissionDate >= start.Value);
+            if (end.HasValue) q = q.Where(r => r.SubmissionDate <= end.Value.AddDays(1));
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (Enum.TryParse<ReportStatus>(status, out var st))
+                {
+                    q = q.Where(r => r.Status == st);
+                }
+            }
+            else
+            {
+                q = q.Where(r => r.Status == ReportStatus.Submitted);
+            }
+
+            var reports = await q.OrderByDescending(r => r.SubmissionDate).ToListAsync();
+
+            var userIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
+            var usersDict = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
+
+            // Create PDF
+            using (var memoryStream = new MemoryStream())
+            {
+                var writer = new PdfWriter(memoryStream);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
+
+                // Title
+                var title = new Paragraph("Expense Reports")
+                    .SetFontSize(18)
+                    .SetBold()
+                    .SetMarginBottom(10);
+                document.Add(title);
+
+                // Report info
+                var reportInfo = new Paragraph()
+                    .Add($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n")
+                    .Add($"Total Records: {reports.Count}\n")
+                    .SetFontSize(10)
+                    .SetMarginBottom(15);
+                if (!string.IsNullOrEmpty(driver))
+                    reportInfo.Add($"Driver Filter: {driver}\n");
+                if (start.HasValue)
+                    reportInfo.Add($"Date From: {start:yyyy-MM-dd}\n");
+                if (end.HasValue)
+                    reportInfo.Add($"Date To: {end:yyyy-MM-dd}\n");
+                if (!string.IsNullOrEmpty(status))
+                    reportInfo.Add($"Status: {status}\n");
+                document.Add(reportInfo);
+
+                // Table
+                var table = new Table(UnitValue.CreatePercentArray(new[] { 12f, 15f, 12f, 12f, 12f, 12f, 12f, 15f }));
+                table.SetWidth(UnitValue.CreatePercentValue(100));
+
+                // Table headers
+                var headers = new[] { "Report #", "Driver", "Amount", "Status", "Budget", "Submitted", "Approved", "Reimbursed" };
+                foreach (var header in headers)
+                {
+                    var cell = new Cell()
+                        .Add(new Paragraph(header).SetBold())
+                        .SetBackgroundColor(new iText.Kernel.Colors.DeviceRgb(240, 243, 247))
+                        .SetPadding(8);
+                    table.AddHeaderCell(cell);
+                }
+
+                // Table rows
+                foreach (var report in reports)
+                {
+                    var driverName = report.UserId != null && usersDict.ContainsKey(report.UserId)
+                        ? usersDict[report.UserId] ?? "Unknown"
+                        : "Unknown";
+
+                    var approvalDate = "—";
+                    var reimbursedText = report.Reimbursed ? "Yes" : "No";
+
+                    table.AddCell(new Cell().Add(new Paragraph($"#{report.Id}").SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(driverName).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph($"₱{report.TotalAmount:N2}").SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(report.Status.ToString()).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(report.BudgetCheck.ToString()).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(report.SubmissionDate.ToString("yyyy-MM-dd")).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(approvalDate).SetFontSize(9)));
+                    table.AddCell(new Cell().Add(new Paragraph(reimbursedText).SetFontSize(9)));
+                }
+
+                document.Add(table);
+                document.Close();
+
+                var bytes = memoryStream.ToArray();
+                return File(bytes, "application/pdf", $"ExpenseReports_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+            }
         }
 
         [HttpGet]
