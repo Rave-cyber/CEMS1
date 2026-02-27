@@ -82,6 +82,9 @@
             <i class="bi bi-moon"></i>
         </button>
 
+        <!-- Notification Bell -->
+        <partial name="_NotificationBell" />
+
         <!-- Profile dropdown -->
         <div>
             <div class="dropdown">
@@ -257,5 +260,8 @@
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <form id="__notifAntiForgery" method="post" style="display:none;">@Html.AntiForgeryToken()</form>
+    <partial name="_NotificationScripts" />
 </body>
 </html>

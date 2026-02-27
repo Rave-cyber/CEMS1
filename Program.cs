@@ -46,6 +46,7 @@ builder.Services.AddScoped<SignInManager<IdentityUser>>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 

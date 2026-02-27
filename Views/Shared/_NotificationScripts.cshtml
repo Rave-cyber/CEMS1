@@ -1,0 +1,147 @@
+@* Notification JavaScript — include before closing </body> in each role layout *@
+<script>
+(function () {
+    const badge = document.getElementById('notificationBadge');
+    const list = document.getElementById('notificationList');
+    const emptyMsg = document.getElementById('notificationEmpty');
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    const bellBtn = document.getElementById('notificationBellBtn');
+    if (!badge || !list) return;
+
+    // CSRF token from any form on the page, or from a meta tag
+    function getToken() {
+        const input = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (input) return input.value;
+        const meta = document.querySelector('meta[name="RequestVerificationToken"]');
+        if (meta) return meta.getAttribute('content');
+        return '';
+    }
+
+    function timeAgo(dateStr) {
+        const now = new Date();
+        const d = new Date(dateStr);
+        const diff = Math.floor((now - d) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+        return d.toLocaleDateString();
+    }
+
+    function iconForType(type) {
+        switch (type) {
+            case 'ReportSubmitted': return 'bi-file-earmark-plus text-primary';
+            case 'ReportOverBudget': return 'bi-exclamation-triangle text-warning';
+            case 'ReportApprovedByManager': return 'bi-check-circle text-success';
+            case 'ReportRejectedByManager': return 'bi-x-circle text-danger';
+            case 'ReportReadyForFinance': return 'bi-cash-coin text-info';
+            case 'ReportForwardedToCEO': return 'bi-arrow-up-circle text-primary';
+            case 'CEOApproved': return 'bi-shield-check text-success';
+            case 'CEORejected': return 'bi-shield-x text-danger';
+            case 'ReimbursementProcessed': return 'bi-wallet2 text-success';
+            case 'BudgetThreshold': return 'bi-graph-up-arrow text-warning';
+            default: return 'bi-bell text-secondary';
+        }
+    }
+
+    function renderNotifications(data) {
+        if (!data || data.length === 0) {
+            list.innerHTML = '';
+            list.appendChild(emptyMsg);
+            emptyMsg.classList.remove('d-none');
+            return;
+        }
+        emptyMsg.classList.add('d-none');
+        let html = '';
+        data.forEach(function (n) {
+            html += '<div class="notification-item px-3 py-2 border-bottom d-flex align-items-start gap-2' +
+                (!n.isRead ? ' bg-light' : '') + '" data-id="' + n.id + '" style="cursor:pointer;">' +
+                '<i class="bi ' + iconForType(n.type) + ' mt-1" style="font-size:1.1rem;"></i>' +
+                '<div class="flex-grow-1" style="min-width:0;">' +
+                '<div class="fw-semibold" style="font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(n.title) + '</div>' +
+                '<div class="text-muted" style="font-size:0.78rem;line-height:1.3;">' + escapeHtml(n.message) + '</div>' +
+                '<div class="text-muted" style="font-size:0.7rem;margin-top:2px;">' + timeAgo(n.createdAt) + '</div>' +
+                '</div>' +
+                (!n.isRead ? '<span class="badge bg-primary rounded-pill align-self-center" style="font-size:0.55rem;">NEW</span>' : '') +
+                '</div>';
+        });
+        list.innerHTML = html;
+
+        // Click to mark as read
+        list.querySelectorAll('.notification-item').forEach(function (el) {
+            el.addEventListener('click', function () {
+                var id = el.getAttribute('data-id');
+                markRead(id, el);
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function loadNotifications() {
+        fetch('/Notification/GetNotifications?count=20')
+            .then(function (r) { return r.json(); })
+            .then(function (data) { renderNotifications(data); })
+            .catch(function () { });
+    }
+
+    function loadUnreadCount() {
+        fetch('/Notification/UnreadCount')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            })
+            .catch(function () { });
+    }
+
+    function markRead(id, el) {
+        var token = getToken();
+        fetch('/Notification/MarkAsRead?id=' + id, {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: '__RequestVerificationToken=' + encodeURIComponent(token)
+        }).then(function () {
+            if (el) {
+                el.classList.remove('bg-light');
+                var badge2 = el.querySelector('.badge');
+                if (badge2) badge2.remove();
+            }
+            loadUnreadCount();
+        }).catch(function () { });
+    }
+
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var token = getToken();
+            fetch('/Notification/MarkAllAsRead', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '__RequestVerificationToken=' + encodeURIComponent(token)
+            }).then(function () {
+                loadNotifications();
+                loadUnreadCount();
+            }).catch(function () { });
+        });
+    }
+
+    // Load when dropdown opens
+    if (bellBtn) {
+        bellBtn.addEventListener('click', function () { loadNotifications(); });
+    }
+
+    // Poll unread count every 30 seconds
+    loadUnreadCount();
+    setInterval(loadUnreadCount, 30000);
+})();
+</script>

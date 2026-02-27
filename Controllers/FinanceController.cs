@@ -15,12 +15,14 @@ namespace CEMS.Controllers
         private readonly Data.ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IPayMongoService _payMongo;
+        private readonly NotificationService _notificationService;
 
-        public FinanceController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, IPayMongoService payMongo)
+        public FinanceController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, IPayMongoService payMongo, NotificationService notificationService)
         {
             _db = db;
             _userManager = userManager;
             _payMongo = payMongo;
+            _notificationService = notificationService;
         }
 
         // Dashboard: list reports ready for reimbursement with optional date filter
@@ -389,6 +391,10 @@ namespace CEMS.Controllers
 
                     TempData["Success"] = $"✅ Report #{payment.ReportId} confirmed paid!";
 
+                    // Notify driver and managers about reimbursement
+                    if (payment.Report != null)
+                        await _notificationService.NotifyReimbursementProcessed(payment.ReportId, payment.Report.UserId, payment.Report.TotalAmount);
+
                     _db.AuditLogs.Add(new AuditLog
                     {
                         Action = "PaymentSynced",
@@ -545,6 +551,22 @@ namespace CEMS.Controllers
                     await _db.SaveChangesAsync();
                     TempData["Success"] = $"✅ Report #{reportId} has been paid and marked as reimbursed!";
 
+                    // Notify driver and managers about reimbursement
+                    await _notificationService.NotifyReimbursementProcessed(reportId, payment.Report.UserId, payment.Report.TotalAmount);
+
+                    // Check budget thresholds
+                    foreach (var item in payment.Report.Items)
+                    {
+                        var category = item.Category?.Trim() ?? "";
+                        var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
+                        if (budget != null && budget.Allocated > 0)
+                        {
+                            var pct = (int)(budget.Spent / budget.Allocated * 100);
+                            if (pct >= 80)
+                                await _notificationService.NotifyBudgetThreshold(category, budget.Allocated, budget.Spent, pct);
+                        }
+                    }
+
                     _db.AuditLogs.Add(new AuditLog
                     {
                         Action = "PaymentConfirmed",
@@ -665,6 +687,22 @@ namespace CEMS.Controllers
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify driver and managers about reimbursement
+            await _notificationService.NotifyReimbursementProcessed(report.Id, report.UserId, report.TotalAmount);
+
+            // Check budget thresholds
+            foreach (var item in report.Items)
+            {
+                var category = item.Category?.Trim() ?? "";
+                var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
+                if (budget != null && budget.Allocated > 0)
+                {
+                    var pct = (int)(budget.Spent / budget.Allocated * 100);
+                    if (pct >= 80)
+                        await _notificationService.NotifyBudgetThreshold(category, budget.Allocated, budget.Spent, pct);
+                }
+            }
 
             TempData["Success"] = "Report marked as reimbursed (manual).";
             return RedirectToAction("Reimbursements");

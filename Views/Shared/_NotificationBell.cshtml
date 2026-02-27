@@ -1,0 +1,29 @@
+@* Notification Bell Dropdown — include in the topbar of each role layout *@
+<div class="dropdown me-2" id="notificationDropdown">
+    <button class="btn btn-link position-relative p-1" type="button"
+            id="notificationBellBtn"
+            data-bs-toggle="dropdown"
+            data-bs-auto-close="outside"
+            aria-expanded="false"
+            style="color: #475569; font-size: 1.25rem; text-decoration: none;">
+        <i class="bi bi-bell"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+              id="notificationBadge" style="font-size: 0.65rem;">
+            0
+        </span>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end shadow-lg p-0" style="width: 360px; max-height: 480px; overflow: hidden; border-radius: 12px;">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #f8fafc;">
+            <strong style="font-size: 0.9rem;">Notifications</strong>
+            <button class="btn btn-sm btn-link text-decoration-none p-0" id="markAllReadBtn" style="font-size: 0.8rem;">
+                Mark all as read
+            </button>
+        </div>
+        <div id="notificationList" style="max-height: 380px; overflow-y: auto;">
+            <div class="text-center text-muted py-4" id="notificationEmpty">
+                <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
+                <p class="mb-0 mt-1" style="font-size: 0.85rem;">No notifications yet</p>
+            </div>
+        </div>
+    </div>
+</div>

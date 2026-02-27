@@ -7,6 +7,7 @@ using System;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using CEMS.Models;
+using CEMS.Services;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -19,11 +20,13 @@ namespace CEMS.Controllers
     {
         private readonly Data.ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly NotificationService _notificationService;
 
-        public DriverController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public DriverController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, NotificationService notificationService)
         {
             _db = db;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
         [HttpGet("Dashboard")]
         public async Task<IActionResult> Dashboard()
@@ -612,6 +615,15 @@ namespace CEMS.Controllers
                 _db.ExpenseReports.Add(report);
                 await _db.ExpenseItems.AddRangeAsync(items);
                 await _db.SaveChangesAsync();
+
+                // Notify managers about the new submission
+                await _notificationService.NotifyReportSubmitted(report.Id, report.TotalAmount, user.UserName ?? user.Email ?? "Driver");
+
+                // If over budget, also send over-budget alerts
+                if (overBudget)
+                {
+                    await _notificationService.NotifyReportOverBudget(report.Id, report.TotalAmount, user.UserName ?? user.Email ?? "Driver");
+                }
 
                 return Json(new { success = true, message = $"Submitted {items.Count} expense(s) in report #{report.Id}." });
             }

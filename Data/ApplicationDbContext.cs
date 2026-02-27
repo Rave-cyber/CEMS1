@@ -26,6 +26,7 @@ namespace CEMS.Data
         public DbSet<DriverProfile> DriverProfiles { get; set; }
         public DbSet<ReimbursementPayment> ReimbursementPayments { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

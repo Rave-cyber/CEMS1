@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
+using CEMS.Services;
 
 namespace CEMS.Controllers
 {
@@ -14,12 +15,16 @@ namespace CEMS.Controllers
         private readonly Data.ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly FuelPriceService _fuelPriceService;
+        private readonly NotificationService _notificationService;
 
-        public CEOController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public CEOController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, FuelPriceService fuelPriceService, NotificationService notificationService)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
+            _fuelPriceService = fuelPriceService;
+            _notificationService = notificationService;
         }
 
         // ───────────── Dashboard ─────────────
@@ -141,6 +146,10 @@ namespace CEMS.Controllers
             ViewBag.FilterStart = startDate.ToString("yyyy-MM-dd");
             ViewBag.FilterEnd = endDate.ToString("yyyy-MM-dd");
 
+            // Get current fuel prices
+            var fuelPrices = await _fuelPriceService.GetFuelPricesAsync();
+            ViewBag.FuelPrices = System.Text.Json.JsonSerializer.Serialize(fuelPrices);
+
             return View("Dashboard/Index");
         }
 
@@ -249,6 +258,9 @@ namespace CEMS.Controllers
 
             await _db.SaveChangesAsync();
 
+            // Notify driver, managers, and finance about CEO approval
+            await _notificationService.NotifyCEOApproved(id, report.UserId);
+
             TempData["Success"] = "Report approved by CEO and forwarded to Finance for reimbursement.";
             return RedirectToAction("Approvals");
         }
@@ -286,6 +298,9 @@ namespace CEMS.Controllers
 
             await _db.SaveChangesAsync();
 
+            // Notify driver and managers about CEO rejection
+            await _notificationService.NotifyCEORejected(id, report.UserId);
+
             TempData["Success"] = "Report rejected by CEO.";
             return RedirectToAction("Approvals");
         }
@@ -321,6 +336,9 @@ namespace CEMS.Controllers
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify driver, managers, and finance about CEO approval
+            await _notificationService.NotifyCEOApproved(id, report.UserId);
 
             TempData["Success"] = "Report approved for reimbursement.";
             return RedirectToAction("Approvals");
@@ -359,6 +377,9 @@ namespace CEMS.Controllers
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify driver and managers about CEO rejection
+            await _notificationService.NotifyCEORejected(id, report.UserId);
 
             TempData["Success"] = "Report rejected by CEO.";
             return RedirectToAction("Approvals");

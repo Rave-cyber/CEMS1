@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
+using CEMS.Services;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
@@ -17,11 +18,15 @@ namespace CEMS.Controllers
     {
         private readonly Data.ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly FuelPriceService _fuelPriceService;
+        private readonly NotificationService _notificationService;
 
-        public ManagerController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public ManagerController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, FuelPriceService fuelPriceService, NotificationService notificationService)
         {
             _db = db;
             _userManager = userManager;
+            _fuelPriceService = fuelPriceService;
+            _notificationService = notificationService;
         }
         
         public async Task<IActionResult> Dashboard(DateTime? start, DateTime? end)
@@ -68,6 +73,10 @@ namespace CEMS.Controllers
             // Active drivers
             var driverUsers = await _userManager.GetUsersInRoleAsync("Driver");
             ViewBag.ActiveDrivers = driverUsers.Count;
+
+            // Get current fuel prices
+            var fuelPrices = await _fuelPriceService.GetFuelPricesAsync();
+            ViewBag.FuelPrices = System.Text.Json.JsonSerializer.Serialize(fuelPrices);
 
             return View("Dashboard/Index");
         }
@@ -474,6 +483,16 @@ namespace CEMS.Controllers
             {
                 TempData["Success"] = "Over-budget report approved and forwarded to CEO for final approval.";
             }
+
+            // Notify driver and relevant roles
+            await _notificationService.NotifyReportApprovedByManager(report.Id, report.UserId, report.BudgetCheck == BudgetCheckStatus.OverBudget);
+
+            // If forwarded to CEO, also send a specific notification
+            if (report.BudgetCheck == BudgetCheckStatus.OverBudget)
+            {
+                await _notificationService.NotifyReportForwardedToCEO(report.Id, report.TotalAmount);
+            }
+
             return RedirectToAction("Reports");
         }
 
@@ -508,6 +527,9 @@ namespace CEMS.Controllers
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify the driver about rejection
+            await _notificationService.NotifyReportRejectedByManager(report.Id, report.UserId);
 
             TempData["Success"] = "Report rejected.";
 
@@ -569,6 +591,9 @@ namespace CEMS.Controllers
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify CEO about the forwarded report
+            await _notificationService.NotifyReportForwardedToCEO(report.Id, report.TotalAmount);
 
             TempData["Success"] = "Report forwarded to CEO for approval.";
             return RedirectToAction("Dashboard");

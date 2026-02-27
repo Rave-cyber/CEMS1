@@ -57,6 +57,9 @@
             <span>@DateTime.Now.ToString("ddd, MMM d")</span>
         </div>
 
+        <!-- Notification Bell -->
+        <partial name="_NotificationBell" />
+
         <!-- Profile dropdown -->
         <div>
             <div class="dropdown">
@@ -200,5 +203,8 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <form id="__notifAntiForgery" method="post" style="display:none;">@Html.AntiForgeryToken()</form>
+    <partial name="_NotificationScripts" />
 </body>
 </html>
