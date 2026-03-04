@@ -38,6 +38,7 @@ namespace CEMS.Controllers
             ViewBag.TotalBudget = budgets.Sum(b => b.Allocated);
 
             // Calculate spent dynamically from reimbursed expense items only (Finance paid, three-level date fallback for NULL dates)
+            // Calculate spent dynamically from reimbursed expense items only (match Finance behavior)
             var spentByCategory = await _db.ExpenseItems
                 .Where(ei => ei.Report != null && ei.Report.Reimbursed == true
                              && ((ei.Date >= startDate && ei.Date <= endDate.AddDays(1))
@@ -106,6 +107,7 @@ namespace CEMS.Controllers
             ViewBag.RecentOverBudget = recentDto;
 
             // ── Spending Trend Data (Weekly) ──
+            // Weekly trend: only include reimbursed reports to reflect actual paid activity
             var allReports = await _db.ExpenseReports
                 .Where(r => r.Reimbursed == true && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate)
                 .ToListAsync();
@@ -642,7 +644,8 @@ namespace CEMS.Controllers
         // ───────────── Expense Overview ─────────────
         public async Task<IActionResult> ExpenseOverview(string? category, string? status, DateTime? start, DateTime? end)
         {
-            var q = _db.ExpenseReports.Include(r => r.Items).AsQueryable();
+            // Only show reimbursed reports by default to match Finance semantics
+            var q = _db.ExpenseReports.Include(r => r.Items).Where(r => r.Reimbursed == true).AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<ReportStatus>(status, out var st))
                 q = q.Where(r => r.Status == st);
@@ -681,13 +684,23 @@ namespace CEMS.Controllers
         }
 
         // ───────────── Financial Reports & Analytics ─────────────
-        public async Task<IActionResult> Analytics()
+        public async Task<IActionResult> Analytics(DateTime? start = null, DateTime? end = null)
         {
             var budgets = await _db.Budgets.ToListAsync();
 
-            // Calculate spent dynamically from approved expense items (no date filter = all-time)
-            var spentByCategory = await _db.ExpenseItems
-                .Where(ei => ei.Report != null && ei.Report.Status == ReportStatus.Approved)
+            // Store filter dates for view (if provided)
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
+
+            // Calculate spent dynamically from approved expense items (optionally filtered by submission date range)
+            var itemsQuery = _db.ExpenseItems.Where(ei => ei.Report != null && ei.Report.Status == ReportStatus.Approved).AsQueryable();
+            if (start.HasValue && end.HasValue)
+            {
+                var startDt = start.Value.Date;
+                var endDt = end.Value.Date.AddDays(1).AddTicks(-1);
+                itemsQuery = itemsQuery.Where(ei => ei.Report.SubmissionDate >= startDt && ei.Report.SubmissionDate <= endDt);
+            }
+            var spentByCategory = await itemsQuery
                 .GroupBy(ei => ei.Category)
                 .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
                 .ToListAsync();
@@ -704,19 +717,41 @@ namespace CEMS.Controllers
 
             ViewBag.Budgets = dynamicBudgets;
 
-            var totalReports = await _db.ExpenseReports.CountAsync();
-            var approvedCount = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Approved).CountAsync();
-            var rejectedCount = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Rejected).CountAsync();
-            var pendingCount = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.PendingCEOApproval).CountAsync();
+            // Use optional date filter when counting reports so charts reflect the active range
+            var reportQueryForCounts = _db.ExpenseReports.AsQueryable();
+            if (start.HasValue)
+                reportQueryForCounts = reportQueryForCounts.Where(r => r.SubmissionDate >= start.Value);
+            if (end.HasValue)
+            {
+                var endDt = end.Value.Date.AddDays(1).AddTicks(-1);
+                reportQueryForCounts = reportQueryForCounts.Where(r => r.SubmissionDate <= endDt);
+            }
+
+            var totalReports = await reportQueryForCounts.CountAsync();
+            var approvedCount = await reportQueryForCounts.Where(r => r.Status == ReportStatus.Approved).CountAsync();
+            var rejectedCount = await reportQueryForCounts.Where(r => r.Status == ReportStatus.Rejected).CountAsync();
+            var pendingCount = await reportQueryForCounts.Where(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.PendingCEOApproval).CountAsync();
 
             ViewBag.TotalReports = totalReports;
             ViewBag.ApprovedCount = approvedCount;
             ViewBag.RejectedCount = rejectedCount;
             ViewBag.PendingCount = pendingCount;
 
-            var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            // Monthly reimbursed within filter range or current month if not provided
+            DateTime monthRangeStart;
+            DateTime monthRangeEnd;
+            if (start.HasValue && end.HasValue)
+            {
+                monthRangeStart = start.Value.Date;
+                monthRangeEnd = end.Value.Date.AddDays(1).AddTicks(-1);
+            }
+            else
+            {
+                monthRangeStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                monthRangeEnd = DateTime.UtcNow;
+            }
             var monthlyReimbursed = await _db.ExpenseReports
-                .Where(r => r.Reimbursed && r.SubmissionDate >= monthStart)
+                .Where(r => r.Reimbursed && r.SubmissionDate >= monthRangeStart && r.SubmissionDate <= monthRangeEnd)
                 .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
             ViewBag.MonthlyReimbursed = monthlyReimbursed;
 
@@ -724,13 +759,33 @@ namespace CEMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Metrics()
+        public async Task<IActionResult> Metrics(DateTime? start = null, DateTime? end = null)
         {
             var budgets = await _db.Budgets.ToListAsync();
 
-            // Calculate spent dynamically from approved expense items (all-time, no date filter)
-            var spentByCategory = await _db.ExpenseItems
-                .Where(ei => ei.Report != null && ei.Report.Status == ReportStatus.Approved)
+            // Build base queries filtered by optional date range (submission date)
+            var reportQuery = _db.ExpenseReports.AsQueryable();
+            if (start.HasValue)
+            {
+                reportQuery = reportQuery.Where(r => r.SubmissionDate >= start.Value);
+            }
+            if (end.HasValue)
+            {
+                var endDt = end.Value.Date.AddDays(1).AddTicks(-1);
+                reportQuery = reportQuery.Where(r => r.SubmissionDate <= endDt);
+            }
+
+            // Calculate spent dynamically from approved expense items within the filter (if provided)
+            var itemsQuery = _db.ExpenseItems.Where(ei => ei.Report != null && ei.Report.Status == ReportStatus.Approved).AsQueryable();
+            if (start.HasValue)
+                itemsQuery = itemsQuery.Where(ei => ei.Report.SubmissionDate >= start.Value);
+            if (end.HasValue)
+            {
+                var endDt = end.Value.Date.AddDays(1).AddTicks(-1);
+                itemsQuery = itemsQuery.Where(ei => ei.Report.SubmissionDate <= endDt);
+            }
+
+            var spentByCategory = await itemsQuery
                 .GroupBy(ei => ei.Category)
                 .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
                 .ToListAsync();
@@ -743,19 +798,28 @@ namespace CEMS.Controllers
                 Spent = spentByCategory.FirstOrDefault(s => s.Category == b.Category)?.Total ?? 0m
             }).ToList();
 
-            var totalPending = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.PendingCEOApproval).CountAsync();
-            var approved = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Approved).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-            var rejected = await _db.ExpenseReports.Where(r => r.Status == ReportStatus.Rejected).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-            var overBudgetCount = await _db.ExpenseReports.Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget).CountAsync();
+            var totalPending = await reportQuery.Where(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.PendingCEOApproval).CountAsync();
+            var approved = await reportQuery.Where(r => r.Status == ReportStatus.Approved).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+            var rejected = await reportQuery.Where(r => r.Status == ReportStatus.Rejected).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+            var overBudgetCount = await reportQuery.Where(r => r.BudgetCheck == BudgetCheckStatus.OverBudget).CountAsync();
 
-            // monthly expense trend (last 6 months)
+            // monthly expense trend (last 6 months) - each month is computed from reports intersecting the optional filter
             var months = Enumerable.Range(0, 6).Select(i => DateTime.UtcNow.AddMonths(-i)).Select(d => new { d.Year, d.Month }).Reverse().ToList();
             var monthlyData = new List<object>();
             foreach (var m in months)
             {
                 var mStart = new DateTime(m.Year, m.Month, 1);
                 var mEnd = mStart.AddMonths(1);
-                var total = await _db.ExpenseReports.Where(r => r.SubmissionDate >= mStart && r.SubmissionDate < mEnd).SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                // Only include reimbursed reports for monthly expense trend (match Finance behavior)
+                var q = _db.ExpenseReports.Where(r => r.Reimbursed == true && r.SubmissionDate >= mStart && r.SubmissionDate < mEnd);
+                if (start.HasValue)
+                    q = q.Where(r => r.SubmissionDate >= start.Value);
+                if (end.HasValue)
+                {
+                    var endDt = end.Value.Date.AddDays(1).AddTicks(-1);
+                    q = q.Where(r => r.SubmissionDate <= endDt);
+                }
+                var total = await q.SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
                 monthlyData.Add(new { label = mStart.ToString("MMM yyyy"), total });
             }
 

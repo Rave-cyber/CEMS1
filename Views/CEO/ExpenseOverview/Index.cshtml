@@ -2,6 +2,14 @@
     ViewData["Title"] = "Expense Overview";
     Layout = "~/Views/Shared/_CEOLayout.cshtml";
     var reports = ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto> ?? new List<CEMS.Models.PendingExpenseReportDto>();
+    var currentUserName = User?.Identity?.Name ?? "Unknown";
+    // Safely handle FilterStart/FilterEnd which may be string or DateTime
+    object rawStart = ViewBag.FilterStart;
+    object rawEnd = ViewBag.FilterEnd;
+    string filterStart;
+    string filterEnd;
+    if (rawStart is DateTime ds) filterStart = ds.ToString("yyyy-MM-dd"); else filterStart = rawStart as string ?? DateTime.UtcNow.ToString("yyyy-MM-01");
+    if (rawEnd is DateTime de) filterEnd = de.ToString("yyyy-MM-dd"); else filterEnd = rawEnd as string ?? DateTime.UtcNow.ToString("yyyy-MM-dd");
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -35,6 +43,12 @@
         box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
     }
 
+    /* Add a small right margin so the table doesn't touch the edge when exported */
+    .table-card { margin-right: 18px; }
+
+    /* Export metadata shown only during export */
+    .export-metadata { display: none; font-size: 0.95rem; color: var(--d-muted); margin-bottom: 8px; }
+
     @@media print {
         body, html { background: #fff !important; }
         nav, header, footer, .no-print, .export-btn { display: none !important; }
@@ -45,6 +59,15 @@
         .dash-table { width: 100% !important; border-collapse: collapse !important; }
         .dash-table th, .dash-table td { border: 1px solid #ddd !important; padding: 8px !important; text-align: left !important; }
         .dash-table th { background: #f8fafc !important; font-weight: bold !important; }
+    }
+
+    /* helper to hide cells only during PDF generation via JS toggling */
+    .hide-for-pdf { display: none !important; }
+
+    /* Quick filter active state */
+    .quick-filter .btn.active {
+        background: var(--bs-primary); color: #fff; border-color: var(--bs-primary);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
 </style>
 
@@ -61,6 +84,7 @@
             <button onclick="downloadExpenseOverviewPDF()" class="export-btn no-print">
                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </button>
+            <div class="export-metadata no-print" id="exportMetadata">Exported by: <strong>@currentUserName</strong> on <strong id="exportTimestamp"></strong></div>
         </div>
 
         <!-- Quick Filter & Date Range -->
@@ -69,11 +93,11 @@
                 <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 160px;">
                         <label class="small text-muted" style="font-weight: 600; margin-bottom: 4px; display: block;">From</label>
-                        <input type="date" id="expenseStart" value="@((string)ViewBag.FilterStart ?? DateTime.UtcNow.ToString("yyyy-MM-01"))" />
+                        <input type="date" id="expenseStart" value="@filterStart" />
                     </div>
                     <div style="flex: 1; min-width: 160px;">
                         <label class="small text-muted" style="font-weight: 600; margin-bottom: 4px; display: block;">To</label>
-                        <input type="date" id="expenseEnd" value="@((string)ViewBag.FilterEnd ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))" />
+                        <input type="date" id="expenseEnd" value="@filterEnd" />
                     </div>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
@@ -178,7 +202,7 @@
     function downloadExpenseOverviewPDF() {
         const element = document.querySelector('.page-wrapper');
         const opt = {
-            margin: 10,
+            margin: [12, 18, 12, 18], // top, right, bottom, left
             filename: 'Expense_Overview_' + new Date().toISOString().slice(0, 10) + '.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
@@ -188,15 +212,22 @@
         // Hide non-essential elements temporarily
         const filterCard = document.querySelector('.filter-card');
         const exportBtn = document.querySelector('.export-btn');
+        const exportMeta = document.getElementById('exportMetadata');
+        const actionCells = document.querySelectorAll('#ceoExpenseTable th:last-child, #ceoExpenseTable td:last-child');
 
         if (filterCard) filterCard.style.display = 'none';
         if (exportBtn) exportBtn.style.display = 'none';
+        if (exportMeta) exportMeta.style.display = 'block';
+        if (actionCells) actionCells.forEach(function(c){ c.classList.add('hide-for-pdf'); });
+
 
         // Generate PDF
         html2pdf().set(opt).from(element).save().then(() => {
             // Restore visibility
             if (filterCard) filterCard.style.display = '';
             if (exportBtn) exportBtn.style.display = '';
+            if (exportMeta) exportMeta.style.display = 'none';
+            if (actionCells) actionCells.forEach(function(c){ c.classList.remove('hide-for-pdf'); });
         });
     }
 
@@ -204,6 +235,7 @@
     document.addEventListener('DOMContentLoaded', function(){
         var start = document.getElementById('expenseStart');
         var end = document.getElementById('expenseEnd');
+        var quickButtons = document.querySelectorAll('.quick-filter [data-range]');
         function apply(){
             var s = start?.value || ''; var e = end?.value || ''; var qs = [];
             if(s) qs.push('start=' + encodeURIComponent(s)); if(e) qs.push('end=' + encodeURIComponent(e));
@@ -224,6 +256,36 @@
                 setTimeout(apply, 120);
             });
         });
+
+        // Highlight the quick filter that matches current range
+        function highlightMatchingRange(){
+            if(!start || !end) return;
+            var s = start.value; var e = end.value; if(!s || !e) return;
+            var sDate = new Date(s); var eDate = new Date(e);
+            quickButtons.forEach(function(b){ b.classList.remove('active'); });
+            var now = new Date();
+            // today
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            if (sDate.getTime() === today.getTime() && eDate.getTime() === today.getTime()) {
+                document.querySelector('.quick-filter [data-range="today"]').classList.add('active'); return;
+            }
+            // week
+            var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+            if (sDate.getTime() === weekStart.getTime() && eDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) {
+                document.querySelector('.quick-filter [data-range="week"]').classList.add('active'); return;
+            }
+            // month
+            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (sDate.getTime() === monthStart.getTime() && eDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) {
+                document.querySelector('.quick-filter [data-range="month"]').classList.add('active'); return;
+            }
+            // year
+            var yearStart = new Date(now.getFullYear(), 0, 1);
+            if (sDate.getTime() === yearStart.getTime() && eDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) {
+                document.querySelector('.quick-filter [data-range="year"]').classList.add('active'); return;
+            }
+        }
+        highlightMatchingRange();
     });
 </script>
 
