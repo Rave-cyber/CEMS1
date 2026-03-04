@@ -65,6 +65,10 @@
         box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
     }
 
+    /* Highlight for approved rows when active (blue accent) */
+    .approved-row { transition: box-shadow .18s ease, border-left-color .18s ease; }
+    .approved-row.highlight { box-shadow: 0 6px 18px rgba(26,107,181,0.08); border-left: 4px solid rgba(26,107,181,0.9); }
+
     .page-wrapper {
         background: var(--d-bg);
         min-height: calc(100vh - 80px);
@@ -332,11 +336,23 @@
                 }, 150);
             });
         });
+
+        // Highlight approved rows on load and when filters change
+        function highlightApprovedRows() {
+            document.querySelectorAll('#financeReportsTable tbody tr.approved-row').forEach(function(row){
+                row.classList.add('highlight');
+            });
+        }
+        highlightApprovedRows();
     });
     </script>
         <!-- Filters: styled like Reimbursements filter card -->
         <div class="filter-card">
             <form id="approvedFilters" class="row g-3" method="get" action="@Context.Request.Path">
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" id="approvedSearch" class="form-control form-control-sm" value="@((string)ViewBag.FilterSearch ?? "")" placeholder="Report ID, driver name..." />
+                </div>
                 <div class="col-md-3">
                     <label class="form-label">From</label>
                     <input type="date" name="start" id="approvedStart" class="form-control form-control-sm" value="@((string)ViewBag.FilterStart ?? "")" />
@@ -345,31 +361,7 @@
                     <label class="form-label">To</label>
                     <input type="date" name="end" id="approvedEnd" class="form-control form-control-sm" value="@((string)ViewBag.FilterEnd ?? "")" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    @{ var _selReimb = ((string)ViewBag.FilterReimbursed ?? "pending").ToLowerInvariant(); }
-                    <select id="approvedReimbursed" name="reimbursed" class="form-select form-select-sm">
-                        @if (_selReimb == "pending") {
-                            <option value="pending" selected>Pending</option>
-                            <option value="initiated">Initiated</option>
-                            <option value="done">Done</option>
-                        } else if (_selReimb == "initiated") {
-                            <option value="pending">Pending</option>
-                            <option value="initiated" selected>Initiated</option>
-                            <option value="done">Done</option>
-                        } else if (_selReimb == "done") {
-                            <option value="pending">Pending</option>
-                            <option value="initiated">Initiated</option>
-                            <option value="done" selected>Done</option>
-                        } else {
-                            <option value="pending">Pending</option>
-                            <option value="initiated">Initiated</option>
-                            <option value="done">Done</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
+                <div class="col-md-3 d-flex align-items-end" style="justify-content:flex-end;">
                     <div class="d-flex gap-2">
                         <button type="button" class="quick-filter-btn" data-range="today">Today</button>
                         <button type="button" class="quick-filter-btn" data-range="week">Week</button>
@@ -404,7 +396,7 @@
                                 @foreach(var dto in ViewBag.ApprovedReports as List<CEMS.Models.PendingExpenseReportDto>)
                                 {
                                     var r = dto.Report;
-                                <tr>
+                                <tr class="approved-row">
                                     <td><strong>@r.Id</strong></td>
                                     <td>
                                         @{

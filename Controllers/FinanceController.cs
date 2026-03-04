@@ -10,6 +10,9 @@ using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using iText.Kernel.Font;
+using iText.IO.Font.Constants;
+using iText.Kernel.Geom;
 
 namespace CEMS.Controllers
 {
@@ -48,18 +51,19 @@ namespace CEMS.Controllers
 
             var reports = await reportsQuery.ToListAsync();
 
-            var userIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
-            var users = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
+            var reportUserIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
+            var userIds = reportUserIds; // legacy alias kept for compatibility
+            var users = await _userManager.Users.Where(u => reportUserIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
 
             // Also load profile display names (Driver/Manager/CEO/Finance) to show full names instead of emails
             var profileNames = new Dictionary<string, string>();
-            var driverProfiles = await _db.DriverProfiles.Where(p => userIds.Contains(p.UserId)).ToListAsync();
+            var driverProfiles = await _db.DriverProfiles.Where(p => reportUserIds.Contains(p.UserId)).ToListAsync();
             foreach (var p in driverProfiles) profileNames[p.UserId] = p.FullName ?? p.User?.UserName ?? p.UserId;
-            var managerProfiles = await _db.ManagerProfiles.Where(p => userIds.Contains(p.UserId)).ToListAsync();
+            var managerProfiles = await _db.ManagerProfiles.Where(p => reportUserIds.Contains(p.UserId)).ToListAsync();
             foreach (var p in managerProfiles) profileNames[p.UserId] = p.FullName ?? p.User?.UserName ?? p.UserId;
-            var financeProfiles = await _db.FinanceProfiles.Where(p => userIds.Contains(p.UserId)).ToListAsync();
+            var financeProfiles = await _db.FinanceProfiles.Where(p => reportUserIds.Contains(p.UserId)).ToListAsync();
             foreach (var p in financeProfiles) profileNames[p.UserId] = p.FullName ?? p.User?.UserName ?? p.UserId;
-            var ceoProfiles = await _db.CEOProfiles.Where(p => userIds.Contains(p.UserId)).ToListAsync();
+            var ceoProfiles = await _db.CEOProfiles.Where(p => reportUserIds.Contains(p.UserId)).ToListAsync();
             foreach (var p in ceoProfiles) profileNames[p.UserId] = p.FullName ?? p.User?.UserName ?? p.UserId;
 
             ViewBag.UserFullNames = profileNames;
@@ -159,7 +163,7 @@ namespace CEMS.Controllers
         }
 
         // List approved reports (visible to finance) — either within budget or CEO approved
-        public async Task<IActionResult> ApprovedReports(DateTime? start, DateTime? end, string? reimbursed)
+        public async Task<IActionResult> ApprovedReports(DateTime? start, DateTime? end, string? reimbursed, string? search)
         {
             var now = DateTime.UtcNow.Date;
             var startDate = start?.Date ?? new DateTime(now.Year, now.Month, 1);
@@ -188,11 +192,47 @@ namespace CEMS.Controllers
 
             var reports = await q.OrderByDescending(r => r.SubmissionDate).ToListAsync();
 
+            // Apply search filter (report id or driver name/full name)
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTrim = search.Trim();
+                if (int.TryParse(searchTrim, out var idSearch))
+                {
+                    reports = reports.Where(r => r.Id == idSearch).ToList();
+                }
+                else
+                {
+                    var lower = searchTrim.ToLowerInvariant();
+                    // build dictionary of all users' usernames to search against
+                    var usersById = await _userManager.Users.ToDictionaryAsync(u => u.Id, u => u.UserName ?? "");
+
+                    // collect user ids that match by profile full name
+                    var matchingUserIds = new List<string>();
+                    var driverProfiles = await _db.DriverProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(driverProfiles.Select(p => p.UserId));
+                    var mgrProfiles = await _db.ManagerProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(mgrProfiles.Select(p => p.UserId));
+                    var finProfiles = await _db.FinanceProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(finProfiles.Select(p => p.UserId));
+                    var ceoProfiles = await _db.CEOProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(ceoProfiles.Select(p => p.UserId));
+
+                    // usernames that match
+                    matchingUserIds.AddRange(usersById.Where(kv => (kv.Value ?? string.Empty).ToLower().Contains(lower)).Select(kv => kv.Key));
+
+                    matchingUserIds = matchingUserIds.Distinct().ToList();
+
+                    reports = reports.Where(r => (r.UserId != null && matchingUserIds.Contains(r.UserId)) || (r.SubmissionDate.ToString().ToLower().Contains(lower))).ToList();
+                }
+            }
+
             var userIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
             var users = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
 
             var dto = reports.Select(r => new PendingExpenseReportDto { Report = r, UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] : "Unknown" }).ToList();
             ViewBag.ApprovedReports = dto;
+
+            ViewBag.FilterSearch = search ?? "";
 
             // load payment records for these reports so the view can show "Initiated" state
             var reportIds = reports.Select(r => r.Id).ToList();
@@ -258,18 +298,60 @@ namespace CEMS.Controllers
         }
 
         // Reimbursements list (same as dashboard but explicit view)
-        public async Task<IActionResult> Reimbursements()
+        public async Task<IActionResult> Reimbursements(string? search, DateTime? start, DateTime? end)
         {
-            var reports = await _db.ExpenseReports
-                .Where(r => r.Status == ReportStatus.Approved && !r.Reimbursed && (r.BudgetCheck == BudgetCheckStatus.WithinBudget || r.CEOApproved == true))
-                .OrderByDescending(r => r.SubmissionDate)
-                .ToListAsync();
+            var q = _db.ExpenseReports
+                .Where(r => r.Status == ReportStatus.Approved && !r.Reimbursed && (r.BudgetCheck == BudgetCheckStatus.WithinBudget || r.CEOApproved == true));
+
+            // Date range filter (optional)
+            if (start.HasValue || end.HasValue)
+            {
+                var s = start?.Date ?? DateTime.MinValue;
+                var e = end?.Date ?? DateTime.UtcNow.Date;
+                var eExclusive = e.AddDays(1);
+                q = q.Where(r => r.SubmissionDate >= s && r.SubmissionDate < eExclusive);
+            }
+
+            // Apply search (report id or driver / profile name)
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTrim = search.Trim();
+                if (int.TryParse(searchTrim, out var idSearch))
+                {
+                    q = q.Where(r => r.Id == idSearch);
+                }
+                else
+                {
+                    var lower = searchTrim.ToLowerInvariant();
+                    var usersById = await _userManager.Users.ToDictionaryAsync(u => u.Id, u => u.UserName ?? "");
+
+                    var matchingUserIds = new List<string>();
+                    var driverProfiles = await _db.DriverProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(driverProfiles.Select(p => p.UserId));
+                    var mgrProfiles = await _db.ManagerProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(mgrProfiles.Select(p => p.UserId));
+                    var finProfiles = await _db.FinanceProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(finProfiles.Select(p => p.UserId));
+                    var ceoProfiles = await _db.CEOProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(ceoProfiles.Select(p => p.UserId));
+
+                    matchingUserIds.AddRange(usersById.Where(kv => (kv.Value ?? string.Empty).ToLower().Contains(lower)).Select(kv => kv.Key));
+                    matchingUserIds = matchingUserIds.Distinct().ToList();
+
+                    q = q.Where(r => r.UserId != null && matchingUserIds.Contains(r.UserId));
+                }
+            }
+
+            var reports = await q.OrderByDescending(r => r.SubmissionDate).ToListAsync();
 
             var userIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
             var users = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
 
             var dto = reports.Select(r => new PendingExpenseReportDto { Report = r, UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] : "Unknown" }).ToList();
             ViewBag.Reports = dto;
+            ViewBag.FilterSearch = search ?? "";
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd") ?? "";
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd") ?? "";
 
             // Load existing payment links for these reports
             var reportIds = reports.Select(r => r.Id).ToList();
@@ -392,73 +474,97 @@ namespace CEMS.Controllers
                 .Where(u => allUserIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => u.UserName ?? u.Email ?? "Unknown");
 
-            // Generate PDF using iText
+            // Generate PDF using iText (improved layout)
             using (var memoryStream = new System.IO.MemoryStream())
             {
                 var writer = new PdfWriter(memoryStream);
                 var pdf = new PdfDocument(writer);
+                // use landscape A4 to give more horizontal space
+                pdf.SetDefaultPageSize(PageSize.A4.Rotate());
                 var document = new Document(pdf);
+
+                // tighter page margins
+                document.SetMargins(24, 24, 24, 24);
+
+                // fonts
+                var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+                var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
 
                 // Title
                 var title = new Paragraph("Payment History Report")
-                    .SetFontSize(18)
-                    .SetBold()
-                    .SetMarginBottom(10);
+                    .SetFont(bold)
+                    .SetFontSize(16)
+                    .SetMarginBottom(8);
                 document.Add(title);
 
-                // Report info
-                var reportInfo = new Paragraph()
-                    .Add($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n")
-                    .Add($"Total Records: {payments.Count}\n")
-                    .SetFontSize(10)
-                    .SetMarginBottom(15);
+                // Determine exporter name
+                var exporterId = _userManager.GetUserId(User);
+                var exporter = exporterId != null ? await _userManager.FindByIdAsync(exporterId) : null;
+                var exporterName = exporter != null ? (exporter.UserName ?? exporter.Email ?? exporterId) : (exporterId ?? "Unknown");
+                if (!string.IsNullOrEmpty(exporterId))
+                {
+                    var dprof = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == exporterId);
+                    if (dprof != null && !string.IsNullOrEmpty(dprof.FullName)) exporterName = dprof.FullName;
+                    var mprof = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == exporterId);
+                    if (mprof != null && !string.IsNullOrEmpty(mprof.FullName)) exporterName = mprof.FullName;
+                    var fprof = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == exporterId);
+                    if (fprof != null && !string.IsNullOrEmpty(fprof.FullName)) exporterName = fprof.FullName;
+                    var cprof = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == exporterId);
+                    if (cprof != null && !string.IsNullOrEmpty(cprof.FullName)) exporterName = cprof.FullName;
+                }
 
-                if (!string.IsNullOrEmpty(search))
-                    reportInfo.Add($"Search: {search}\n");
-                if (!string.IsNullOrEmpty(status))
-                    reportInfo.Add($"Status Filter: {status}\n");
-                if (start.HasValue)
-                    reportInfo.Add($"Date From: {start:yyyy-MM-dd}\n");
-                if (end.HasValue)
-                    reportInfo.Add($"Date To: {end:yyyy-MM-dd}\n");
+                // Report info (include exporter)
+                var reportInfo = new Paragraph()
+                    .SetFont(font)
+                    .SetFontSize(9)
+                    .SetMarginBottom(10)
+                    .Add($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n")
+                    .Add($"Exported by: {exporterName}\n")
+                    .Add($"Total Records: {payments.Count}\n");
+
+                if (!string.IsNullOrEmpty(search)) reportInfo.Add($"Search: {search}\n");
+                if (!string.IsNullOrEmpty(status)) reportInfo.Add($"Status Filter: {status}\n");
+                if (start.HasValue) reportInfo.Add($"Date From: {start:yyyy-MM-dd}\n");
+                if (end.HasValue) reportInfo.Add($"Date To: {end:yyyy-MM-dd}\n");
 
                 document.Add(reportInfo);
 
-                // Table with 10 columns
-                var table = new Table(UnitValue.CreatePercentArray(new[] { 10f, 15f, 12f, 10f, 12f, 15f, 10f, 10f, 10f, 16f }));
+                // Table with adjusted column widths to avoid scrambling
+                var columnWidths = new float[] { 6f, 26f, 8f, 6f, 10f, 24f, 8f, 8f, 8f, 12f };
+                var table = new Table(UnitValue.CreatePercentArray(columnWidths));
                 table.SetWidth(UnitValue.CreatePercentValue(100));
+                table.SetKeepTogether(true);
 
                 // Table headers
                 var headers = new[] { "Report ID", "Driver / Payee", "Amount", "Currency", "Payment Method", "PayMongo ID", "Ref #", "Status", "Paid At", "Processed By" };
                 foreach (var header in headers)
                 {
                     var cell = new Cell()
-                        .Add(new Paragraph(header).SetBold())
+                        .Add(new Paragraph(header).SetFont(bold).SetFontSize(9))
                         .SetBackgroundColor(new iText.Kernel.Colors.DeviceRgb(16, 185, 129))
                         .SetFontColor(new iText.Kernel.Colors.DeviceRgb(255, 255, 255))
-                        .SetPadding(6);
+                        .SetPadding(4);
                     table.AddHeaderCell(cell);
                 }
 
-                // Table rows
+                // Table rows (smaller font to fit)
                 foreach (var p in payments)
                 {
-                    var driverName = (p.Report?.UserId != null && userMap.ContainsKey(p.Report.UserId))
-                        ? userMap[p.Report.UserId] : "—";
-                    var processedByName = (p.ProcessedByUserId != null && userMap.ContainsKey(p.ProcessedByUserId))
-                        ? userMap[p.ProcessedByUserId] : "—";
+                    var driverName = (p.Report?.UserId != null && userMap.ContainsKey(p.Report.UserId)) ? userMap[p.Report.UserId] : "—";
+                    var processedByName = (p.ProcessedByUserId != null && userMap.ContainsKey(p.ProcessedByUserId)) ? userMap[p.ProcessedByUserId] : "—";
                     var paidAtStr = p.PaidAt.HasValue ? p.PaidAt.Value.ToLocalTime().ToString("MMM d, yyyy") : "—";
+                    var paymongo = string.IsNullOrEmpty(p.PayMongoLinkId) ? "" : (p.PayMongoLinkId.Length > 18 ? p.PayMongoLinkId.Substring(0, 12) + "..." + p.PayMongoLinkId.Substring(p.PayMongoLinkId.Length-6) : p.PayMongoLinkId);
 
-                    table.AddCell(new Cell().Add(new Paragraph($"#{p.ReportId}").SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph(driverName).SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph($"₱{p.Amount:N2}").SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph("PHP").SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph("GCash").SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph(p.PayMongoLinkId.Substring(0, Math.Min(15, p.PayMongoLinkId.Length)) + (p.PayMongoLinkId.Length > 15 ? "..." : "")).SetFontSize(7)));
-                    table.AddCell(new Cell().Add(new Paragraph($"RPT-{p.ReportId}-{p.Id}").SetFontSize(7)));
-                    table.AddCell(new Cell().Add(new Paragraph(p.Status).SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph(paidAtStr).SetFontSize(8)));
-                    table.AddCell(new Cell().Add(new Paragraph(processedByName).SetFontSize(8)));
+                    table.AddCell(new Cell().Add(new Paragraph($"#{p.ReportId}").SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph(driverName).SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph($"₱{p.Amount:N2}").SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph("PHP").SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph("GCash").SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph(paymongo).SetFont(font).SetFontSize(7)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph($"RPT-{p.ReportId}-{p.Id}").SetFont(font).SetFontSize(7)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph(p.Status).SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph(paidAtStr).SetFont(font).SetFontSize(8)).SetPadding(4));
+                    table.AddCell(new Cell().Add(new Paragraph(processedByName).SetFont(font).SetFontSize(8)).SetPadding(4));
                 }
 
                 document.Add(table);
