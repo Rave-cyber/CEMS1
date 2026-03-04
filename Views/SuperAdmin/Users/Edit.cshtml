@@ -3,50 +3,284 @@
     Layout = null;
 }
 
-<form asp-action="EditUser" method="post">
-    <input type="hidden" name="UserId" value="@Model.UserId" />
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label fw-semibold small text-muted">Email</label>
-            <input type="email" name="Email" class="form-control form-control-sm" value="@Model.Email" required />
+<style>
+    .edit-modal-stepper {
+        padding: 20px;
+        border-bottom: 1px solid var(--d-border);
+    }
+
+    .edit-stepper-indicators {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .edit-stepper-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .edit-stepper-indicator {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--d-border);
+        color: var(--d-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .edit-stepper-indicator.active {
+        background: var(--d-primary);
+        color: white;
+    }
+
+    .edit-stepper-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--d-muted);
+        text-align: center;
+    }
+
+    .edit-stepper-label.active {
+        color: var(--d-text);
+    }
+
+    .edit-stepper-line {
+        flex: 1;
+        height: 2px;
+        background: var(--d-border);
+        margin-bottom: 20px;
+    }
+
+    .edit-step {
+        margin-top: 0;
+    }
+
+    .edit-step h6 {
+        font-weight: 700;
+        color: var(--d-text);
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+    }
+</style>
+
+<!-- Stepper Progress -->
+<div class="edit-modal-stepper">
+    <div class="edit-stepper-indicators">
+        <!-- Step 1 -->
+        <div class="edit-stepper-step">
+            <div class="edit-stepper-indicator active" id="editStep1Ind" onclick="editShowStep(1)">1</div>
+            <span class="edit-stepper-label active">Account</span>
         </div>
-        <div class="col-md-6">
-            <label class="form-label fw-semibold small text-muted">Full Name</label>
-            <input type="text" name="FullName" class="form-control form-control-sm" value="@Model.FullName" />
+        <div class="edit-stepper-line"></div>
+
+        <!-- Step 2 -->
+        <div class="edit-stepper-step">
+            <div class="edit-stepper-indicator" id="editStep2Ind" onclick="editShowStep(2)">2</div>
+            <span class="edit-stepper-label">Personal</span>
         </div>
-        <div class="col-md-6">
-            <label class="form-label fw-semibold small text-muted">Contact Number</label>
-            <input type="text" name="ContactNumber" class="form-control form-control-sm" value="@Model.ContactNumber" />
+        <div class="edit-stepper-line"></div>
+
+        <!-- Step 3 -->
+        <div class="edit-stepper-step">
+            <div class="edit-stepper-indicator" id="editStep3Ind" onclick="editShowStep(3)">3</div>
+            <span class="edit-stepper-label">Address</span>
         </div>
-        <div class="col-md-6">
-            <label class="form-label fw-semibold small text-muted">Street / House No.</label>
-            <input type="text" name="Street" class="form-control form-control-sm" value="@Model.Street" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-semibold small text-muted">Barangay</label>
-            <input type="text" name="Barangay" class="form-control form-control-sm" value="@Model.Barangay" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-semibold small text-muted">City / Municipality</label>
-            <input type="text" name="City" class="form-control form-control-sm" value="@Model.City" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label fw-semibold small text-muted">Province</label>
-            <input type="text" name="Province" class="form-control form-control-sm" value="@Model.Province" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold small text-muted">ZIP Code</label>
-            <input type="text" name="ZipCode" class="form-control form-control-sm" value="@Model.ZipCode" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold small text-muted">Country</label>
-            <input type="text" name="Country" class="form-control form-control-sm" value="@Model.Country" />
+        <div class="edit-stepper-line"></div>
+
+        <!-- Step 4 -->
+        <div class="edit-stepper-step">
+            <div class="edit-stepper-indicator" id="editStep4Ind" onclick="editShowStep(4)">4</div>
+            <span class="edit-stepper-label">Review</span>
         </div>
     </div>
-    <div class="d-flex gap-2 mt-4 pt-3 border-top">
-        <button type="submit" class="btn btn-primary btn-sm px-4">
-            <i class="bi bi-check-lg me-1"></i> Save Changes
-        </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-    </div>
-</form>
+</div>
+
+<div class="modal-body">
+    <form id="editUserForm" asp-action="EditUser" method="post">
+        <input type="hidden" name="UserId" value="@Model.UserId" />
+
+        <div id="editStep1" class="edit-step" style="display:block;">
+            <h6>Account</h6>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-muted">Email <span style="color:red;">*</span></label>
+                    <input type="email" name="Email" class="form-control form-control-sm" value="@Model.Email" required />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-semibold small text-muted">Password</label>
+                    <input type="password" name="Password" class="form-control form-control-sm" placeholder="Leave blank to keep current" autocomplete="new-password" />
+                    <small class="text-muted">Minimum 6 characters</small>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-semibold small text-muted">Confirm Password</label>
+                    <input type="password" name="ConfirmPassword" class="form-control form-control-sm" placeholder="Re-enter password" autocomplete="new-password" />
+                </div>
+            </div>
+        </div>
+
+        <div id="editStep2" class="edit-step" style="display:none;">
+            <h6>Personal</h6>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-muted">Full Name</label>
+                    <input type="text" name="FullName" class="form-control form-control-sm" value="@Model.FullName" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-muted">Contact Number</label>
+                    <input type="text" name="ContactNumber" class="form-control form-control-sm" value="@Model.ContactNumber" />
+                </div>
+            </div>
+        </div>
+
+        <div id="editStep3" class="edit-step" style="display:none;">
+            <h6>Address</h6>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-muted">Street / House No.</label>
+                    <input type="text" name="Street" id="editStreet" class="form-control form-control-sm" value="@Model.Street" />
+                </div>
+                <div class="col-6 psgc-wrapper">
+                    <label class="form-label fw-semibold small text-muted">Province</label>
+                    <input type="text" name="Province" id="editProvince" class="form-control form-control-sm" value="@Model.Province" autocomplete="off" />
+                    <input type="hidden" id="editProvinceCode" />
+                    <div id="editProvinceDropdown" class="psgc-dropdown"></div>
+                </div>
+                <div class="col-6 psgc-wrapper">
+                    <label class="form-label fw-semibold small text-muted">City / Municipality</label>
+                    <input type="text" name="City" id="editCity" class="form-control form-control-sm" value="@Model.City" autocomplete="off" />
+                    <input type="hidden" id="editCityCode" />
+                    <div id="editCityDropdown" class="psgc-dropdown"></div>
+                </div>
+                <div class="col-6 psgc-wrapper">
+                    <label class="form-label fw-semibold small text-muted">Barangay</label>
+                    <input type="text" name="Barangay" id="editBarangay" class="form-control form-control-sm" value="@Model.Barangay" autocomplete="off" />
+                    <div id="editBarangayDropdown" class="psgc-dropdown"></div>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-semibold small text-muted">ZIP Code</label>
+                    <input type="text" name="ZipCode" class="form-control form-control-sm" value="@Model.ZipCode" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-muted">Country</label>
+                    <input type="text" name="Country" class="form-control form-control-sm" value="@Model.Country" />
+                </div>
+            </div>
+        </div>
+
+        <div id="editStep4" class="edit-step" style="display:none;">
+            <h6>Review</h6>
+            <div class="border p-3 rounded" style="background: var(--d-bg); border-color: var(--d-border)!important; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--d-border);">
+                    <strong>Email:</strong> <span id="editReviewEmail">@Model.Email</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--d-border);">
+                    <strong>Name:</strong> <span id="editReviewName">@Model.FullName</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--d-border);">
+                    <strong>Contact:</strong> <span id="editReviewContact">@Model.ContactNumber</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 8px;">
+                    <strong>Address:</strong> <span id="editReviewAddress" style="text-align:right;">@Model.Street, @Model.Barangay, @Model.City, @Model.Province</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 pt-3 border-top" style="border-color: var(--d-border)!important;">
+            <button type="button" id="editPrevBtn" class="btn btn-outline-secondary btn-sm px-3" style="display:none;">
+                <i class="bi bi-arrow-left me-1"></i>Previous
+            </button>
+            <div class="ms-auto d-flex gap-2">
+                <button type="button" id="editNextBtn" class="btn btn-primary btn-sm px-3">
+                    Next<i class="bi bi-arrow-right ms-1"></i>
+                </button>
+                <button type="submit" id="editSubmitBtn" class="btn btn-success btn-sm px-4" style="display:none;">
+                    <i class="bi bi-check-lg me-1"></i>Save Changes
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Edit modal stepper logic
+    var editCurrentStep = 1, editTotalSteps = 4;
+
+    function editShowStep(s) {
+        for (var i = 1; i <= editTotalSteps; i++) {
+            var el = document.getElementById('editStep' + i);
+            if (el) el.style.display = 'none';
+        }
+        var targetEl = document.getElementById('editStep' + s);
+        if (targetEl) targetEl.style.display = 'block';
+
+        // Update indicators
+        for (var i = 1; i <= editTotalSteps; i++) {
+            var ind = document.getElementById('editStep' + i + 'Ind');
+            var label = ind ? ind.parentElement.querySelector('.edit-stepper-label') : null;
+            if (ind) {
+                if (i <= s) {
+                    ind.classList.add('active');
+                    if (label) label.classList.add('active');
+                } else {
+                    ind.classList.remove('active');
+                    if (label) label.classList.remove('active');
+                }
+            }
+        }
+
+        document.getElementById('editPrevBtn').style.display = s === 1 ? 'none' : 'inline-block';
+        document.getElementById('editNextBtn').style.display = s === editTotalSteps ? 'none' : 'inline-block';
+        document.getElementById('editSubmitBtn').style.display = s === editTotalSteps ? 'inline-block' : 'none';
+        editCurrentStep = s;
+    }
+
+    function editUpdateReview() {
+        document.getElementById('editReviewEmail').textContent = document.querySelector('input[name="Email"]').value || '-';
+        document.getElementById('editReviewName').textContent = document.querySelector('input[name="FullName"]').value || '-';
+        document.getElementById('editReviewContact').textContent = document.querySelector('input[name="ContactNumber"]').value || '-';
+        var parts = [
+            document.getElementById('editStreet').value,
+            document.getElementById('editBarangay').value,
+            document.getElementById('editCity').value,
+            document.getElementById('editProvince').value,
+            document.querySelector('input[name="ZipCode"]').value
+        ].filter(x => x);
+        document.getElementById('editReviewAddress').textContent = parts.length ? parts.join(', ') : '-';
+    }
+
+    document.getElementById('editNextBtn')?.addEventListener('click', function () {
+        // Validate step 1: password confirmation
+        if (editCurrentStep === 1) {
+            var email = document.querySelector('input[name="Email"]').value.trim();
+            var pass = document.querySelector('input[name="Password"]').value;
+            var confirm = document.querySelector('input[name="ConfirmPassword"]').value;
+
+            if (!email) { alert('Email is required.'); return; }
+            if (pass || confirm) {
+                if (pass.length < 6) { alert('Password must be at least 6 characters.'); return; }
+                if (pass !== confirm) { alert('Passwords do not match.'); return; }
+            }
+        }
+        if (editCurrentStep === 3) { editUpdateReview(); }
+        editShowStep(editCurrentStep + 1);
+    });
+
+    document.getElementById('editPrevBtn')?.addEventListener('click', function () {
+        editShowStep(editCurrentStep - 1);
+    });
+
+    // Preload PSGC provinces on modal load
+    setTimeout(function () {
+        if (window.psgcLoadProvinces) window.psgcLoadProvinces();
+    }, 100);
+</script>

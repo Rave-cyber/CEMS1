@@ -38,5 +38,14 @@ namespace CEMS.Controllers
 
         [MaxLength(20)]
         public string? ContactNumber { get; set; }
+
+        // Optional password change
+        [DataType(DataType.Password)]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
+        public string? Password { get; set; }
+
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Passwords do not match.")]
+        public string? ConfirmPassword { get; set; }
     }
 }

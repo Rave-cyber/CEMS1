@@ -163,20 +163,33 @@
 
     <div class="w-100">
         <main role="main" class="pb-3">
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @TempData["Success"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <!-- Toast container for transient notifications (replaces top alerts) -->
+            <div aria-live="polite" aria-atomic="true" class="position-relative">
+                <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1080;">
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    @TempData["Success"]
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    @TempData["Error"]
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    }
                 </div>
-            }
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @TempData["Error"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            }
+            </div>
             @RenderBody()
         </main>
     </div>
@@ -189,6 +202,22 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Auto-show and auto-hide bootstrap toasts rendered from TempData
+        (function () {
+            try {
+                document.addEventListener('DOMContentLoaded', function () {
+                    var container = document.getElementById('toastContainer');
+                    if (!container) return;
+                    var toasts = container.querySelectorAll('.toast');
+                    toasts.forEach(function (t) {
+                        var toast = new bootstrap.Toast(t, { delay: 1000 }); // 1s visible
+                        toast.show();
+                    });
+                });
+            } catch (e) { console.warn('Toast init failed', e); }
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

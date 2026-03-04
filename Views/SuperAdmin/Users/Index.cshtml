@@ -7,6 +7,9 @@
     var filterQuery = (string?)ViewBag.FilterQuery;
     var filterRole = (string?)ViewBag.FilterRole;
     var filterStatus = (string?)ViewBag.FilterStatus;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalCount = ViewBag.TotalCount ?? 0;
 }
 
 <style>
@@ -134,6 +137,28 @@
         filter: brightness(0.95);
     }
 
+    .psgc-wrapper { position: relative; }
+    .psgc-dropdown {
+        position: absolute; top: 100%; left: 0; right: 0; z-index: 1055;
+        max-height: 200px; overflow-y: auto;
+        background: var(--d-card); border: 1px solid var(--d-border); border-top: none;
+        border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: none;
+    }
+    .psgc-dropdown.show { display: block; }
+    .psgc-dropdown .psgc-item {
+        padding: 8px 12px; cursor: pointer; font-size: 0.85rem; color: var(--d-text);
+        transition: background 0.15s;
+    }
+    .psgc-dropdown .psgc-item:hover,
+    .psgc-dropdown .psgc-item.active { background: rgba(26,107,181,0.1); }
+    .psgc-dropdown .psgc-empty {
+        padding: 10px 12px; font-size: 0.85rem; color: var(--d-muted); text-align: center;
+    }
+    .psgc-spinner {
+        padding: 10px 12px; font-size: 0.85rem; color: var(--d-muted); text-align: center;
+    }
+
     @@media (max-width: 768px) {
         .table-card-header { flex-direction: column; align-items: flex-start; gap: 12px; }
         .actions-group { justify-content: flex-start; }
@@ -146,6 +171,62 @@
         .filter-group input,
         .filter-group select { width: 100%; }
     }
+
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-top: 1px solid var(--d-border);
+        background: var(--d-card);
+        border-radius: 0 0 var(--d-radius-lg) var(--d-radius-lg);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        margin: 0;
+    }
+
+    .pagination-btn {
+        padding: 6px 10px;
+        border: 1px solid var(--d-border);
+        border-radius: 6px;
+        background: var(--d-card);
+        color: var(--d-primary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+        background: var(--d-primary);
+        color: white;
+        border-color: var(--d-primary);
+    }
+
+    .pagination-btn.active {
+        background: var(--d-primary);
+        color: white;
+        border-color: var(--d-primary);
+    }
+
+    .pagination-btn.disabled {
+        color: var(--d-muted);
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: var(--d-muted);
+    }
+
 </style>
 
 <div class="page-wrapper">
@@ -153,14 +234,14 @@
         <!-- Header with PDF Export -->
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
             <div class="page-header" style="margin-bottom: 0; flex: 1;">
-                <h1 class="page-title">
+                @* <h1 class="page-title">
                     <i class="bi bi-people"></i>
                     User Management
-                </h1>
+                </h1> *@
                 <p class="page-subtitle">Manage system users and their roles</p>
             </div>
             <button type="button" id="exportPdfBtn" style="background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; height: fit-content; white-space: nowrap;">
-                <i class="bi bi-file-pdf"></i> Export PDF
+                 Export PDF
             </button>
         </div>
 
@@ -197,9 +278,196 @@
             </div>
 
             <div style="display: flex; gap: 8px; margin-left: auto;">
-                <button class="create-btn" data-bs-toggle="modal" data-bs-target="#createAccountModal">
-                    <i class="bi bi-person-plus"></i> Create Account
+                <button type="button" class="create-btn" id="createAccountBtn">
+                     Create Account
                 </button>
+            </div>
+        </div>
+
+        <!-- Create Account Modal (Stepper Format) -->
+        <div class="modal fade" id="createAccountModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, rgba(26,107,181,0.05), rgba(46,196,182,0.05)); border-bottom: 1px solid var(--d-border);">
+                        <h5 class="modal-title" style="font-weight: 700; color: var(--d-text);">
+                            <i class="bi bi-person-plus me-2" style="color: var(--d-primary);"></i>Create Account
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Stepper Progress -->
+                    <div style="padding: 20px; border-bottom: 1px solid var(--d-border);">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <!-- Step 1 -->
+                            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                                <div id="step1Indicator" style="width: 36px; height: 36px; border-radius: 50%; background: var(--d-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 6px; cursor: pointer;">1</div>
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--d-text);">Credentials</span>
+                            </div>
+                            <div style="flex: 1; height: 2px; background: var(--d-border); margin-bottom: 20px;"></div>
+
+                            <!-- Step 2 -->
+                            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                                <div id="step2Indicator" style="width: 36px; height: 36px; border-radius: 50%; background: var(--d-border); color: var(--d-muted); display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 6px; cursor: pointer;">2</div>
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--d-muted);">Personal</span>
+                            </div>
+                            <div style="flex: 1; height: 2px; background: var(--d-border); margin-bottom: 20px;"></div>
+
+                            <!-- Step 3 -->
+                            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                                <div id="step3Indicator" style="width: 36px; height: 36px; border-radius: 50%; background: var(--d-border); color: var(--d-muted); display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 6px; cursor: pointer;">3</div>
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--d-muted);">Address</span>
+                            </div>
+                            <div style="flex: 1; height: 2px; background: var(--d-border); margin-bottom: 20px;"></div>
+
+                            <!-- Step 4 -->
+                            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                                <div id="step4Indicator" style="width: 36px; height: 36px; border-radius: 50%; background: var(--d-border); color: var(--d-muted); display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 6px; cursor: pointer;">4</div>
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--d-muted);">Review</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-body">
+                        <form id="createAccountForm" asp-action="CreateAccount" asp-controller="SuperAdmin" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <!-- Step 1: Account Credentials -->
+                            <div id="step1Content" class="step-content" style="display: block;">
+                                <h6 style="font-weight: 700; color: var(--d-text); margin-bottom: 16px;">Account Credentials</h6>
+                                <div style="display: flex; flex-direction: column; gap: 16px;">
+                                    <div>
+                                        <label class="form-label" for="createEmail">Email Address <span style="color: red;">*</span></label>
+                                        <input id="createEmail" name="email" type="email" class="form-control" placeholder="user@example.com" required autocomplete="email" />
+                                        <small style="color: var(--d-muted);">This will be used for login</small>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="createPassword">Password <span style="color: red;">*</span></label>
+                                        <input id="createPassword" name="password" type="password" class="form-control" placeholder="Enter password" required autocomplete="new-password" />
+                                        <small style="color: var(--d-muted);">Must be at least 6 characters</small>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="createConfirmPassword">Confirm Password <span style="color: red;">*</span></label>
+                                        <input id="createConfirmPassword" name="confirmPassword" type="password" class="form-control" placeholder="Re-enter password" required autocomplete="new-password" />
+                                        <small style="color: var(--d-muted);">Passwords must match</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Personal Information -->
+                            <div id="step2Content" class="step-content" style="display: none;">
+                                <h6 style="font-weight: 700; color: var(--d-text); margin-bottom: 16px;">Personal Information</h6>
+                                <div style="display: flex; flex-direction: column; gap: 16px;">
+                                    <div>
+                                        <label class="form-label" for="createFullName">Full Name <span style="color: red;">*</span></label>
+                                        <input id="createFullName" name="fullName" type="text" class="form-control" placeholder="John Doe" required autocomplete="name" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="createRole">Assign Role</label>
+                                        <select id="createRole" name="role" class="form-select">
+                                            <option value="">-- Select Role --</option>
+                                            @foreach (var r in allRoles)
+                                            {
+                                                if (!string.IsNullOrEmpty(r))
+                                                {
+                                                    <option value="@r">@r</option>
+                                                }
+                                            }
+                                        </select>
+                                        <small style="color: var(--d-muted);">Choose the user's role in the system</small>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="createContactNumber">Contact Number</label>
+                                        <input id="createContactNumber" name="contactNumber" type="text" class="form-control" placeholder="+63 123 456 7890" autocomplete="tel" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Address Information (PSGC API powered) -->
+                            <div id="step3Content" class="step-content" style="display: none;">
+                                <h6 style="font-weight: 700; color: var(--d-text); margin-bottom: 16px;">Address Information</h6>
+                                <div style="display: flex; flex-direction: column; gap: 16px;">
+                                    <div>
+                                        <label class="form-label" for="createStreet">Street / House No.</label>
+                                        <input id="createStreet" name="street" type="text" class="form-control" placeholder="123 Main Street" autocomplete="off" />
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <div class="psgc-wrapper">
+                                            <label class="form-label" for="createProvince">Province</label>
+                                            <input id="createProvince" name="province" type="text" class="form-control" placeholder="Type to search province..." autocomplete="off" />
+                                            <input type="hidden" id="createProvinceCode" />
+                                            <div id="provinceDropdown" class="psgc-dropdown"></div>
+                                        </div>
+                                        <div class="psgc-wrapper">
+                                            <label class="form-label" for="createCity">City / Municipality</label>
+                                            <input id="createCity" name="city" type="text" class="form-control" placeholder="Select province first" autocomplete="off" disabled />
+                                            <input type="hidden" id="createCityCode" />
+                                            <div id="cityDropdown" class="psgc-dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <div class="psgc-wrapper">
+                                            <label class="form-label" for="createBarangay">Barangay</label>
+                                            <input id="createBarangay" name="barangay" type="text" class="form-control" placeholder="Select city first" autocomplete="off" disabled />
+                                            <div id="barangayDropdown" class="psgc-dropdown"></div>
+                                        </div>
+                                        <div>
+                                            <label class="form-label" for="createZipCode">Zip Code</label>
+                                            <input id="createZipCode" name="zipCode" type="text" class="form-control" placeholder="Zip Code" autocomplete="off" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="createCountry">Country</label>
+                                        <input id="createCountry" name="country" type="text" class="form-control" placeholder="Country" value="Philippines" autocomplete="off" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Review -->
+                            <div id="step4Content" class="step-content" style="display: none;">
+                                <h6 style="font-weight: 700; color: var(--d-text); margin-bottom: 16px;">Review Your Information</h6>
+                                <div style="background: var(--d-bg); border: 1px solid var(--d-border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--d-border);">
+                                        <span style="font-weight: 600; color: var(--d-muted);">Email</span>
+                                        <span id="reviewEmail" style="color: var(--d-text); font-weight: 500;">-</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--d-border);">
+                                        <span style="font-weight: 600; color: var(--d-muted);">Full Name</span>
+                                        <span id="reviewName" style="color: var(--d-text); font-weight: 500;">-</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--d-border);">
+                                        <span style="font-weight: 600; color: var(--d-muted);">Role</span>
+                                        <span id="reviewRole" style="color: var(--d-text); font-weight: 500;">-</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--d-border);">
+                                        <span style="font-weight: 600; color: var(--d-muted);">Contact</span>
+                                        <span id="reviewContact" style="color: var(--d-text); font-weight: 500;">-</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="font-weight: 600; color: var(--d-muted);">Address</span>
+                                        <span id="reviewAddress" style="color: var(--d-text); font-weight: 500; text-align: right;">-</span>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 16px; font-size: 0.85rem; color: var(--d-muted);">Please review all information before creating the account.</p>
+                            </div>
+
+                            <!-- Navigation Buttons -->
+                            <div style="display: flex; gap: 8px; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--d-border);">
+                                <button id="prevBtn" type="button" class="btn btn-outline-secondary" style="display: none;">
+                                    <i class="bi bi-arrow-left me-2"></i>Previous
+                                </button>
+                                <div style="margin-left: auto; display: flex; gap: 8px;">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button id="nextBtn" type="button" class="btn btn-primary">
+                                        Next<i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                    <button id="submitBtn" type="submit" class="btn btn-success" style="display: none;">
+                                        <i class="bi bi-check-lg me-2"></i>Create Account
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -208,7 +476,7 @@
             <div class="table-card-header" style="padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--d-text); font-size: 0.9rem;">
                     <i class="bi bi-people"></i>
-                    All Users (@users.Count)
+                    All Users (@totalCount)
                 </div>
             </div>
             <div class="table-responsive">
@@ -221,6 +489,10 @@
                 }
                 else
                 {
+                    <div style="padding: 12px 14px; border-bottom: 1px solid var(--d-border); font-size: 0.85rem; color: var(--d-muted);">
+                        Showing page @currentPage of @totalPages (@totalCount total records)
+                    </div>
+
                     <table class="table dash-table">
                         <thead>
                             <tr>
@@ -291,9 +563,9 @@
                                                 </button>
                                             </form>
 
-                                            <!-- Edit (opens modal) -->
-                                            <button class="action-btn action-btn-primary" title="Edit" onclick="openEditModal('@user.UserId')">
-                                                <i class="bi bi-pencil"></i>
+                                            <!-- Edit (opens modal) - use same visual style as FuelPrices edit button -->
+                                            <button class="btn btn-sm me-1" style="background: rgba(26,107,181,0.1); color: var(--d-primary); border: none; border-radius: 6px; padding: 6px 12px; font-weight: 600;" title="Edit" onclick="openEditModal('@user.UserId')">
+                                                <i class="bi bi-pencil-square"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -301,6 +573,61 @@
                             }
                         </tbody>
                     </table>
+
+                    <!-- Pagination -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="pagination-wrapper">
+                            <div class="pagination-info">
+                                Page @currentPage of @totalPages (@totalCount records)
+                            </div>
+                            <div class="pagination">
+                                @if (currentPage > 1)
+                                {
+                                    <a class="pagination-btn" href="@Url.Action("Users", new { page = currentPage - 1, q = filterQuery, role = filterRole, status = filterStatus })">
+                                        <i class="bi bi-chevron-left"></i> Prev
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="pagination-btn disabled">
+                                        <i class="bi bi-chevron-left"></i> Prev
+                                    </span>
+                                }
+
+                                @{
+                                    int startPage = Math.Max(1, currentPage - 2);
+                                    int endPage = Math.Min(totalPages, startPage + 4);
+                                    startPage = Math.Max(1, endPage - 4);
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    @if (i == currentPage)
+                                    {
+                                        <span class="pagination-btn active">@i</span>
+                                    }
+                                    else
+                                    {
+                                        <a class="pagination-btn" href="@Url.Action("Users", new { page = i, q = filterQuery, role = filterRole, status = filterStatus })">@i</a>
+                                    }
+                                }
+
+                                @if (currentPage < totalPages)
+                                {
+                                    <a class="pagination-btn" href="@Url.Action("Users", new { page = currentPage + 1, q = filterQuery, role = filterRole, status = filterStatus })">
+                                        Next <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="pagination-btn disabled">
+                                        Next <i class="bi bi-chevron-right"></i>
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
                 }
             </div>
         </div>
@@ -309,13 +636,15 @@
 
 <!-- Edit User Modal -->
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit User</h5>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, rgba(26,107,181,0.05), rgba(46,196,182,0.05)); border-bottom: 1px solid var(--d-border);">
+                <h5 class="modal-title" style="font-weight: 700; color: var(--d-text);">
+                    <i class="bi bi-pencil-square me-2" style="color: var(--d-primary);"></i>Edit User
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="editUserModalBody">
+            <div id="editUserModalBody">
                 <!-- Content loaded via AJAX -->
                 <div class="text-center py-4">Loading...</div>
             </div>
@@ -324,85 +653,8 @@
 </div>
 
 <script>
-    function openEditModal(userId) {
-        var modalEl = document.getElementById('editUserModal');
-        var modalBody = document.getElementById('editUserModalBody');
-        // show loading
-        modalBody.innerHTML = '<div class="text-center py-4">Loading...</div>';
-
-        var myModal = new bootstrap.Modal(modalEl);
-        myModal.show();
-
-        fetch('@Url.Action("EditUser", "SuperAdmin")' + '?userId=' + encodeURIComponent(userId))
-            .then(function (r) { return r.text(); })
-            .then(function (html) {
-                modalBody.innerHTML = html;
-            })
-            .catch(function () {
-                modalBody.innerHTML = '<div class="text-danger">Failed to load form.</div>';
-            });
-    }
-</script>
-<script>
-    (function(){
-        function applyUserFilters() {
-            const q = document.getElementById('userSearch')?.value || '';
-            const role = document.getElementById('userRoleFilter')?.value || '';
-            const status = document.getElementById('userStatusFilter')?.value || '';
-
-            const params = [];
-            if (q) params.push('q=' + encodeURIComponent(q));
-            if (role) params.push('role=' + encodeURIComponent(role));
-            if (status) params.push('status=' + encodeURIComponent(status));
-
-            const url = '@Url.Action("Users", "SuperAdmin")' + (params.length ? ('?' + params.join('&')) : '');
-            window.location.href = url;
-        }
-
-        document.addEventListener('DOMContentLoaded', function(){
-            // Restore filter state from ViewBag values
-            const filterQuery = '@(filterQuery ?? "")';
-            const filterRole = '@(filterRole ?? "")';
-            const filterStatus = '@(filterStatus ?? "")';
-
-            if (filterQuery) {
-                document.getElementById('userSearch').value = filterQuery;
-            }
-            if (filterRole) {
-                document.getElementById('userRoleFilter').value = filterRole;
-            }
-            if (filterStatus) {
-                document.getElementById('userStatusFilter').value = filterStatus;
-            }
-
-            // Attach event listeners
-            document.getElementById('userSearch')?.addEventListener('input', function(){
-                // debounce
-                clearTimeout(this._t);
-                this._t = setTimeout(applyUserFilters, 400);
-            });
-            document.getElementById('userRoleFilter')?.addEventListener('change', applyUserFilters);
-            document.getElementById('userStatusFilter')?.addEventListener('change', applyUserFilters);
-
-            // PDF Export functionality
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
-            if (exportPdfBtn) {
-                exportPdfBtn.addEventListener('click', function() {
-                    const q = document.getElementById('userSearch')?.value || '';
-                    const role = document.getElementById('userRoleFilter')?.value || '';
-                    const status = document.getElementById('userStatusFilter')?.value || '';
-
-                    const params = [];
-                    if (q) params.push('q=' + encodeURIComponent(q));
-                    if (role) params.push('role=' + encodeURIComponent(role));
-                    if (status) params.push('status=' + encodeURIComponent(status));
-
-                    const url = '@Url.Action("ExportUsersPdf", "SuperAdmin")' + (params.length ? ('?' + params.join('&')) : '');
-                    window.location.href = url;
-                });
-            }
-        });
-    })();
+    // placeholder so inline onclick does not throw before scripts section runs
+    function openEditModal() {}
 </script>
 <style>
     .modal-content {
@@ -441,373 +693,583 @@
         font-size: 0.85rem;
         margin-bottom: 6px;
     }
-
-    .modal-body .form-control,
-    .modal-body .form-select {
-        border: 1px solid var(--d-border);
-        border-radius: var(--d-radius);
-        padding: 10px 12px;
-        font-size: 0.9rem;
-        color: var(--d-text);
-    }
-
-    .modal-body .form-control:focus,
-    .modal-body .form-select:focus {
-        border-color: var(--d-primary);
-        box-shadow: 0 0 0 3px rgba(26, 107, 181, 0.1);
-    }
-
-    .modal-footer {
-        background: #f8fafc;
-        border-top: 1px solid var(--d-border);
-        padding: 14px 20px;
-    }
-
-    .modal-footer .btn {
-        border-radius: var(--d-radius);
-        font-size: 0.9rem;
-        font-weight: 600;
-        padding: 10px 16px;
-    }
-
-    .modal-footer .btn-primary {
-        background: var(--d-primary);
-        border-color: var(--d-primary);
-    }
-
-    .modal-footer .btn-primary:hover {
-        background: #155297;
-        border-color: #155297;
-    }
-
-    .modal-footer .btn-secondary {
-        background: #e5e7eb;
-        border-color: #e5e7eb;
-        color: var(--d-text);
-    }
-
-    .modal-footer .btn-secondary:hover {
-        background: #d1d5db;
-        border-color: #d1d5db;
-    }
-
-    .modal-footer .btn-warning {
-        background: #f59e0b;
-        border-color: #f59e0b;
-        color: #fff;
-    }
-
-    .modal-footer .btn-warning:hover {
-        background: #d97706;
-        border-color: #d97706;
-    }
 </style>
-
-<!-- Create Account Modal -->
-<div class="modal fade" id="createAccountModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="post" asp-action="CreateAccount">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Create New Account</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="fullName" class="form-control" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" class="form-control" required minlength="6" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Role <span class="text-danger">*</span></label>
-                            <select name="role" class="form-select" required>
-                                <option value="">-- Select Role --</option>
-                                @foreach (var role in allRoles)
-                                {
-                                    <option value="@role">@role</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                    <hr class="my-3" />
-                    <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt"></i> Address</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Street / House No.</label>
-                            <input type="text" name="street" class="form-control" placeholder="e.g. 123 Rizal St." />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Barangay</label>
-                            <div class="position-relative">
-                                <input type="text" name="barangay" class="form-control address-autocomplete" data-address-type="barangay" placeholder="Start typing barangay..." autocomplete="off" />
-                                <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">City / Municipality</label>
-                            <div class="position-relative">
-                                <input type="text" name="city" class="form-control address-autocomplete" data-address-type="city" placeholder="Start typing city..." autocomplete="off" />
-                                <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Province</label>
-                            <div class="position-relative">
-                                <input type="text" name="province" class="form-control address-autocomplete" data-address-type="province" placeholder="Start typing province..." autocomplete="off" />
-                                <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">ZIP Code</label>
-                            <input type="text" name="zipCode" class="form-control" placeholder="e.g. 1100" maxlength="10" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Country</label>
-                            <div class="position-relative">
-                                <input type="text" name="country" class="form-control address-autocomplete" data-address-type="country" placeholder="Start typing country..." autocomplete="off" value="Philippines" />
-                                <ul class="list-group position-absolute w-100 shadow-sm address-suggestions" style="z-index:1055; max-height:200px; overflow-y:auto; display:none;"></ul>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="my-3" />
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Contact Number</label>
-                            <input type="text" name="contactNumber" class="form-control" placeholder="e.g. 09171234567" maxlength="20" />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Create</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Assign Role Modal -->
-<div class="modal fade" id="assignRoleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" asp-action="AssignRole">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Assign Role</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="userId" id="assignRoleUserId" />
-                    <p>Assign a role to <strong id="assignRoleUserLabel"></strong></p>
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" class="form-select" required>
-                            <option value="">-- Select Role --</option>
-                            @foreach (var role in allRoles)
-                            {
-                                <option value="@role">@role</option>
-                            }
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Assign</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Remove Role Modal -->
-<div class="modal fade" id="removeRoleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" asp-action="RemoveRole">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-person-dash"></i> Remove Role</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="userId" id="removeRoleUserId" />
-                    <p>Remove a role from <strong id="removeRoleUserLabel"></strong></p>
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" id="removeRoleSelect" class="form-select" required>
-                            <option value="">-- Select Role --</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning"><i class="bi bi-x-lg"></i> Remove</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
 <script>
-    function loadRemoveRoles(userId, email, rolesStr) {
-        document.getElementById('removeRoleUserId').value = userId;
-        document.getElementById('removeRoleUserLabel').textContent = email;
-        var select = document.getElementById('removeRoleSelect');
-        select.innerHTML = '<option value="">-- Select Role --</option>';
-        var roles = rolesStr.split(',');
-        roles.forEach(function (r) {
-            if (r.trim()) {
-                var opt = document.createElement('option');
-                opt.value = r.trim();
-                opt.textContent = r.trim();
-                select.appendChild(opt);
+    // ── Stepper form logic ──
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    function showStep(step) {
+        // Hide all steps
+        document.getElementById('step1Content').style.display = 'none';
+        document.getElementById('step2Content').style.display = 'none';
+        document.getElementById('step3Content').style.display = 'none';
+        document.getElementById('step4Content').style.display = 'none';
+
+        // Show current step
+        document.getElementById('step' + step + 'Content').style.display = 'block';
+
+        // Update indicators
+        updateIndicators(step);
+
+        // Update button visibility
+        document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'inline-block';
+        document.getElementById('nextBtn').style.display = step === totalSteps ? 'none' : 'inline-block';
+        document.getElementById('submitBtn').style.display = step === totalSteps ? 'inline-block' : 'none';
+
+        currentStep = step;
+    }
+
+    function updateIndicators(activeStep) {
+        for (let i = 1; i <= totalSteps; i++) {
+            const indicator = document.getElementById('step' + i + 'Indicator');
+            if (i <= activeStep) {
+                indicator.style.background = 'var(--d-primary)';
+                indicator.style.color = 'white';
+                const label = indicator.parentElement.querySelector('span');
+                if (label) label.style.color = 'var(--d-text)';
+            } else {
+                indicator.style.background = 'var(--d-border)';
+                indicator.style.color = 'var(--d-muted)';
+                const label = indicator.parentElement.querySelector('span');
+                if (label) label.style.color = 'var(--d-muted)';
+            }
+        }
+    }
+
+    function validateStep(step) {
+        if (step === 1) {
+            const email = document.getElementById('createEmail').value.trim();
+            const password = document.getElementById('createPassword').value.trim();
+            const confirmPassword = document.getElementById('createConfirmPassword').value.trim();
+
+            if (!email || !password || !confirmPassword) {
+                alert('Please enter email, password, and confirm password.');
+                return false;
+            }
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters.');
+                return false;
+            }
+            if (password !== confirmPassword) {
+                alert('Passwords do not match.');
+                return false;
+            }
+        } else if (step === 2) {
+            const fullName = document.getElementById('createFullName').value.trim();
+            if (!fullName) {
+                alert('Please enter full name.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function updateReview() {
+        document.getElementById('reviewEmail').textContent = document.getElementById('createEmail').value || '-';
+        document.getElementById('reviewName').textContent = document.getElementById('createFullName').value || '-';
+        const role = document.getElementById('createRole').value;
+        document.getElementById('reviewRole').textContent = role || 'Not assigned';
+        document.getElementById('reviewContact').textContent = document.getElementById('createContactNumber').value || '-';
+
+        const street = document.getElementById('createStreet').value;
+        const barangay = document.getElementById('createBarangay').value;
+        const city = document.getElementById('createCity').value;
+        const province = document.getElementById('createProvince').value;
+        const zipCode = document.getElementById('createZipCode').value;
+        const country = document.getElementById('createCountry').value;
+
+        const address = [street, barangay, city, province, zipCode, country]
+            .filter(x => x)
+            .join(', ') || '-';
+        document.getElementById('reviewAddress').textContent = address;
+    }
+
+    document.getElementById('nextBtn')?.addEventListener('click', function () {
+        if (validateStep(currentStep)) {
+            if (currentStep === totalSteps - 1) {
+                updateReview();
+            }
+            showStep(currentStep + 1);
+        }
+    });
+
+    document.getElementById('prevBtn')?.addEventListener('click', function () {
+        showStep(currentStep - 1);
+    });
+
+    // Click on step indicator to jump
+    for (let i = 1; i <= currentStep; i++) {
+        document.getElementById('step' + i + 'Indicator')?.addEventListener('click', function () {
+            if (i <= currentStep) {
+                showStep(i);
             }
         });
     }
 
-    // Address autocomplete: provinces, cities, barangays from PSGC API + country list
-    (function () {
-        var cache = { provinces: null, cities: null, countries: null };
+    // ── Modal helpers (bootstrap is guaranteed loaded here) ──
+    function openEditModal(userId) {
+        var modalEl = document.getElementById('editUserModal');
+        var modalBody = document.getElementById('editUserModalBody');
+        modalBody.innerHTML = '<div class="text-center py-4">Loading...</div>';
 
-        var countryList = [
-            "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
-            "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
-            "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
-            "Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica",
-            "Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt",
-            "El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia",
-            "Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras",
-            "Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan",
-            "Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein",
-            "Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania",
-            "Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia",
-            "Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
-            "Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
-            "Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa",
-            "San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore",
-            "Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka",
-            "Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo",
-            "Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates",
-            "United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen",
-            "Zambia","Zimbabwe"
-        ];
+        var myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
 
-        function loadData(type) {
-            if (type === 'province') {
-                if (cache.provinces) return Promise.resolve(cache.provinces);
-                return fetch('https://psgc.gitlab.io/api/provinces.json')
+        fetch('@Url.Action("EditUser", "SuperAdmin")' + '?userId=' + encodeURIComponent(userId))
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                modalBody.innerHTML = html;
+                // Initialize PSGC for edit modal after content loads
+                initializeEditPSGC();
+            })
+            .catch(function () { modalBody.innerHTML = '<div class="text-danger">Failed to load form.</div>'; });
+    }
+
+    // Initialize PSGC for edit modal
+    function initializeEditPSGC() {
+        // Province input
+        (function () {
+            var input = document.getElementById('editProvince');
+            var codeEl = document.getElementById('editProvinceCode');
+            var dd = document.getElementById('editProvinceDropdown');
+            var cityInput = document.getElementById('editCity');
+            var cityCode = document.getElementById('editCityCode');
+            var brgyInput = document.getElementById('editBarangay');
+
+            if (!input) return; // Elements not ready yet
+
+            function onProvinceSelect(item) {
+                cityInput.value = '';
+                cityCode.value = '';
+                cityInput.disabled = false;
+                cityInput.placeholder = 'Loading cities...';
+                brgyInput.value = '';
+                brgyInput.disabled = true;
+                brgyInput.placeholder = 'Select city first';
+                psgcCities = [];
+                psgcBarangays = [];
+                document.getElementById('editCityDropdown').classList.remove('show');
+                document.getElementById('editBarangayDropdown').classList.remove('show');
+
+                fetch(PSGC_BASE + '/provinces/' + item.code + '/cities-municipalities/')
                     .then(function (r) { return r.json(); })
-                    .then(function (data) { cache.provinces = data.map(function (d) { return d.name; }).sort(); return cache.provinces; })
-                    .catch(function () { return []; });
+                    .then(function (data) {
+                        psgcCities = data.sort(function (a, b) { return a.name.localeCompare(b.name); });
+                        cityInput.placeholder = 'Type to search city...';
+                        cityInput.focus();
+                    })
+                    .catch(function () { cityInput.placeholder = 'Failed to load cities'; });
             }
-            if (type === 'city') {
-                if (cache.cities) return Promise.resolve(cache.cities);
-                return fetch('https://psgc.gitlab.io/api/cities-municipalities.json')
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) { cache.cities = data.map(function (d) { return d.name; }).sort(); return cache.cities; })
-                    .catch(function () { return []; });
-            }
-            if (type === 'country') {
-                return Promise.resolve(countryList);
-            }
-            if (type === 'barangay') {
-                return Promise.resolve(null);
-            }
-            return Promise.resolve([]);
-        }
-
-        function filterList(list, query) {
-            var q = query.toLowerCase();
-            return list.filter(function (item) { return item.toLowerCase().indexOf(q) !== -1; }).slice(0, 15);
-        }
-
-        function showSuggestions(box, items, input) {
-            box.innerHTML = '';
-            if (items.length > 0) {
-                items.forEach(function (name) {
-                    var li = document.createElement('li');
-                    li.className = 'list-group-item list-group-item-action';
-                    li.style.cursor = 'pointer';
-                    li.style.fontSize = '0.88rem';
-                    li.textContent = name;
-                    li.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        input.value = name;
-                        box.style.display = 'none';
-                    });
-                    box.appendChild(li);
-                });
-                box.style.display = 'block';
-            } else {
-                box.style.display = 'none';
-            }
-        }
-
-        var inputs = document.querySelectorAll('.address-autocomplete');
-        inputs.forEach(function (input) {
-            var box = input.parentElement.querySelector('.address-suggestions');
-            var type = input.getAttribute('data-address-type');
-            var timer = null;
 
             input.addEventListener('input', function () {
-                var q = this.value.trim();
-                clearTimeout(timer);
-                if (q.length < 1) { box.style.display = 'none'; box.innerHTML = ''; return; }
-
-                timer = setTimeout(function () {
-                    if (type === 'barangay') {
-                        fetch('https://psgc.gitlab.io/api/barangays.json')
-                            .then(function (r) { return r.json(); })
-                            .then(function (data) {
-                                var names = data.map(function (d) { return d.name; });
-                                showSuggestions(box, filterList(names, q), input);
-                            })
-                            .catch(function () {
-                                fetch('https://psgc.cloud/api/barangays?search=' + encodeURIComponent(q) + '&limit=15')
-                                    .then(function (r) { return r.json(); })
-                                    .then(function (data) {
-                                        var names = (data || []).map(function (d) { return d.name; });
-                                        showSuggestions(box, names, input);
-                                    })
-                                    .catch(function () { box.style.display = 'none'; });
-                            });
-                    } else {
-                        loadData(type).then(function (list) {
-                            if (list && list.length > 0) {
-                                showSuggestions(box, filterList(list, q), input);
-                            }
-                        });
-                    }
-                }, 200);
+                codeEl.value = '';
+                var filtered = psgcFilter(psgcProvinces, input.value);
+                psgcRenderDropdown(dd, filtered, input, codeEl, onProvinceSelect);
             });
 
             input.addEventListener('focus', function () {
-                var q = this.value.trim();
-                if (q.length >= 1 && box.children.length > 0) {
-                    box.style.display = 'block';
+                if (psgcProvinces.length > 0) {
+                    var filtered = psgcFilter(psgcProvinces, input.value);
+                    psgcRenderDropdown(dd, filtered, input, codeEl, onProvinceSelect);
                 }
             });
 
             input.addEventListener('blur', function () {
-                setTimeout(function () { box.style.display = 'none'; }, 200);
+                setTimeout(function () { dd.classList.remove('show'); }, 200);
             });
-        });
 
-        document.addEventListener('click', function (e) {
-            document.querySelectorAll('.address-suggestions').forEach(function (box) {
-                if (!box.contains(e.target)) {
-                    box.style.display = 'none';
+            input.addEventListener('keydown', function (e) {
+                var filtered = psgcFilter(psgcProvinces, input.value);
+                psgcKeyboard(e, dd, input, codeEl, filtered, onProvinceSelect);
+            });
+        })();
+
+        // City input
+        (function () {
+            var input = document.getElementById('editCity');
+            var codeEl = document.getElementById('editCityCode');
+            var dd = document.getElementById('editCityDropdown');
+            var brgyInput = document.getElementById('editBarangay');
+
+            if (!input) return;
+
+            function onCitySelect(item) {
+                brgyInput.value = '';
+                brgyInput.disabled = false;
+                brgyInput.placeholder = 'Loading barangays...';
+                psgcBarangays = [];
+                document.getElementById('editBarangayDropdown').classList.remove('show');
+
+                fetch(PSGC_BASE + '/cities-municipalities/' + item.code + '/barangays/')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        psgcBarangays = data.sort(function (a, b) { return a.name.localeCompare(b.name); });
+                        brgyInput.placeholder = 'Type to search barangay...';
+                        brgyInput.focus();
+                    })
+                    .catch(function () { brgyInput.placeholder = 'Failed to load barangays'; });
+            }
+
+            input.addEventListener('input', function () {
+                codeEl.value = '';
+                var filtered = psgcFilter(psgcCities, input.value);
+                psgcRenderDropdown(dd, filtered, input, codeEl, onCitySelect);
+            });
+
+            input.addEventListener('focus', function () {
+                if (psgcCities.length > 0) {
+                    var filtered = psgcFilter(psgcCities, input.value);
+                    psgcRenderDropdown(dd, filtered, input, codeEl, onCitySelect);
                 }
             });
+
+            input.addEventListener('blur', function () {
+                setTimeout(function () { dd.classList.remove('show'); }, 200);
+            });
+
+            input.addEventListener('keydown', function (e) {
+                var filtered = psgcFilter(psgcCities, input.value);
+                psgcKeyboard(e, dd, input, codeEl, filtered, onCitySelect);
+            });
+        })();
+
+        // Barangay input
+        (function () {
+            var input = document.getElementById('editBarangay');
+            var dd = document.getElementById('editBarangayDropdown');
+
+            if (!input) return;
+
+            input.addEventListener('input', function () {
+                var filtered = psgcFilter(psgcBarangays, input.value);
+                psgcRenderDropdown(dd, filtered, input, null, null);
+            });
+
+            input.addEventListener('focus', function () {
+                if (psgcBarangays.length > 0) {
+                    var filtered = psgcFilter(psgcBarangays, input.value);
+                    psgcRenderDropdown(dd, filtered, input, null, null);
+                }
+            });
+
+            input.addEventListener('blur', function () {
+                setTimeout(function () { dd.classList.remove('show'); }, 200);
+            });
+
+            input.addEventListener('keydown', function (e) {
+                var filtered = psgcFilter(psgcBarangays, input.value);
+                psgcKeyboard(e, dd, input, null, filtered, null);
+            });
+        })();
+
+        // Preload provinces if not cached
+        psgcLoadProvinces();
+    }
+
+    function openCreateAccountModal() {
+        var form = document.getElementById('createAccountForm');
+        if (form) form.reset();
+
+        // Reset PSGC state
+        document.getElementById('createProvinceCode').value = '';
+        document.getElementById('createCityCode').value = '';
+        document.getElementById('createCity').disabled = true;
+        document.getElementById('createCity').placeholder = 'Select province first';
+        document.getElementById('createBarangay').disabled = true;
+        document.getElementById('createBarangay').placeholder = 'Select city first';
+        document.getElementById('provinceDropdown').classList.remove('show');
+        document.getElementById('cityDropdown').classList.remove('show');
+        document.getElementById('barangayDropdown').classList.remove('show');
+        document.getElementById('createCountry').value = 'Philippines';
+
+        // Preload provinces if not cached
+        psgcLoadProvinces();
+
+        currentStep = 1;
+        showStep(1);
+
+        var modalEl = document.getElementById('createAccountModal');
+        var myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    }
+
+    // ── PSGC API Integration ──
+    var PSGC_BASE = 'https://psgc.gitlab.io/api';
+    var psgcProvinces = [];
+    var psgcCities = [];
+    var psgcBarangays = [];
+    var psgcActiveIndex = -1; // keyboard navigation index
+
+    function psgcLoadProvinces() {
+        if (psgcProvinces.length > 0) return; // already cached
+        var dd = document.getElementById('provinceDropdown');
+        dd.innerHTML = '<div class="psgc-spinner"><i class="bi bi-arrow-repeat"></i> Loading provinces...</div>';
+        fetch(PSGC_BASE + '/provinces/')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                psgcProvinces = data.sort(function (a, b) { return a.name.localeCompare(b.name); });
+                dd.innerHTML = '';
+            })
+            .catch(function () {
+                dd.innerHTML = '<div class="psgc-empty">Failed to load provinces</div>';
+            });
+    }
+
+    function psgcRenderDropdown(dropdown, items, inputEl, codeEl, onSelect) {
+        dropdown.innerHTML = '';
+        psgcActiveIndex = -1;
+        if (items.length === 0) {
+            dropdown.innerHTML = '<div class="psgc-empty">No results found</div>';
+            dropdown.classList.add('show');
+            return;
+        }
+        items.forEach(function (item, idx) {
+            var div = document.createElement('div');
+            div.className = 'psgc-item';
+            div.textContent = item.name;
+            div.setAttribute('data-code', item.code);
+            div.setAttribute('data-index', idx);
+            div.addEventListener('mousedown', function (e) {
+                e.preventDefault(); // prevent blur before click registers
+                inputEl.value = item.name;
+                if (codeEl) codeEl.value = item.code;
+                dropdown.classList.remove('show');
+                if (onSelect) onSelect(item);
+            });
+            dropdown.appendChild(div);
+        });
+        dropdown.classList.add('show');
+    }
+
+    function psgcFilter(list, query) {
+        var q = query.toLowerCase().trim();
+        if (!q) return list.slice(0, 50); // show first 50 when empty
+        return list.filter(function (item) {
+            return item.name.toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 50);
+    }
+
+    function psgcKeyboard(e, dropdown, inputEl, codeEl, items, onSelect) {
+        var allItems = dropdown.querySelectorAll('.psgc-item');
+        if (!allItems.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            psgcActiveIndex = Math.min(psgcActiveIndex + 1, allItems.length - 1);
+            allItems.forEach(function (el, i) { el.classList.toggle('active', i === psgcActiveIndex); });
+            allItems[psgcActiveIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            psgcActiveIndex = Math.max(psgcActiveIndex - 1, 0);
+            allItems.forEach(function (el, i) { el.classList.toggle('active', i === psgcActiveIndex); });
+            allItems[psgcActiveIndex].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' && psgcActiveIndex >= 0) {
+            e.preventDefault();
+            allItems[psgcActiveIndex].dispatchEvent(new Event('mousedown'));
+        } else if (e.key === 'Escape') {
+            dropdown.classList.remove('show');
+        }
+    }
+
+    // Province input
+    (function () {
+        var input = document.getElementById('createProvince');
+        var codeEl = document.getElementById('createProvinceCode');
+        var dd = document.getElementById('provinceDropdown');
+        var cityInput = document.getElementById('createCity');
+        var cityCode = document.getElementById('createCityCode');
+        var brgyInput = document.getElementById('createBarangay');
+
+        function onProvinceSelect(item) {
+            // Reset downstream
+            cityInput.value = '';
+            cityCode.value = '';
+            cityInput.disabled = false;
+            cityInput.placeholder = 'Loading cities...';
+            brgyInput.value = '';
+            brgyInput.disabled = true;
+            brgyInput.placeholder = 'Select city first';
+            psgcCities = [];
+            psgcBarangays = [];
+            document.getElementById('cityDropdown').classList.remove('show');
+            document.getElementById('barangayDropdown').classList.remove('show');
+
+            // Fetch cities for this province
+            fetch(PSGC_BASE + '/provinces/' + item.code + '/cities-municipalities/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    psgcCities = data.sort(function (a, b) { return a.name.localeCompare(b.name); });
+                    cityInput.placeholder = 'Type to search city...';
+                    cityInput.focus();
+                })
+                .catch(function () {
+                    cityInput.placeholder = 'Failed to load cities';
+                });
+        }
+
+        input.addEventListener('input', function () {
+            codeEl.value = ''; // clear code when user types manually
+            var filtered = psgcFilter(psgcProvinces, input.value);
+            psgcRenderDropdown(dd, filtered, input, codeEl, onProvinceSelect);
+        });
+
+        input.addEventListener('focus', function () {
+            if (psgcProvinces.length > 0) {
+                var filtered = psgcFilter(psgcProvinces, input.value);
+                psgcRenderDropdown(dd, filtered, input, codeEl, onProvinceSelect);
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            setTimeout(function () { dd.classList.remove('show'); }, 200);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            var filtered = psgcFilter(psgcProvinces, input.value);
+            psgcKeyboard(e, dd, input, codeEl, filtered, onProvinceSelect);
+        });
+    })();
+
+    // City input
+    (function () {
+        var input = document.getElementById('createCity');
+        var codeEl = document.getElementById('createCityCode');
+        var dd = document.getElementById('cityDropdown');
+        var brgyInput = document.getElementById('createBarangay');
+
+        function onCitySelect(item) {
+            brgyInput.value = '';
+            brgyInput.disabled = false;
+            brgyInput.placeholder = 'Loading barangays...';
+            psgcBarangays = [];
+            document.getElementById('barangayDropdown').classList.remove('show');
+
+            fetch(PSGC_BASE + '/cities-municipalities/' + item.code + '/barangays/')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    psgcBarangays = data.sort(function (a, b) { return a.name.localeCompare(b.name); });
+                    brgyInput.placeholder = 'Type to search barangay...';
+                    brgyInput.focus();
+                })
+                .catch(function () {
+                    brgyInput.placeholder = 'Failed to load barangays';
+                });
+        }
+
+        input.addEventListener('input', function () {
+            codeEl.value = '';
+            var filtered = psgcFilter(psgcCities, input.value);
+            psgcRenderDropdown(dd, filtered, input, codeEl, onCitySelect);
+        });
+
+        input.addEventListener('focus', function () {
+            if (psgcCities.length > 0) {
+                var filtered = psgcFilter(psgcCities, input.value);
+                psgcRenderDropdown(dd, filtered, input, codeEl, onCitySelect);
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            setTimeout(function () { dd.classList.remove('show'); }, 200);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            var filtered = psgcFilter(psgcCities, input.value);
+            psgcKeyboard(e, dd, input, codeEl, filtered, onCitySelect);
+        });
+    })();
+
+    // Barangay input
+    (function () {
+        var input = document.getElementById('createBarangay');
+        var dd = document.getElementById('barangayDropdown');
+
+        input.addEventListener('input', function () {
+            var filtered = psgcFilter(psgcBarangays, input.value);
+            psgcRenderDropdown(dd, filtered, input, null, null);
+        });
+
+        input.addEventListener('focus', function () {
+            if (psgcBarangays.length > 0) {
+                var filtered = psgcFilter(psgcBarangays, input.value);
+                psgcRenderDropdown(dd, filtered, input, null, null);
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            setTimeout(function () { dd.classList.remove('show'); }, 200);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            var filtered = psgcFilter(psgcBarangays, input.value);
+            psgcKeyboard(e, dd, input, null, filtered, null);
+        });
+    })();
+
+    // Close PSGC dropdowns when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.psgc-wrapper')) {
+            document.querySelectorAll('.psgc-dropdown').forEach(function (dd) { dd.classList.remove('show'); });
+        }
+    });
+
+    // ── Filters & buttons ──
+    (function () {
+        function applyUserFilters() {
+            var q = document.getElementById('userSearch')?.value || '';
+            var role = document.getElementById('userRoleFilter')?.value || '';
+            var status = document.getElementById('userStatusFilter')?.value || '';
+
+            var params = [];
+            if (q) params.push('q=' + encodeURIComponent(q));
+            if (role) params.push('role=' + encodeURIComponent(role));
+            if (status) params.push('status=' + encodeURIComponent(status));
+            params.push('page=1'); // Reset to page 1 when filtering
+
+            window.location.href = '@Url.Action("Users", "SuperAdmin")' + (params.length ? ('?' + params.join('&')) : '');
+        }
+
+        // Restore filter state
+        var filterQuery = '@Html.Raw((filterQuery ?? "").Replace("'", "\\'"))';
+        var filterRole = '@Html.Raw((filterRole ?? "").Replace("'", "\\'"))';
+        var filterStatus = '@Html.Raw((filterStatus ?? "").Replace("'", "\\'"))';
+
+        if (filterQuery) document.getElementById('userSearch').value = filterQuery;
+        if (filterRole) document.getElementById('userRoleFilter').value = filterRole;
+        if (filterStatus) document.getElementById('userStatusFilter').value = filterStatus;
+
+        // Search (debounced)
+        var searchEl = document.getElementById('userSearch');
+        if (searchEl) {
+            var timer;
+            searchEl.addEventListener('input', function () {
+                clearTimeout(timer);
+                timer = setTimeout(applyUserFilters, 400);
+            });
+        }
+
+        // Dropdowns
+        document.getElementById('userRoleFilter')?.addEventListener('change', applyUserFilters);
+        document.getElementById('userStatusFilter')?.addEventListener('change', applyUserFilters);
+
+        // Create Account button
+        document.getElementById('createAccountBtn')?.addEventListener('click', openCreateAccountModal);
+
+        // PDF Export
+        document.getElementById('exportPdfBtn')?.addEventListener('click', function () {
+            var q = document.getElementById('userSearch')?.value || '';
+            var role = document.getElementById('userRoleFilter')?.value || '';
+            var status = document.getElementById('userStatusFilter')?.value || '';
+
+            var params = [];
+            if (q) params.push('q=' + encodeURIComponent(q));
+            if (role) params.push('role=' + encodeURIComponent(role));
+            if (status) params.push('status=' + encodeURIComponent(status));
+
+            window.location.href = '@Url.Action("ExportUsersPdf", "SuperAdmin")' + (params.length ? ('?' + params.join('&')) : '');
         });
     })();
 </script>
 }
-

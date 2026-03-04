@@ -88,7 +88,7 @@ namespace CEMS.Controllers
         }
 
         // ───────────── User Management ─────────────
-        public async Task<IActionResult> Users(string? q, string? role, string? status)
+        public async Task<IActionResult> Users(string? q, string? role, string? status, int page = 1, int pageSize = 10)
         {
             var allUsers = await _userManager.Users.OrderBy(u => u.Email).ToListAsync();
             var userDtos = new List<UserWithRolesDto>();
@@ -134,11 +134,25 @@ namespace CEMS.Controllers
                 }
             }
 
-            ViewBag.Users = userDtos;
+            // Pagination
+            int totalCount = userDtos.Count;
+            int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var paginatedUsers = userDtos
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            ViewBag.Users = paginatedUsers;
             ViewBag.AllRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
             ViewBag.FilterQuery = q;
             ViewBag.FilterRole = role;
             ViewBag.FilterStatus = status;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.PageSize = pageSize;
 
             return View("Users/Index");
         }
@@ -295,20 +309,85 @@ namespace CEMS.Controllers
 
             var adminId = _userManager.GetUserId(User);
 
+            // Normalize address fields - empty string becomes null
+            var normalizedStreet = string.IsNullOrWhiteSpace(street) ? null : street.Trim();
+            var normalizedBarangay = string.IsNullOrWhiteSpace(barangay) ? null : barangay.Trim();
+            var normalizedCity = string.IsNullOrWhiteSpace(city) ? null : city.Trim();
+            var normalizedProvince = string.IsNullOrWhiteSpace(province) ? null : province.Trim();
+            var normalizedZipCode = string.IsNullOrWhiteSpace(zipCode) ? null : zipCode.Trim();
+            var normalizedCountry = string.IsNullOrWhiteSpace(country) ? null : country.Trim();
+            var normalizedContactNumber = string.IsNullOrWhiteSpace(contactNumber) ? null : contactNumber.Trim();
+
             // Create profile record based on role
             switch (role)
             {
                 case "CEO":
-                    _db.CEOProfiles.Add(new CEOProfile { UserId = user.Id, FullName = fullName, Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true });
+                    _db.CEOProfiles.Add(new CEOProfile 
+                    { 
+                        UserId = user.Id, 
+                        FullName = fullName?.Trim(), 
+                        Street = normalizedStreet, 
+                        Barangay = normalizedBarangay, 
+                        City = normalizedCity, 
+                        Province = normalizedProvince, 
+                        ZipCode = normalizedZipCode, 
+                        Country = normalizedCountry, 
+                        ContactNumber = normalizedContactNumber, 
+                        IsActive = true 
+                    });
                     break;
                 case "Manager":
-                    _db.ManagerProfiles.Add(new ManagerProfile { UserId = user.Id, FullName = fullName, Department = "General", Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
+                    _db.ManagerProfiles.Add(new ManagerProfile 
+                    { 
+                        UserId = user.Id, 
+                        FullName = fullName?.Trim(), 
+                        Department = "General", 
+                        Street = normalizedStreet, 
+                        Barangay = normalizedBarangay, 
+                        City = normalizedCity, 
+                        Province = normalizedProvince, 
+                        ZipCode = normalizedZipCode, 
+                        Country = normalizedCountry, 
+                        ContactNumber = normalizedContactNumber, 
+                        IsActive = true, 
+                        CreatedByUserId = adminId 
+                    });
                     break;
                 case "Finance":
-                    _db.FinanceProfiles.Add(new FinanceProfile { UserId = user.Id, FullName = fullName, Department = "Accounting", Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
+                    _db.FinanceProfiles.Add(new FinanceProfile 
+                    { 
+                        UserId = user.Id, 
+                        FullName = fullName?.Trim(), 
+                        Department = "Accounting", 
+                        Street = normalizedStreet, 
+                        Barangay = normalizedBarangay, 
+                        City = normalizedCity, 
+                        Province = normalizedProvince, 
+                        ZipCode = normalizedZipCode, 
+                        Country = normalizedCountry, 
+                        ContactNumber = normalizedContactNumber, 
+                        IsActive = true, 
+                        CreatedByUserId = adminId 
+                    });
                     break;
                 case "Driver":
-                    _db.DriverProfiles.Add(new DriverProfile { UserId = user.Id, FullName = fullName, Street = street, Barangay = barangay, City = city, Province = province, ZipCode = zipCode, Country = country, ContactNumber = contactNumber, IsActive = true, CreatedByUserId = adminId });
+                    _db.DriverProfiles.Add(new DriverProfile 
+                    { 
+                        UserId = user.Id, 
+                        FullName = fullName?.Trim(), 
+                        Street = normalizedStreet, 
+                        Barangay = normalizedBarangay, 
+                        City = normalizedCity, 
+                        Province = normalizedProvince, 
+                        ZipCode = normalizedZipCode, 
+                        Country = normalizedCountry, 
+                        ContactNumber = normalizedContactNumber, 
+                        IsActive = true, 
+                        CreatedByUserId = adminId 
+                    });
+                    break;
+                default:
+                    // If no role is selected, we still create a basic user but no profile
                     break;
             }
 
@@ -424,6 +503,24 @@ namespace CEMS.Controllers
                 driver.ZipCode = model.ZipCode;
                 driver.Country = model.Country;
                 driver.ContactNumber = model.ContactNumber;
+            }
+
+            await _db.SaveChangesAsync();
+
+            // Handle password change if provided
+            if (!string.IsNullOrWhiteSpace(model.Password))
+            {
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, model.Password!);
+                if (!resetResult.Succeeded)
+                {
+                    // Return to the edit view with errors
+                    foreach (var err in resetResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, err.Description);
+                    }
+                    return PartialView("Users/Edit", model);
+                }
             }
 
             await _db.SaveChangesAsync();

@@ -12,9 +12,9 @@
 
         <!-- Page Header -->
         <div class="page-header">
-            <h1 class="page-title">
+            @* <h1 class="page-title">
                 <i class="bi bi-fuel-pump"></i> Fuel Price Management
-            </h1>
+            </h1> *@
             <p class="page-subtitle">Manually set and adjust fuel prices visible across the system.</p>
         </div>
 
@@ -170,7 +170,7 @@
                                                 <td style="padding: 14px 16px; text-align: right;">
                                                     <button class="btn btn-sm me-1" style="background: rgba(26,107,181,0.1); color: var(--d-primary); border: none; border-radius: 6px; padding: 6px 12px; font-weight: 600;"
                                                             data-bs-toggle="modal" data-bs-target="#editModal-@fp.Id">
-                                                        <i class="bi bi-pencil-square"></i> Edit
+                                                        <i class="bi bi-pencil-square"></i> 
                                                     </button>
                                                     <form method="post" asp-action="DeleteFuelPrice" asp-controller="SuperAdmin" class="d-inline"
                                                           onsubmit="return confirm('Are you sure you want to delete this fuel type?');">
