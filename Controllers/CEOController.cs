@@ -106,25 +106,69 @@ namespace CEMS.Controllers
             }
             ViewBag.RecentOverBudget = recentDto;
 
-            // ── Spending Trend Data (Weekly) ──
-            // Weekly trend: only include reimbursed reports to reflect actual paid activity
-            var allReports = await _db.ExpenseReports
-                .Where(r => r.Reimbursed == true && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate)
-                .ToListAsync();
+            // ── Adaptive Spending Trend (auto granularity from date range) ──
+            var trendLabels = new List<string>();
+            var trendData = new List<decimal>();
+            var totalDays = (endDate - startDate).TotalDays;
 
-            // Group by week
-            var weeklySpending = new Dictionary<int, decimal>();
-            for (int i = 0; i < 4; i++)
+            if (totalDays <= 1)
             {
-                var weekStart = startDate.AddDays(i * 7);
-                var weekEnd = weekStart.AddDays(6); 
-                var weekTotal = allReports
-                    .Where(r => r.SubmissionDate >= weekStart && r.SubmissionDate <= weekEnd)
-                    .Sum(r => r.TotalAmount);
-                weeklySpending[i + 1] = weekTotal;
+                for (int h = 0; h < 24; h += 4)
+                {
+                    var blockStart = startDate.Date.AddHours(h);
+                    var blockEnd = blockStart.AddHours(4);
+                    trendLabels.Add(blockStart.ToString("h tt"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= blockStart && r.SubmissionDate < blockEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                }
+            }
+            else if (totalDays <= 7)
+            {
+                for (var d = startDate.Date; d <= endDate.Date; d = d.AddDays(1))
+                {
+                    trendLabels.Add(d.ToString("ddd d"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= d && r.SubmissionDate < d.AddDays(1))
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                }
+            }
+            else if (totalDays <= 40)
+            {
+                var wStart = startDate.Date;
+                int wNum = 1;
+                while (wStart <= endDate.Date)
+                {
+                    var wEnd = wStart.AddDays(7) > endDate ? endDate.AddDays(1) : wStart.AddDays(7);
+                    trendLabels.Add($"Week {wNum}");
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= wStart && r.SubmissionDate < wEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                    wStart = wEnd;
+                    wNum++;
+                }
+            }
+            else
+            {
+                var cur = new DateTime(startDate.Year, startDate.Month, 1);
+                var endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+                while (cur <= endMonth)
+                {
+                    var mEnd = cur.AddMonths(1);
+                    trendLabels.Add(cur.ToString("MMM"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= cur && r.SubmissionDate < mEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                    cur = mEnd;
+                }
             }
 
-            ViewBag.WeeklySpending = System.Text.Json.JsonSerializer.Serialize(weeklySpending.Values.ToList());
+            ViewBag.TrendLabels = System.Text.Json.JsonSerializer.Serialize(trendLabels);
+            ViewBag.TrendData = System.Text.Json.JsonSerializer.Serialize(trendData);
 
             // ── Report Status Distribution Data ──
             var submitted = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
@@ -140,29 +184,12 @@ namespace CEMS.Controllers
             // ── Category Budget Breakdown ──
             var categoryLabels = budgets.Select(b => b.Category).ToList();
             var categoryAllocated = budgets.Select(b => b.Allocated).ToList();
-            // Calculate spent per category dynamically from approved expense items
-            var categorySpent = budgets.Select(b => 
+            var categorySpent = budgets.Select(b =>
                 spentByCategory.FirstOrDefault(s => s.Category == b.Category)?.Total ?? 0m
             ).ToList();
             ViewBag.CategoryLabels = System.Text.Json.JsonSerializer.Serialize(categoryLabels);
             ViewBag.CategoryAllocated = System.Text.Json.JsonSerializer.Serialize(categoryAllocated);
             ViewBag.CategorySpent = System.Text.Json.JsonSerializer.Serialize(categorySpent);
-
-            // ── Monthly Spending Trend (Last 6 Months) ──
-            var monthLabels = new List<string>();
-            var monthTotals = new List<decimal>();
-            for (int i = 5; i >= 0; i--)
-            {
-                var ms = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-i);
-                var me = ms.AddMonths(1).AddDays(-1);
-                monthLabels.Add(ms.ToString("MMM"));
-                var mt = await _db.ExpenseReports
-                    .Where(r => r.Reimbursed == true && r.SubmissionDate >= ms && r.SubmissionDate <= me)
-                    .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-                monthTotals.Add(mt);
-            }
-            ViewBag.MonthLabels = System.Text.Json.JsonSerializer.Serialize(monthLabels);
-            ViewBag.MonthTotals = System.Text.Json.JsonSerializer.Serialize(monthTotals);
 
             // Store filter dates for view
             ViewBag.FilterStart = startDate.ToString("yyyy-MM-dd");
@@ -173,6 +200,114 @@ namespace CEMS.Controllers
             ViewBag.FuelPrices = System.Text.Json.JsonSerializer.Serialize(fuelPrices);
 
             return View("Dashboard/Index");
+        }
+
+        // ───────────── Dashboard AJAX Data ─────────────
+        [HttpGet]
+        public async Task<IActionResult> GetDashboardData(DateTime? start = null, DateTime? end = null)
+        {
+            var startDate = start ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var endDate = end ?? DateTime.Now;
+            var totalDays = (endDate - startDate).TotalDays;
+
+            var budgets = await _db.Budgets.ToListAsync();
+            var totalBudget = budgets.Sum(b => b.Allocated);
+
+            var spentByCategory = await _db.ExpenseItems
+                .Where(ei => ei.Report != null && ei.Report.Reimbursed == true
+                             && ((ei.Date >= startDate && ei.Date <= endDate.AddDays(1))
+                                 || (ei.Date == null && ei.Report.SubmissionDate >= startDate && ei.Report.SubmissionDate <= endDate.AddDays(1))
+                                 || (ei.Date == null && ei.Report.SubmissionDate < startDate && ei.Report.TripStart >= startDate && ei.Report.TripStart <= endDate.AddDays(1))))
+                .GroupBy(ei => ei.Category)
+                .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
+                .ToListAsync();
+
+            var totalSpent = spentByCategory.Sum(s => s.Total);
+            var totalRemaining = totalBudget - totalSpent;
+
+            var submitted = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var approved = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Approved && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var rejected = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.Rejected && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+            var pendingApproval = await _db.ExpenseReports.CountAsync(r => r.Status == ReportStatus.PendingCEOApproval && r.SubmissionDate >= startDate && r.SubmissionDate <= endDate);
+
+            var categoryLabels = budgets.Select(b => b.Category).ToList();
+            var categoryAllocated = budgets.Select(b => b.Allocated).ToList();
+            var categorySpentList = budgets.Select(b => spentByCategory.FirstOrDefault(s => s.Category == b.Category)?.Total ?? 0m).ToList();
+
+            var trendLabels = new List<string>();
+            var trendData = new List<decimal>();
+
+            if (totalDays <= 1)
+            {
+                for (int h = 0; h < 24; h += 4)
+                {
+                    var blockStart = startDate.Date.AddHours(h);
+                    var blockEnd = blockStart.AddHours(4);
+                    trendLabels.Add(blockStart.ToString("h tt"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= blockStart && r.SubmissionDate < blockEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                }
+            }
+            else if (totalDays <= 7)
+            {
+                for (var d = startDate.Date; d <= endDate.Date; d = d.AddDays(1))
+                {
+                    trendLabels.Add(d.ToString("ddd d"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= d && r.SubmissionDate < d.AddDays(1))
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                }
+            }
+            else if (totalDays <= 40)
+            {
+                var wStart = startDate.Date;
+                int wNum = 1;
+                while (wStart <= endDate.Date)
+                {
+                    var wEnd = wStart.AddDays(7) > endDate ? endDate.AddDays(1) : wStart.AddDays(7);
+                    trendLabels.Add($"Week {wNum}");
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= wStart && r.SubmissionDate < wEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                    wStart = wEnd;
+                    wNum++;
+                }
+            }
+            else
+            {
+                var cur = new DateTime(startDate.Year, startDate.Month, 1);
+                var endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+                while (cur <= endMonth)
+                {
+                    var mEnd = cur.AddMonths(1);
+                    trendLabels.Add(cur.ToString("MMM"));
+                    var t = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= cur && r.SubmissionDate < mEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    trendData.Add(t);
+                    cur = mEnd;
+                }
+            }
+
+            return Json(new
+            {
+                totalBudget,
+                totalSpent,
+                totalRemaining,
+                submittedCount = submitted,
+                approvedCount = approved,
+                rejectedCount = rejected,
+                pendingApprovalCount = pendingApproval,
+                categoryLabels,
+                categoryAllocated,
+                categorySpent = categorySpentList,
+                trendLabels,
+                trendData
+            });
         }
 
         // ───────────── Over-Budget Expense Reports (Approvals) ─────────────

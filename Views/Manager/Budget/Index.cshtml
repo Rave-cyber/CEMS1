@@ -282,8 +282,8 @@
             <div>
                 <p class="page-subtitle">Budgets are set by the CEO. Track allocations and spending below.</p>
             </div>
-            <button type="button" class="btn btn-sm" style="background-color: #10b981; color: white; border: 1px solid #10b981;" onclick="exportBudgetToPDF()">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            <button type="button" class="btn btn-sm" style="background-color: #155a9a; color: white; border: 1px solid #155a9a;" onclick="exportBudgetToPDF()">
+                Export PDF
             </button>
         </div>
 
@@ -457,7 +457,7 @@ async function loadBudgets(){
             window.budgetChartInstance.destroy();
         }
 
-        window.budgetChartInstance = new Chart(ctx, {pdf
+        window.budgetChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
@@ -629,11 +629,29 @@ function exportBudgetToPDF() {
         jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    try {
+        // Use a safe filename (no spaces/reserved chars)
+        opt.filename = `budget-report-${new Date().toISOString().split('T')[0]}.pdf`;
+        const job = html2pdf().set(opt).from(element);
+        // .save() may or may not return a Promise depending on the bundled version; handle both cases
+        const res = job.save();
+        if (res && typeof res.then === 'function') {
+            res.then(() => console.log('PDF saved:', opt.filename)).catch(err => {
+                console.error('PDF save failed:', err);
+                alert('PDF export failed. See console for details.');
+            });
+        } else {
+            // If no promise returned, give the browser a moment and check for errors in console
+            console.log('PDF save initiated (no promise returned)');
+        }
+    } catch (err) {
+        console.error('PDF export exception:', err);
+        alert('PDF export failed. See console for details.');
+    }
 }
 
 function generateBudgetTableRows() {
-    const budgets = @Html.Raw(JsonSerializer.Serialize(ViewBag.Budgets ?? new List<CEMS.Models.Budget>()));
+    const budgets = @Html.Raw(JsonSerializer.Serialize(ViewBag.Budgets ?? new List<CEMS.Models.Budget>(), new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
     let html = '';
 
     if (!budgets || budgets.length === 0) {

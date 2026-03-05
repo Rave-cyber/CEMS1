@@ -330,18 +330,84 @@ namespace CEMS.Controllers
                 .Where(r => r.Status == ReportStatus.Rejected && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
                 .CountAsync();
 
-            // Monthly spending trend (last 6 months)
+            // Spending trend with dynamic labels based on date range
             var monthLabels = new List<string>();
             var monthTotals = new List<decimal>();
-            for (int i = 5; i >= 0; i--)
+
+            var dateSpan = (end.Value - start.Value).Days;
+
+            if (dateSpan <= 1)
             {
-                var ms = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-i);
-                var me = ms.AddMonths(1).AddDays(-1);
-                monthLabels.Add(ms.ToString("MMM"));
-                var mt = await _db.ExpenseReports
-                    .Where(r => r.Reimbursed == true && r.SubmissionDate >= ms && r.SubmissionDate <= me)
-                    .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
-                monthTotals.Add(mt);
+                // Daily view: show hourly labels (00:00, 01:00, 02:00, ..., 23:00)
+                for (int hour = 0; hour < 24; hour++)
+                {
+                    monthLabels.Add($"{hour:D2}:00");
+
+                    var hourStart = start.Value.Date.AddHours(hour);
+                    var hourEnd = hourStart.AddHours(1).AddSeconds(-1);
+
+                    var mt = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= hourStart && r.SubmissionDate <= hourEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    monthTotals.Add(mt);
+                }
+            }
+            else if (dateSpan <= 7)
+            {
+                // Weekly view: show 7 days with day names and dates
+                var currentDate = start.Value.Date;
+                string[] dayNames = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+                while (currentDate <= end.Value.Date)
+                {
+                    var dayOfWeek = dayNames[(int)currentDate.DayOfWeek];
+                    var dayLabel = $"{dayOfWeek} {currentDate:M/d}";
+
+                    monthLabels.Add(dayLabel);
+                    var dayEnd = currentDate.AddDays(1).AddSeconds(-1);
+
+                    var mt = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= currentDate && r.SubmissionDate <= dayEnd)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    monthTotals.Add(mt);
+
+                    currentDate = currentDate.AddDays(1);
+                }
+            }
+            else if (dateSpan <= 31)
+            {
+                // Monthly view: show weeks within the selected month
+                var currentDate = start.Value.Date;
+                int weekNum = 1;
+
+                while (currentDate <= end.Value.Date)
+                {
+                    var weekEnd = currentDate.AddDays(7).AddDays(-1);
+                    if (weekEnd > end.Value.Date) weekEnd = end.Value.Date;
+
+                    monthLabels.Add($"Week {weekNum}");
+                    var mt = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= currentDate && r.SubmissionDate <= weekEnd.AddDays(1))
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    monthTotals.Add(mt);
+
+                    currentDate = weekEnd.AddDays(1);
+                    weekNum++;
+                }
+            }
+            else
+            {
+                // Yearly/large range view: show last 6 months (original behavior)
+                for (int i = 5; i >= 0; i--)
+                {
+                    var ms = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-i);
+                    var me = ms.AddMonths(1).AddDays(-1);
+                    monthLabels.Add(ms.ToString("MMM"));
+                    var mt = await _db.ExpenseReports
+                        .Where(r => r.Reimbursed == true && r.SubmissionDate >= ms && r.SubmissionDate <= me)
+                        .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
+                    monthTotals.Add(mt);
+                }
             }
 
             return Json(new { totalPending, approved, rejected, overBudgetCount, approvedTodayCount, approvedTodayTotal, budgets, topSubmitters, topReimbursed, submittedCount, approvedCount, rejectedCount, monthLabels, monthTotals });

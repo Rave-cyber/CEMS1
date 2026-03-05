@@ -39,8 +39,8 @@ namespace CEMS.Services
 
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
         {
-            // Organize: receipts/yyyy/MM/guid/filename
-            var key = $"receipts/{DateTime.UtcNow:yyyy/MM}/{Guid.NewGuid()}/{fileName}";
+           
+            var key = $"receipts/{DateTime.UtcNow:yyyy/MM/dd}/{fileName}";
 
             var request = new TransferUtilityUploadRequest
             {

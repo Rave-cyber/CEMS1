@@ -145,6 +145,16 @@
     .status-badge--within   { background: rgba(16,185,129,.1);  color: #10b981; }
     .status-badge--over     { background: rgba(239,68,68,.1);   color: #ef4444; }
 
+    /* Small circular status indicator (used instead of textual badges) */
+    .status-circle { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
+    .status-circle--pending  { background: #f59e0b; }
+    .status-circle--approved { background: #10b981; }
+    .status-circle--rejected { background: #ef4444; }
+    .status-circle--ceo      { background: #7c3aed; }
+    .status-circle--within   { background: #10b981; }
+    .status-circle--over     { background: #ef4444; }
+    .status-label { color: var(--d-text); font-weight: 700; font-size: .88rem; vertical-align: middle; }
+
     .cat-tag {
         display: inline-block;
         padding: 3px 9px;
@@ -332,7 +342,7 @@
                 Report #@Model.Id
             </div>
             <a class="back-btn" href="@Url.Action("Reports", "Manager")">
-                <i class="bi bi-arrow-left"></i> Back to Reports
+                Back to Reports
             </a>
         </div>
 
@@ -352,24 +362,22 @@
                     @switch (Model.Status)
                     {
                         case CEMS.Models.ReportStatus.Submitted:
-                            <span class="status-badge status-badge--pending">Pending</span>
+                            <span class="status-circle status-circle--pending" title="Pending"></span><span class="status-label">Pending</span>
                             break;
                         case CEMS.Models.ReportStatus.Approved:
-                            <span class="status-badge status-badge--approved">Approved</span>
+                            <span class="status-circle status-circle--approved" title="Approved"></span><span class="status-label">Approved</span>
                             break;
                         case CEMS.Models.ReportStatus.Rejected:
-                            <span class="status-badge status-badge--rejected">Rejected</span>
+                            <span class="status-circle status-circle--rejected" title="Rejected"></span><span class="status-label">Rejected</span>
                             break;
                         case CEMS.Models.ReportStatus.PendingCEOApproval:
-                            <span class="status-badge status-badge--ceo">Forwarded to CEO</span>
+                            <span class="status-circle status-circle--ceo" title="Forwarded to CEO"></span><span class="status-label">Forwarded to CEO</span>
                             break;
                     }
                 </div>
                 <div class="meta-item">
                     <label>Budget Check</label>
-                    <span class="status-badge @(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "status-badge--over" : "status-badge--within")">
-                        @(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "Over Budget" : "Within Budget")
-                    </span>
+                    <span class="status-circle @(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "status-circle--over" : "status-circle--within")" title="@(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "Over Budget" : "Within Budget")"></span><span class="status-label">@(Model.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget ? "Over Budget" : "Within Budget")</span>
                 </div>
                 <div class="meta-item">
                     <label>Total Amount</label>
@@ -426,12 +434,12 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.Id" />
                             <button class="action-btn action-btn--approve" type="submit">
-                                <i class="bi bi-check-lg"></i> Approve
+                                 Approve
                             </button>
                         </form>
                     }
                     <button class="action-btn action-btn--reject" type="button" onclick="document.getElementById('rejectSection').style.display='block'; this.style.display='none';">
-                        <i class="bi bi-x-lg"></i> Reject
+                         Reject
                     </button>
                 </div>
                 <!-- Rejection notes section (initially hidden) -->
@@ -445,7 +453,7 @@
                         </div>
                         <div class="d-flex gap-2">
                             <button class="action-btn action-btn--reject" type="submit">
-                                <i class="bi bi-x-lg"></i> Confirm Rejection
+                                 Confirm Rejection
                             </button>
                             <button class="action-btn" type="button" style="background:#f1f5f9;color:var(--d-text);" onclick="document.getElementById('rejectSection').style.display='none'; document.querySelector('.action-btn--reject[type=button]').style.display='';">
                                 Cancel
@@ -605,9 +613,9 @@
                     var icon = a.Status == CEMS.Models.ApprovalStatus.Approved ? "bi-check-lg"
                              : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "bi-x-lg"
                              : "bi-hourglass-split";
-                    var badgeClass = a.Status == CEMS.Models.ApprovalStatus.Approved ? "status-badge--approved"
-                                   : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "status-badge--rejected"
-                                   : "status-badge--pending";
+                    var badgeClass = a.Status == CEMS.Models.ApprovalStatus.Approved ? "status-circle--approved"
+                                   : a.Status == CEMS.Models.ApprovalStatus.Rejected  ? "status-circle--rejected"
+                                   : "status-circle--pending";
                     <div class="trail-item">
                         <div class="trail-dot @dotClass"><i class="bi @icon"></i></div>
                         <div class="trail-info">
@@ -618,7 +626,7 @@
                                 <div class="trail-remark">@a.Remarks</div>
                             }
                         </div>
-                        <div><span class="status-badge @badgeClass">@a.Status</span></div>
+                        <div><span class="status-circle @badgeClass" title="@a.Status"></span><span class="status-label">@a.Status</span></div>
                     </div>
                 }
             </div>

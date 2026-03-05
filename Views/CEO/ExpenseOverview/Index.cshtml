@@ -25,7 +25,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: #22c55e;
+        background: #1a6bb5; /* blue */
         color: #fff;
         border: none;
         border-radius: 6px;
@@ -38,10 +38,18 @@
     }
 
     .export-btn:hover {
-        background: #16a34a;
+        background: #155a9a; /* darker blue */
         transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+        box-shadow: 0 2px 8px rgba(26, 107, 181, 0.2);
     }
+
+    /* Compact export adjustments (applied during export) */
+    .export-compact .dash-table th,
+    .export-compact .dash-table td {
+        padding: 4px !important;
+        font-size: 10px !important;
+    }
+    .export-compact .page-subtitle { font-size: 12px !important; }
 
     /* Add a small right margin so the table doesn't touch the edge when exported */
     .table-card { margin-right: 18px; }
@@ -82,7 +90,7 @@
                 <p class="page-subtitle">View all expenses across the organization.</p>
             </div>
             <button onclick="downloadExpenseOverviewPDF()" class="export-btn no-print">
-                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                 Export PDF
             </button>
             <div class="export-metadata no-print" id="exportMetadata">Exported by: <strong>@currentUserName</strong> on <strong id="exportTimestamp"></strong></div>
         </div>
@@ -125,7 +133,6 @@
                                 <th>Submitted</th>
                                 <th>Status</th>
                                 <th>Budget Check</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -166,9 +173,7 @@
                                             }
                                         </span>
                                     </td>
-                                    <td>
-                                        <a class="view-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">View</a>
-                                    </td>
+
                                 </tr>
                             }
                         </tbody>
@@ -202,11 +207,11 @@
     function downloadExpenseOverviewPDF() {
         const element = document.querySelector('.page-wrapper');
         const opt = {
-            margin: [12, 18, 12, 18], // top, right, bottom, left
+            margin: [6, 6, 6, 6], // smaller margins to fit more data
             filename: 'Expense_Overview_' + new Date().toISOString().slice(0, 10) + '.pdf',
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
-            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
         };
 
         // Hide non-essential elements temporarily
@@ -220,6 +225,10 @@
         if (exportMeta) exportMeta.style.display = 'block';
         if (actionCells) actionCells.forEach(function(c){ c.classList.add('hide-for-pdf'); });
 
+        // compact + blue theme for PDF
+        if (element) element.classList.add('export-compact');
+        if (element) element.classList.add('pdf-blue');
+
 
         // Generate PDF
         html2pdf().set(opt).from(element).save().then(() => {
@@ -228,6 +237,16 @@
             if (exportBtn) exportBtn.style.display = '';
             if (exportMeta) exportMeta.style.display = 'none';
             if (actionCells) actionCells.forEach(function(c){ c.classList.remove('hide-for-pdf'); });
+            if (element) element.classList.remove('export-compact');
+            if (element) element.classList.remove('pdf-blue');
+        }).catch(err => {
+            console.error('PDF export failed', err);
+            if (filterCard) filterCard.style.display = '';
+            if (exportBtn) exportBtn.style.display = '';
+            if (exportMeta) exportMeta.style.display = 'none';
+            if (actionCells) actionCells.forEach(function(c){ c.classList.remove('hide-for-pdf'); });
+            if (element) element.classList.remove('export-compact');
+            if (element) element.classList.remove('pdf-blue');
         });
     }
 

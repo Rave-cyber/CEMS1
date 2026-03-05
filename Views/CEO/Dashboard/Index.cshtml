@@ -12,6 +12,8 @@
     var recentOB = ViewBag.RecentOverBudget as List<CEMS.Models.OverBudgetReportDto> ?? new List<CEMS.Models.OverBudgetReportDto>();
 }
 
+
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
 <style>
@@ -35,8 +37,8 @@
     .quick-filters { display: flex; align-items: center; gap: 2px; background: #f8fafc; padding: 4px; border-radius: 8px; border: 1px solid #edf2f7; flex-shrink: 0; }
     .filter-btn { padding: 6px 16px; border: none; background: transparent; border-radius: 6px; font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; flex-shrink: 0; }
     .filter-btn:hover { background: #e2e8f0; color: #0288d1; }
-    .filter-btn.active { background: #0288d1; color: white; }
-    .filter-btn.active:hover { background: #01579b; }
+    .filter-btn.active { background: #0288d1; color: white; border: 1px solid #01579b; box-shadow: 0 2px 8px rgba(2, 136, 209, 0.3); }
+    .filter-btn.active:hover { background: #01579b; border-color: #0c47a1; }
     body.dark-mode .top-bar { background: #1e293b; border-color: #334155; }
     body.dark-mode .greeting { color: #e2e8f0; }
     body.dark-mode .quick-filters { background: #0f172a; border-color: #334155; }
@@ -61,14 +63,24 @@
     .stat-number { font-size: 1.25rem; font-weight: 600; line-height: 1.2; }
     .stat-sub { font-size: 0.65rem; color: #94a3b8; margin-top: 2px; }
 
+    /* Chart grid layouts */
     .charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .charts-grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
     .chart-card { background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e9eef2; display: flex; flex-direction: column; height: fit-content; }
     body.dark-mode .chart-card { background: #1e293b; border-color: #334155; }
     .chart-header { font-size: 0.85rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 6px; padding: 0 0 8px 0; border-bottom: 1px solid #e9eef2; margin-bottom: 8px; }
     .chart-header i { color: #0288d1; }
+    .chart-header .granularity-tag { margin-left: auto; font-size: 0.65rem; font-weight: 500; color: #94a3b8; background: #f1f5f9; padding: 2px 8px; border-radius: 10px; }
     body.dark-mode .chart-header { color: #e2e8f0; border-color: #334155; }
+    body.dark-mode .chart-header .granularity-tag { background: #0f172a; color: #64748b; }
     .chart-container { height: 160px; width: 100%; position: relative; margin: 0; padding: 0; display: block; line-height: 0; font-size: 0; }
+    .chart-container--tall { height: 200px; }
     .chart-container canvas { display: block; width: 100% !important; height: 100% !important; margin: 0; padding: 0; vertical-align: bottom; }
+    @@media (max-width: 768px) {
+        .charts-grid-wide { grid-template-columns: 1fr; }
+        .charts-grid { grid-template-columns: 1fr; }
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
 
     .table-card { background: white; border-radius: 10px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e9eef2; }
     body.dark-mode .table-card { background: #1e293b; border-color: #334155; }
@@ -175,7 +187,7 @@
                 <div class="stat-icon blue"><i class="bi bi-cash-coin"></i></div>
                 <div class="stat-content">
                     <div class="stat-label">Total Budget</div>
-                    <div class="stat-number">₱@totalBudget.ToString("N0")</div>
+                    <div class="stat-number" id="statBudget">₱@totalBudget.ToString("N0")</div>
                     <div class="stat-sub">all categories</div>
                 </div>
             </div>
@@ -183,8 +195,8 @@
                 <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="stat-content">
                     <div class="stat-label">Utilized</div>
-                    <div class="stat-number">₱@totalSpent.ToString("N0")</div>
-                    <div class="stat-sub">@usagePct% of budget</div>
+                    <div class="stat-number" id="statSpent">₱@totalSpent.ToString("N0")</div>
+                    <div class="stat-sub" id="statUsagePct">@usagePct% of budget</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -205,31 +217,30 @@
             </div>
         </div>
 
-        <!-- Charts Row 1 -->
-        <div class="charts-grid">
+        <!-- Charts Row 1: Spending Trend (wide) + Budget Breakdown -->
+        <div class="charts-grid-wide">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-graph-up"></i> Spending Trend
+                    <span class="granularity-tag" id="trendGranularity">Weekly</span>
+                </div>
+                <div class="chart-container chart-container--tall"><canvas id="ceoTrendChart"></canvas></div>
+            </div>
             <div class="chart-card">
                 <div class="chart-header"><i class="bi bi-pie-chart-fill"></i> Budget Breakdown</div>
-                <div class="chart-container"><canvas id="ceoBudgetChart"></canvas></div>
+                <div class="chart-container chart-container--tall"><canvas id="ceoBudgetChart"></canvas></div>
             </div>
-            <div class="chart-card">
-                <div class="chart-header"><i class="bi bi-graph-up"></i> Weekly Spending</div>
-                <div class="chart-container"><canvas id="ceoTrendChart"></canvas></div>
-            </div>
+        </div>
+
+        <!-- Charts Row 2: Status + Category + Utilization -->
+        <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-header"><i class="bi bi-bar-chart-fill"></i> Report Status</div>
                 <div class="chart-container"><canvas id="ceoStatusChart"></canvas></div>
             </div>
-        </div>
-
-        <!-- Charts Row 2 (NEW) -->
-        <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-header"><i class="bi bi-bar-chart-steps"></i> Category Spending</div>
                 <div class="chart-container"><canvas id="ceoCategoryChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-header"><i class="bi bi-calendar3"></i> Monthly Trend</div>
-                <div class="chart-container"><canvas id="ceoMonthlyChart"></canvas></div>
             </div>
             <div class="chart-card">
                 <div class="chart-header"><i class="bi bi-speedometer2"></i> Budget Utilization</div>
@@ -319,87 +330,129 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-    (function() {
-        let trendChartInstance, statusChartInstance;
+    (function () {
+        var CI = {};
+        var startEl = document.getElementById('dashboardStart');
+        var endEl = document.getElementById('dashboardEnd');
 
-        const totalSpent = Number('@totalSpent.ToString(System.Globalization.CultureInfo.InvariantCulture)');
-        const totalRemaining = Number('@totalRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)');
-        const weeklySpending = @Html.Raw(ViewBag.WeeklySpending ?? "[0,0,0,0]");
-        const submittedCount = @(ViewBag.SubmittedCount ?? 0);
-        const approvedCount = @(ViewBag.ApprovedCount ?? 0);
-        const rejectedCount = @(ViewBag.RejectedCount ?? 0);
-        const pendingApprovalCount = @(ViewBag.PendingApprovalCount ?? 0);
-        const categoryLabels = @Html.Raw(ViewBag.CategoryLabels ?? "[]");
-        const categoryAllocated = @Html.Raw(ViewBag.CategoryAllocated ?? "[]");
-        const categorySpent = @Html.Raw(ViewBag.CategorySpent ?? "[]");
-        const monthLabels = @Html.Raw(ViewBag.MonthLabels ?? "[]");
-        const monthTotals = @Html.Raw(ViewBag.MonthTotals ?? "[]");
+        // Initial server-rendered data
+        var DATA = {
+            totalBudget: Number('@totalBudget.ToString(System.Globalization.CultureInfo.InvariantCulture)'),
+            totalSpent: Number('@totalSpent.ToString(System.Globalization.CultureInfo.InvariantCulture)'),
+            totalRemaining: Number('@totalRemaining.ToString(System.Globalization.CultureInfo.InvariantCulture)'),
+            trendLabels: @Html.Raw(ViewBag.TrendLabels ?? "[]"),
+            trendData: @Html.Raw(ViewBag.TrendData ?? "[]"),
+            submittedCount: @(ViewBag.SubmittedCount ?? 0),
+            approvedCount: @(ViewBag.ApprovedCount ?? 0),
+            rejectedCount: @(ViewBag.RejectedCount ?? 0),
+            pendingApprovalCount: @(ViewBag.PendingApprovalCount ?? 0),
+            categoryLabels: @Html.Raw(ViewBag.CategoryLabels ?? "[]"),
+            categoryAllocated: @Html.Raw(ViewBag.CategoryAllocated ?? "[]"),
+            categorySpent: @Html.Raw(ViewBag.CategorySpent ?? "[]")
+        };
 
-        function highlightActiveFilter() {
-            var startInput = document.getElementById('dashboardStart');
-            var endInput = document.getElementById('dashboardEnd');
-            if (!startInput || !endInput) return;
-            var start = new Date(startInput.value);
-            var end = new Date(endInput.value);
-            var now = new Date();
-            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            document.querySelectorAll('.filter-btn').forEach(function(btn) { btn.classList.remove('active'); });
-            var matchingRange = null;
-            if (start.getTime() === today.getTime() && end.getTime() === today.getTime()) { matchingRange = 'today'; }
-            else {
-                var weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay());
-                if (start.getTime() === weekStart.getTime() && end.getTime() === today.getTime()) { matchingRange = 'week'; }
-            }
-            if (!matchingRange) { var monthStart = new Date(now.getFullYear(), now.getMonth(), 1); if (start.getTime() === monthStart.getTime() && end.getTime() === today.getTime()) { matchingRange = 'month'; } }
-            if (!matchingRange) { var yearStart = new Date(now.getFullYear(), 0, 1); if (start.getTime() === yearStart.getTime() && end.getTime() === today.getTime()) { matchingRange = 'year'; } }
-            if (matchingRange) { var activeBtn = document.querySelector('[data-range="' + matchingRange + '"]'); if (activeBtn) activeBtn.classList.add('active'); }
+        function destroy(id) {
+            if (CI[id]) { CI[id].destroy(); CI[id] = null; }
         }
 
-        function loadDashboardCharts() {
+        function fmt(n) {
+            return '₱' + Number(n).toLocaleString('en', { maximumFractionDigits: 0 });
+        }
+
+        function detectGranularity(labels) {
+            if (!labels || labels.length === 0) return 'No Data';
+            if (labels[0] && (labels[0].indexOf('AM') >= 0 || labels[0].indexOf('PM') >= 0)) return 'Hourly';
+            if (labels.some(function (l) { return l.indexOf('Week') >= 0; })) return 'Weekly';
+            var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            if (labels.length <= 7 && days.some(function (d) { return labels[0] && labels[0].indexOf(d) >= 0; })) return 'Daily';
+            return 'Monthly';
+        }
+
+        // Local date helpers to avoid UTC shifts when using toISOString
+        function pad2(n) { return n < 10 ? '0' + n : String(n); }
+        function formatLocalDate(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+        function parseLocalInputDate(s) { if (!s) return null; var parts = s.split('-'); if (parts.length !== 3) return null; var y = parseInt(parts[0], 10); var m = parseInt(parts[1], 10) - 1; var day = parseInt(parts[2], 10); return new Date(y, m, day); }
+
+        function renderCharts(d) {
             if (!window.Chart) return;
 
-            // 1. Budget Doughnut
-            var budgetCanvas = document.getElementById('ceoBudgetChart');
-            if (budgetCanvas) {
-                new Chart(budgetCanvas, {
+            // 1. Spending Trend (area line — wide)
+            destroy('ceoTrendChart');
+            var trendCtx = document.getElementById('ceoTrendChart');
+            if (trendCtx) {
+                var gran = detectGranularity(d.trendLabels);
+                var granEl = document.getElementById('trendGranularity');
+                if (granEl) granEl.textContent = gran;
+
+                CI['ceoTrendChart'] = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: d.trendLabels,
+                        datasets: [{
+                            label: 'Spending',
+                            data: d.trendData,
+                            borderColor: '#0288d1',
+                            backgroundColor: 'rgba(2,136,209,0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#0288d1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { drawBorder: false }, ticks: { font: { size: 9 }, callback: function (v) { return '₱' + v.toLocaleString(); } } },
+                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                        },
+                        layout: { padding: 0 }
+                    }
+                });
+            }
+
+            // 2. Budget Breakdown (doughnut)
+            destroy('ceoBudgetChart');
+            var budgetCtx = document.getElementById('ceoBudgetChart');
+            if (budgetCtx) {
+                CI['ceoBudgetChart'] = new Chart(budgetCtx, {
                     type: 'doughnut',
-                    data: { labels: ['Spent', 'Remaining'], datasets: [{ data: [totalSpent, Math.max(0, totalRemaining)], backgroundColor: ['#0288d1', '#2e7d32'], borderWidth: 0 }] },
+                    data: {
+                        labels: ['Spent', 'Remaining'],
+                        datasets: [{ data: [Number(d.totalSpent), Math.max(0, Number(d.totalRemaining))], backgroundColor: ['#0288d1', '#2e7d32'], borderWidth: 0 }]
+                    },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8, boxHeight: 8 } } }, layout: { padding: 0 } }
                 });
             }
 
-            // 2. Weekly Spending Trend
-            var trendCanvas = document.getElementById('ceoTrendChart');
-            if (trendCanvas) {
-                if (trendChartInstance) trendChartInstance.destroy();
-                trendChartInstance = new Chart(trendCanvas, {
-                    type: 'line',
-                    data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Weekly Spending', data: weeklySpending, borderColor: '#0288d1', backgroundColor: 'rgba(2,136,209,0.1)', fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: '#0288d1', pointBorderColor: '#fff', pointBorderWidth: 1, pointRadius: 3 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { drawBorder: false }, ticks: { font: { size: 9 } } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } }, layout: { padding: 0 } }
-                });
-            }
-
-            // 3. Report Status Bar
-            var statusCanvas = document.getElementById('ceoStatusChart');
-            if (statusCanvas) {
-                if (statusChartInstance) statusChartInstance.destroy();
-                statusChartInstance = new Chart(statusCanvas, {
+            // 3. Report Status (bar)
+            destroy('ceoStatusChart');
+            var statusCtx = document.getElementById('ceoStatusChart');
+            if (statusCtx) {
+                CI['ceoStatusChart'] = new Chart(statusCtx, {
                     type: 'bar',
-                    data: { labels: ['Submitted', 'Approved', 'Rejected', 'Pending CEO'], datasets: [{ label: 'Reports', data: [submittedCount, approvedCount, rejectedCount, pendingApprovalCount], backgroundColor: ['#0288d1', '#2e7d32', '#d32f2f', '#00897b'], borderRadius: 4 }] },
+                    data: {
+                        labels: ['Submitted', 'Approved', 'Rejected', 'Pending CEO'],
+                        datasets: [{ label: 'Reports', data: [d.submittedCount, d.approvedCount, d.rejectedCount, d.pendingApprovalCount], backgroundColor: ['#0288d1', '#2e7d32', '#d32f2f', '#00897b'], borderRadius: 4 }]
+                    },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 9 } }, grid: { drawBorder: false } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } }, layout: { padding: 0 } }
                 });
             }
 
-            // 4. Category Spending (Horizontal Bar)
-            var catCanvas = document.getElementById('ceoCategoryChart');
-            if (catCanvas && categoryLabels.length > 0) {
-                new Chart(catCanvas, {
+            // 4. Category Spending (horizontal bar)
+            destroy('ceoCategoryChart');
+            var catCtx = document.getElementById('ceoCategoryChart');
+            if (catCtx && d.categoryLabels && d.categoryLabels.length > 0) {
+                CI['ceoCategoryChart'] = new Chart(catCtx, {
                     type: 'bar',
                     data: {
-                        labels: categoryLabels,
+                        labels: d.categoryLabels,
                         datasets: [
-                            { label: 'Budget', data: categoryAllocated, backgroundColor: 'rgba(2,136,209,0.7)', borderColor: '#0288d1', borderWidth: 1, borderRadius: 3 },
-                            { label: 'Spent', data: categorySpent, backgroundColor: 'rgba(46,125,50,0.7)', borderColor: '#2e7d32', borderWidth: 1, borderRadius: 3 }
+                            { label: 'Budget', data: d.categoryAllocated, backgroundColor: 'rgba(2,136,209,0.7)', borderColor: '#0288d1', borderWidth: 1, borderRadius: 3 },
+                            { label: 'Spent', data: d.categorySpent, backgroundColor: 'rgba(46,125,50,0.7)', borderColor: '#2e7d32', borderWidth: 1, borderRadius: 3 }
                         ]
                     },
                     options: {
@@ -411,44 +464,80 @@
                 });
             }
 
-            // 5. Monthly Trend (Area)
-            var monthCanvas = document.getElementById('ceoMonthlyChart');
-            if (monthCanvas && monthLabels.length > 0) {
-                new Chart(monthCanvas, {
-                    type: 'line',
-                    data: {
-                        labels: monthLabels,
-                        datasets: [{
-                            label: 'Monthly Spending',
-                            data: monthTotals,
-                            borderColor: '#2e7d32',
-                            backgroundColor: 'rgba(46,125,50,0.12)',
-                            fill: true, tension: 0.4, borderWidth: 2,
-                            pointBackgroundColor: '#2e7d32', pointBorderColor: '#fff', pointBorderWidth: 1, pointRadius: 3
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { drawBorder: false }, ticks: { font: { size: 9 } } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } }, layout: { padding: 0 } }
-                });
-            }
-
-            // 6. Budget Utilization (Polar Area)
-            var utilCanvas = document.getElementById('ceoUtilChart');
-            if (utilCanvas && categoryLabels.length > 0) {
-                var utilPct = categoryAllocated.map(function(a, i) { return a === 0 ? 0 : Math.round((categorySpent[i] / a) * 100); });
-                var utilColors = utilPct.map(function(p) { return p >= 100 ? '#d32f2f' : p >= 80 ? '#00897b' : '#0288d1'; });
-                new Chart(utilCanvas, {
+            // 5. Budget Utilization (polar area)
+            destroy('ceoUtilChart');
+            var utilCtx = document.getElementById('ceoUtilChart');
+            if (utilCtx && d.categoryLabels && d.categoryLabels.length > 0) {
+                var utilPct = d.categoryAllocated.map(function (a, i) { return a === 0 ? 0 : Math.round((d.categorySpent[i] / a) * 100); });
+                var utilColors = utilPct.map(function (p) { return p >= 100 ? '#d32f2f' : p >= 80 ? '#00897b' : '#0288d1'; });
+                CI['ceoUtilChart'] = new Chart(utilCtx, {
                     type: 'polarArea',
-                    data: { labels: categoryLabels, datasets: [{ data: utilPct, backgroundColor: utilColors.map(function(c) { return c + '99'; }), borderColor: utilColors, borderWidth: 1 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 8 }, boxWidth: 8, boxHeight: 8 } } }, scales: { r: { beginAtZero: true, ticks: { font: { size: 8 }, callback: function(v) { return v + '%'; } } } }, layout: { padding: 0 } }
+                    data: { labels: d.categoryLabels, datasets: [{ data: utilPct, backgroundColor: utilColors.map(function (c) { return c + '99'; }), borderColor: utilColors, borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 8 }, boxWidth: 8, boxHeight: 8 } } }, scales: { r: { beginAtZero: true, ticks: { font: { size: 8 }, callback: function (v) { return v + '%'; } } } }, layout: { padding: 0 } }
                 });
             }
         }
 
+        function updateStats(d) {
+            var el = function (id) { return document.getElementById(id); };
+            if (el('statBudget')) el('statBudget').textContent = fmt(d.totalBudget);
+            if (el('statSpent')) el('statSpent').textContent = fmt(d.totalSpent);
+            var pct = d.totalBudget === 0 ? 0 : Math.round(d.totalSpent / d.totalBudget * 100);
+            if (el('statUsagePct')) el('statUsagePct').textContent = pct + '% of budget';
+        }
+
+        // ── AJAX fetch ──
+        var fetchTimer = null;
+        function fetchDashboardData() {
+            var s = startEl ? startEl.value : '';
+            var e = endEl ? endEl.value : '';
+            if (!s || !e) return;
+            fetch('/CEO/GetDashboardData?start=' + encodeURIComponent(s) + '&end=' + encodeURIComponent(e), { credentials: 'same-origin' })
+                .then(function (res) { if (!res.ok) throw new Error(); return res.json(); })
+                .then(function (data) {
+                    DATA = data;
+                    renderCharts(data);
+                    updateStats(data);
+                    highlightActiveFilter();
+                })
+                .catch(function (err) { console.error('Dashboard data error', err); });
+        }
+
+        function debouncedFetch() {
+            clearTimeout(fetchTimer);
+            fetchTimer = setTimeout(fetchDashboardData, 300);
+        }
+
+        // ── Quick-filter highlight ──
+        function highlightActiveFilter() {
+            if (!startEl || !endEl) return;
+            var start = parseLocalInputDate(startEl.value);
+            var end = parseLocalInputDate(endEl.value);
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            document.querySelectorAll('.filter-btn').forEach(function (btn) { btn.classList.remove('active'); });
+            var match = null;
+            if (start && start.getTime() === today.getTime() && end && end.getTime() === today.getTime()) { match = 'today'; }
+            else {
+                var ws = new Date(today); ws.setDate(today.getDate() - today.getDay());
+                if (start && start.getTime() === ws.getTime() && end && end.getTime() === today.getTime()) { match = 'week'; }
+                else {
+                    var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    var mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    if (start && start.getTime() === mStart.getTime() && end && (end.getTime() === mEnd.getTime() || end.getTime() === today.getTime())) { match = 'month'; }
+                    else {
+                        var ys = new Date(now.getFullYear(), 0, 1);
+                        if (start && start.getTime() === ys.getTime() && end && end.getTime() === today.getTime()) { match = 'year'; }
+                    }
+                }
+            }
+            if (match) { var btn = document.querySelector('[data-range="' + match + '"]'); if (btn) btn.classList.add('active'); }
+        }
+
+        // ── Fuel prices (unchanged) ──
         function loadFuelPrices() {
             var grid = document.getElementById('fuelPriceGrid');
             if (!grid) return;
-
-            // Static fallback data in case the API is unreachable
             var fallbackData = [
                 { name: 'Unleaded 91', desc: 'Regular Gasoline (91 RON)', price: 57.50, unit: '/L', icon: 'bi-droplet-fill', cls: 'gasoline', trend: 'up', change: '+0.75' },
                 { name: 'Premium 95', desc: 'Premium Gasoline (95 RON)', price: 62.75, unit: '/L', icon: 'bi-droplet-fill', cls: 'premium', trend: 'up', change: '+0.50' },
@@ -459,70 +548,60 @@
                 { name: 'LPG (Autogas)', desc: 'Liquefied Petroleum Gas', price: 28.50, unit: '/L', icon: 'bi-cloud-fill', cls: 'lpg', trend: 'stable', change: '0.00' },
                 { name: 'E10 Biofuel', desc: 'Ethanol-blended gasoline', price: 55.20, unit: '/L', icon: 'bi-leaf-fill', cls: 'bio', trend: 'down', change: '-0.40' }
             ];
-
             fetch('/api/FuelPrice')
-                .then(function(res) {
-                    if (!res.ok) throw new Error('API error');
-                    return res.json();
-                })
-                .then(function(data) {
-                    if (Array.isArray(data) && data.length > 0) {
-                        renderFuelPrices(grid, data);
-                    } else {
-                        renderFuelPrices(grid, fallbackData);
-                    }
-                })
-                .catch(function() {
-                    renderFuelPrices(grid, fallbackData);
-                });
+                .then(function (res) { if (!res.ok) throw new Error('API error'); return res.json(); })
+                .then(function (data) { renderFuelPrices(grid, (Array.isArray(data) && data.length > 0) ? data : fallbackData); })
+                .catch(function () { renderFuelPrices(grid, fallbackData); });
         }
 
         function renderFuelPrices(grid, data) {
             grid.innerHTML = '';
-            data.forEach(function(f) {
+            data.forEach(function (f) {
                 var trendIcon = f.trend === 'up' ? 'bi-caret-up-fill' : f.trend === 'down' ? 'bi-caret-down-fill' : 'bi-dash';
                 var card = document.createElement('div');
                 card.className = 'fuel-card';
                 card.innerHTML =
                     '<div class="fuel-icon ' + f.cls + '"><i class="bi ' + f.icon + '"></i></div>' +
-                    '<div class="fuel-info">' +
-                        '<div class="fuel-name">' + f.name + '</div>' +
-                        '<div class="fuel-desc">' + f.desc + '</div>' +
-                    '</div>' +
-                    '<div style="text-align:right;">' +
-                        '<div class="fuel-price">₱' + f.price.toFixed(2) + ' <span class="unit">' + f.unit + '</span></div>' +
-                        '<div class="fuel-trend ' + f.trend + '"><i class="bi ' + trendIcon + '"></i> ' + f.change + '</div>' +
-                    '</div>';
+                    '<div class="fuel-info"><div class="fuel-name">' + f.name + '</div><div class="fuel-desc">' + f.desc + '</div></div>' +
+                    '<div style="text-align:right;"><div class="fuel-price">₱' + f.price.toFixed(2) + ' <span class="unit">' + f.unit + '</span></div>' +
+                    '<div class="fuel-trend ' + f.trend + '"><i class="bi ' + trendIcon + '"></i> ' + f.change + '</div></div>';
                 grid.appendChild(card);
             });
         }
 
-        function applyDashboardFilter() {
-            var start = document.getElementById('dashboardStart')?.value;
-            var end = document.getElementById('dashboardEnd')?.value;
-            if (start && end) { window.location.href = '@Url.Action("Dashboard", "CEO")?start=' + start + '&end=' + end; }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboardCharts();
+        // ── Init ──
+        document.addEventListener('DOMContentLoaded', function () {
+            renderCharts(DATA);
             highlightActiveFilter();
             loadFuelPrices();
 
-            document.getElementById('dashboardStart')?.addEventListener('change', function() { applyDashboardFilter(); });
-            document.getElementById('dashboardEnd')?.addEventListener('change', function() { applyDashboardFilter(); });
+            // Date inputs → AJAX (no page reload)
+            if (startEl) startEl.addEventListener('change', debouncedFetch);
+            if (endEl) endEl.addEventListener('change', debouncedFetch);
 
-            document.querySelectorAll('[data-range]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+            // Quick-filter buttons → set dates + AJAX
+            document.querySelectorAll('[data-range]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
                     var range = this.getAttribute('data-range');
                     var now = new Date();
-                    var start;
-                    if (range === 'today') { start = new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
-                    else if (range === 'week') { var day = now.getDay(); start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day); }
-                    else if (range === 'month') { start = new Date(now.getFullYear(), now.getMonth(), 1); }
-                    else if (range === 'year') { start = new Date(now.getFullYear(), 0, 1); }
-                    document.getElementById('dashboardStart').value = start.toISOString().split('T')[0];
-                    document.getElementById('dashboardEnd').value = now.toISOString().split('T')[0];
-                    applyDashboardFilter();
+                    var s;
+                    if (range === 'today') { s = new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+                    else if (range === 'week') { s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()); }
+                    else if (range === 'month') { s = new Date(now.getFullYear(), now.getMonth(), 1); }
+                    else if (range === 'year') { s = new Date(now.getFullYear(), 0, 1); }
+                    if (startEl) startEl.value = formatLocalDate(s);
+                    if (endEl) {
+                        if (range === 'month') {
+                            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                            endEl.value = formatLocalDate(lastDay);
+                        } else {
+                            endEl.value = formatLocalDate(now);
+                        }
+                    }
+                    // immediate visual feedback
+                    document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    fetchDashboardData();
                 });
             });
         });

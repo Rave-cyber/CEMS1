@@ -127,13 +127,57 @@
 <div class="page-wrapper">
     <div class="container-fluid px-4">
         <!-- Page Header -->
-        <div class="page-header">
-            @* <h1 class="page-title">
-                <i class="bi bi-receipt"></i>
-                Team Expenses
-            </h1> *@
-            <p class="page-subtitle">View expenses submitted by your team members.</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div>
+                <p class="page-subtitle">View expenses submitted by your team members.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="btn btn-sm" style="background-color:#10b981;color:white;border:1px solid #10b981;" onclick="downloadExpensesPDF()">
+                    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                </button>
+                <div class="export-metadata no-print" id="exportMetadata" style="display:none;font-size:.95rem;color:var(--d-muted);">Exported by: <strong>@(User?.Identity?.Name ?? "Unknown")</strong> on <strong id="exportTimestamp"></strong></div>
+            </div>
         </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    function downloadExpensesPDF(){
+        const element = document.querySelector('.page-wrapper');
+        const opt = {
+            margin: [12,18,12,18],
+            filename: 'Team_Expenses_' + new Date().toISOString().slice(0,10) + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+
+        const exportMeta = document.getElementById('exportMetadata');
+        if (exportMeta) { exportMeta.style.display = 'block'; document.getElementById('exportTimestamp').textContent = new Date().toLocaleString(); }
+
+        html2pdf().set(opt).from(element).save().then(()=>{
+            if (exportMeta) exportMeta.style.display = 'none';
+        }).catch(err => {
+            console.error('PDF export failed', err);
+            if (exportMeta) exportMeta.style.display = 'none';
+            alert('PDF export failed. See console for details.');
+        });
+    }
+
+    // small client-side pagination if many rows
+    (function(){
+        var table = document.querySelector('.dash-table');
+        if(!table) return;
+        var tbody = table.querySelector('tbody');
+        if(!tbody) return;
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+        if(rows.length <= 10) return;
+        var PAGE_SIZE = 10; var totalPages = Math.ceil(rows.length / PAGE_SIZE); var currentPage = 1;
+        var pager = document.createElement('div'); pager.className = 'controls-bottom'; pager.style.marginTop = '12px';
+        function renderPage(page){ currentPage = page; rows.forEach((r,i)=> r.style.display = (i >= (page-1)*PAGE_SIZE && i < page*PAGE_SIZE) ? '' : 'none'); renderControls(); }
+        function renderControls(){ var html = '<nav aria-label="Pages"><ul class="pagination">'; html += '<li class="page-item '+(currentPage===1?'disabled':'')+''><a href="#" class="page-link" data-page="'+(currentPage-1)+'">Prev</a></li>'; for(var p=1;p<=totalPages;p++){ html += '<li class="page-item '+(p===currentPage?'active':'')+'"><a href="#" class="page-link" data-page="'+p+'">'+p+'</a></li>'; } html += '<li class="page-item '+(currentPage===totalPages?'disabled':'')+'"><a href="#" class="page-link" data-page="'+(currentPage+1)+'">Next</a></li>'; html += '</ul></nav>'; pager.innerHTML = html; pager.querySelectorAll('a[data-page]').forEach(a=> a.addEventListener('click', function(e){ e.preventDefault(); var pg = parseInt(this.getAttribute('data-page')); if(pg>=1 && pg<=totalPages) renderPage(pg); })); }
+        table.parentNode.insertBefore(pager, table.nextSibling);
+        renderPage(1);
+    })();
+</script>
 
         <!-- Expenses Table -->
         @if (ViewBag.RecentExpenses != null && ((IEnumerable<CEMS.Models.Expense>)ViewBag.RecentExpenses).Any())

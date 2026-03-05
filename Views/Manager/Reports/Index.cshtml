@@ -117,12 +117,27 @@
         text-transform: none;
         color: var(--d-text);
     }
+    .status-badge--pending { color: var(--d-primary); }
+    .status-badge--approved { color: var(--d-primary); }
+    .status-badge--rejected { color: var(--d-danger); }
+    .status-badge--within { color: var(--d-primary); }
+    .status-badge--over { color: var(--d-danger); }
 
-    .status-badge--pending { color: var(--d-text); }
-    .status-badge--approved { color: var(--d-text); }
-    .status-badge--rejected { color: var(--d-text); }
-    .status-badge--within { color: var(--d-text); }
-    .status-badge--over { color: var(--d-text); }
+    /* Export PDF button (blue) */
+    .export-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--d-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .export-btn:hover { background: #155a9a; }
 
     /* Over-budget row indicator (left accent) */
     .report-overbudget td:first-child {
@@ -277,11 +292,16 @@
 <div class="page-wrapper">
     <div class="container-fluid px-4">
         <!-- Page Header -->
-        <div class="page-header">
-            @* <h1 class="page-title">
-                <i class="bi bi-file-earmark-check"></i>
-                Expense Reports
-            </h1> *@
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <div>
+                <p class="page-subtitle">Expense Reports</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" id="exportPdfBtn" class="export-btn no-print">
+                    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                </button>
+                <div class="export-metadata no-print" id="exportMetadata" style="display:none;">Exported by: <strong>@(User?.Identity?.Name ?? "Unknown")</strong> on <strong id="exportTimestampMgr"></strong></div>
+            </div>
         </div>
         
         <!-- filters removed for consistent manager view -->
@@ -367,6 +387,50 @@
                 });
             }
         </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        var btn = document.getElementById('exportPdfBtn');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+            var element = document.querySelector('.page-wrapper');
+            var opt = {
+                margin: [6,6,6,6],
+                filename: 'Manager_Reports_' + new Date().toISOString().slice(0,10) + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+            };
+
+            var filterCard = document.querySelector('.filter-card');
+            var exportMeta = document.getElementById('exportMetadata');
+            var actionCells = document.querySelectorAll('#mgrReportsTable th:last-child, #mgrReportsTable td:last-child');
+
+            if(filterCard) filterCard.style.display = 'none';
+            if(exportMeta) { exportMeta.style.display = 'block'; document.getElementById('exportTimestampMgr').textContent = new Date().toLocaleString(); }
+            if(actionCells) actionCells.forEach(function(c){ c.classList.add('hide-for-pdf'); });
+            if(element) element.classList.add('export-compact');
+            if(element) element.classList.add('pdf-blue');
+
+            html2pdf().set(opt).from(element).save().then(function(){
+                if(filterCard) filterCard.style.display = '';
+                if(exportMeta) exportMeta.style.display = 'none';
+                if(actionCells) actionCells.forEach(function(c){ c.classList.remove('hide-for-pdf'); });
+                if(element) element.classList.remove('export-compact');
+                if(element) element.classList.remove('pdf-blue');
+            }).catch(function(err){
+                console.error(err);
+                if(filterCard) filterCard.style.display = '';
+                if(exportMeta) exportMeta.style.display = 'none';
+                if(actionCells) actionCells.forEach(function(c){ c.classList.remove('hide-for-pdf'); });
+                if(element) element.classList.remove('export-compact');
+                if(element) element.classList.remove('pdf-blue');
+                alert('PDF export failed. See console for details.');
+            });
+        });
+    });
+</script>
 
         <!-- Reports Table -->
         <div class="table-card">

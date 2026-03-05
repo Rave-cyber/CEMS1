@@ -176,7 +176,7 @@ namespace CEMS.Controllers
                 baseQuery = baseQuery.Where(r => r.Status == parsedStatus);
             }
 
-            // total count for paging
+        
             var totalCount = await baseQuery.CountAsync();
 
             var reports = await baseQuery
@@ -200,7 +200,7 @@ namespace CEMS.Controllers
             // Load active categories for the edit modal dropdown
             ViewBag.Categories = budgets.Where(b => b.IsActive).OrderBy(b => b.Category).Select(b => b.Category).Distinct().ToList();
 
-            // Load approval remarks for rejected/approved reports (only for visible reports to reduce load)
+        
             var reportIds = reports.Select(r => r.Id).ToList();
             var approvals = await _db.Approvals
                 .Where(a => reportIds.Contains(a.ReportId))
@@ -347,7 +347,7 @@ namespace CEMS.Controllers
             report.CEOApproved = false;
             report.Reimbursed = false;
 
-            // Resolve trip dates from form or infer from item dates
+        
             DateTime? tripStart = null;
             DateTime? tripEnd = null;
             if (DateTime.TryParse(form["TripStart"], out var ts))
@@ -385,7 +385,7 @@ namespace CEMS.Controllers
 
                 var reportCategoryTotal = updatedItems.Where(i => i.Category == category).Sum(i => i.Amount);
 
-                // Per-trip allowance: (monthly budget / days in month) * trip days
+                // calculation sa (monthly budget / days in month) * trip days
                 var allowedForTrip = budget.Allocated / daysInMonth * tripDays;
                 if (reportCategoryTotal > allowedForTrip)
                 {
@@ -453,7 +453,7 @@ namespace CEMS.Controllers
         {
             try
             {
-                // Ensure we set server-side fields (UserId, Date, Status, ReceiptPath)
+    
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
                     throw new InvalidOperationException("Unable to determine current user.");
@@ -487,8 +487,7 @@ namespace CEMS.Controllers
                     }
                 }
 
-                // Re-validate model after we populated server-only fields so required fields don't fail
-                // Clear existing modelstate and re-run validation for this model
+                
                 ModelState.Clear();
                 if (!TryValidateModel(model))
                 {

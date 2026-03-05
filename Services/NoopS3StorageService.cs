@@ -1,9 +1,6 @@
 namespace CEMS.Services
 {
-    /// <summary>
-    /// Fallback used when AWS S3 is not configured. Receipts continue to be stored
-    /// in the database as byte arrays (existing behaviour).
-    /// </summary>
+    
     public class NoopS3StorageService : IS3StorageService
     {
         public bool IsEnabled => false;

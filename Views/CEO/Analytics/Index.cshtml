@@ -78,7 +78,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: var(--d-success);
+        background: #1a6bb5; /* blue */
         color: #fff;
         border: none;
         border-radius: 6px;
@@ -86,11 +86,14 @@
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.15s;
+        transition: all 0.2s;
+        text-decoration: none;
     }
 
     .export-btn:hover {
-        background: #059669;
+        background: #155a9a; /* darker blue */
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(26, 107, 181, 0.2);
     }
 
     .table-card-head {
