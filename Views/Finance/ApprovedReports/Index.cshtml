@@ -429,28 +429,27 @@
                                         }
                                     </td>
                                     <td>
-                                            <a class="view-btn" href="@Url.Action("ReportDetails","Finance", new { id = r.Id })">View</a>
                                             @{
                                                 var payments = ViewBag.Payments as Dictionary<int, CEMS.Models.ReimbursementPayment> ?? new Dictionary<int, CEMS.Models.ReimbursementPayment>();
                                                 var payment = payments.ContainsKey(r.Id) ? payments[r.Id] : null;
                                             }
-                                            @if (r.Reimbursed)
-                                            {
-                                                <span class="status-text" style="margin-left:8px;color:#10b981;">Done</span>
-                                            }
-                                            else if (payment != null)
-                                            {
-                                                <span class="status-text" style="margin-left:8px;color:#f59e0b;">Initiated</span>
-                                                <a class="view-btn" style="margin-left:6px;" href="@payment.CheckoutUrl" target="_blank">Open Payment</a>
-                                            }
-                                            else
-                                            {
-                                                <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;margin-left:6px;">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@r.Id" />
-                                                    <button type="submit" class="approve-btn">Reimburse</button>
-                                                </form>
-                                            }
+                                            @if (r.Reimbursed) 
+                                            { 
+                                                <span class="status-text" style="margin-left:8px;color:#10b981;">Done</span> 
+                                            } 
+                                            else if (payment != null) 
+                                            { 
+                                                <span class="status-text" style="margin-left:8px;color:#f59e0b;">Initiated</span> 
+                                                <a class="view-btn" style="margin-left:6px;" href="@payment.CheckoutUrl" target="_blank">Open Payment</a> 
+                                            } 
+                                            else 
+                                            { 
+                                                <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;margin-left:6px;"> 
+                                                    @Html.AntiForgeryToken() 
+                                                    <input type="hidden" name="id" value="@r.Id" /> 
+                                                    <button type="submit" class="approve-btn">Reimburse</button> 
+                                                </form> 
+                                            } 
                                         </td>
                                     </tr>
                                 }

@@ -20,7 +20,7 @@
                 return "active";
             return string.Empty;
         };
-        var userName = User.Identity?.Name ?? "User";
+        var userName = ViewBag.UserFullName ?? User.Identity?.Name ?? "User";
         var initial = userName.Length > 0 ? userName[0].ToString().ToUpper() : "U";
         var pageTitle = ViewData["Title"]?.ToString() ?? "Driver Portal";
     }
@@ -119,7 +119,19 @@
                         </div>
                     </li>
                     <li><hr class="dropdown-divider my-0"></li>
-                    <li><partial name="_LoginPartial" /></li>
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal" style="padding:10px 16px; font-size:.875rem;">
+                            <i class="bi bi-person-circle me-2" style="color:#1a6bb5;"></i>My Profile
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider my-0"></li>
+                    <li>
+                        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                            <button type="submit" class="dropdown-item" style="padding:10px 16px; font-size:.875rem; color:#ef4444;">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -268,5 +280,6 @@
 
     <form id="__notifAntiForgery" method="post" style="display:none;">@Html.AntiForgeryToken()</form>
     <partial name="_NotificationScripts" />
+    <partial name="_ProfileModal" />
 </body>
 </html>

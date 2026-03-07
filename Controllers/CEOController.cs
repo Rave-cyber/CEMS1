@@ -34,6 +34,18 @@ namespace CEMS.Controllers
             var startDate = start ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             var endDate = end ?? DateTime.Now;
 
+            // Get user's full name from CEOProfile
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var ceoProfile = await _db.Set<CEOProfile>().FirstOrDefaultAsync(c => c.UserId == userId);
+                ViewBag.UserFullName = ceoProfile?.FullName ?? User.Identity?.Name ?? "CEO";
+            }
+            else
+            {
+                ViewBag.UserFullName = User.Identity?.Name ?? "CEO";
+            }
+
             var budgets = await _db.Budgets.ToListAsync();
             ViewBag.TotalBudget = budgets.Sum(b => b.Allocated);
 

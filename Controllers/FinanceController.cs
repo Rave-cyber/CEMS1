@@ -41,6 +41,18 @@ namespace CEMS.Controllers
             var endDate = end?.Date ?? now;
             var endExclusive = endDate.AddDays(1);
 
+            // Get user's full name from FinanceProfile
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var financeProfile = await _db.Set<FinanceProfile>().FirstOrDefaultAsync(f => f.UserId == userId);
+                ViewBag.UserFullName = financeProfile?.FullName ?? User.Identity?.Name ?? "Finance";
+            }
+            else
+            {
+                ViewBag.UserFullName = User.Identity?.Name ?? "Finance";
+            }
+
             // Only show reports approved by manager and cleared for finance in the date range
             var reportsQuery = _db.ExpenseReports
                 .Include(r => r.Items)
@@ -149,6 +161,13 @@ namespace CEMS.Controllers
                 .Take(8)
                 .ToListAsync();
 
+            // Report status distribution for pie chart
+            var statusQuery = _db.ExpenseReports.Where(r => r.SubmissionDate >= startDate && r.SubmissionDate < endExclusive).AsQueryable();
+            var submittedCount = await statusQuery.Where(r => r.Status == ReportStatus.Submitted).CountAsync();
+            var approvedCount = await statusQuery.Where(r => r.Status == ReportStatus.Approved).CountAsync();
+            var rejectedCount = await statusQuery.Where(r => r.Status == ReportStatus.Rejected).CountAsync();
+            var pendingCount = await statusQuery.Where(r => r.Status == ReportStatus.PendingCEOApproval).CountAsync();
+
             return Json(new
             {
                 toProcess = toProcessTotal,
@@ -158,7 +177,8 @@ namespace CEMS.Controllers
                 monthlyTotal = processedTotal,
                 monthlyCount = processedCount,
                 monthlyData,
-                categories = categoryData
+                categories = categoryData,
+                statusCounts = new { submitted = submittedCount, approved = approvedCount, rejected = rejectedCount, pending = pendingCount }
             });
         }
 
@@ -365,18 +385,10 @@ namespace CEMS.Controllers
             return View("Reimbursements/Index");
         }
 
-        public async Task<IActionResult> ReportDetails(int id)
+        public IActionResult ReportDetails(int id)
         {
-            var report = await _db.ExpenseReports
-                .Include(r => r.Items)
-                .FirstOrDefaultAsync(r => r.Id == id);
-
-            if (report == null) return NotFound();
-
-            var user = report.UserId != null ? await _userManager.FindByIdAsync(report.UserId) : null;
-            ViewBag.ReportUserName = user?.UserName ?? "Unknown";
-
-            return View("ReportDetails", report);
+            // ReportDetails view removed. Redirect back to ApprovedReports list.
+            return RedirectToAction("ApprovedReports");
         }
 
         // Payment history: fetched from ReimbursementPayments table (no webhook needed)
@@ -779,19 +791,6 @@ namespace CEMS.Controllers
                     // Notify driver and managers about reimbursement
                     await _notificationService.NotifyReimbursementProcessed(reportId, payment.Report.UserId, payment.Report.TotalAmount);
 
-                    // Check budget thresholds
-                    foreach (var item in payment.Report.Items)
-                    {
-                        var category = item.Category?.Trim() ?? "";
-                        var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
-                        if (budget != null && budget.Allocated > 0)
-                        {
-                            var pct = (int)(budget.Spent / budget.Allocated * 100);
-                            if (pct >= 80)
-                                await _notificationService.NotifyBudgetThreshold(category, budget.Allocated, budget.Spent, pct);
-                        }
-                    }
-
                     _db.AuditLogs.Add(new AuditLog
                     {
                         Action = "PaymentConfirmed",
@@ -915,19 +914,6 @@ namespace CEMS.Controllers
 
             // Notify driver and managers about reimbursement
             await _notificationService.NotifyReimbursementProcessed(report.Id, report.UserId, report.TotalAmount);
-
-            // Check budget thresholds
-            foreach (var item in report.Items)
-            {
-                var category = item.Category?.Trim() ?? "";
-                var budget = await _db.Budgets.FirstOrDefaultAsync(b => b.Category == category);
-                if (budget != null && budget.Allocated > 0)
-                {
-                    var pct = (int)(budget.Spent / budget.Allocated * 100);
-                    if (pct >= 80)
-                        await _notificationService.NotifyBudgetThreshold(category, budget.Allocated, budget.Spent, pct);
-                }
-            }
 
             TempData["Success"] = "Report marked as reimbursed (manual).";
             return RedirectToAction("Reimbursements");

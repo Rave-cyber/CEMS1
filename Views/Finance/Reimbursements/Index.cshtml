@@ -264,7 +264,7 @@
             <i class="bi bi-info-circle"></i>
             <strong>How it works:</strong> Click <strong>"Pay via GCash/Card"</strong> to open a PayMongo checkout page.
             Complete the payment there and you'll be redirected back automatically.
-            Use <strong>"Check Status"</strong> to verify pending payments, or <strong>"Manual"</strong> to mark as reimbursed without PayMongo.
+            Use <strong>"Check Status"</strong> to verify pending payments.
         </div>
 
         @if(ViewBag.Reports != null && ((List<CEMS.Models.PendingExpenseReportDto>)ViewBag.Reports).Count > 0)
@@ -331,12 +331,6 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />
                                                 <button type="submit" class="view-btn">Pay via GCash/Card</button>
-                                            </form>
-                                            <!-- Manual fallback -->
-                                            <form method="post" asp-action="MarkReimbursedManual" asp-controller="Finance" style="display:inline-block; margin-left:6px;">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="approve-btn" onclick="return confirm('Mark as reimbursed without PayMongo?');">Manual</button>
                                             </form>
                                         }
                                     </td>

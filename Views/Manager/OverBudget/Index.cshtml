@@ -257,7 +257,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <a class="view-btn" href="@Url.Action("ReportDetails", "Manager", new { id = dto.Report.Id })">View</a>
+                                        <a class="view-btn" href="@Url.Action("ReportDetails", "Manager", new { id = dto.Report.Id, source = "OverBudget" })">View</a>
                                         @if (dto.Report.Status == CEMS.Models.ReportStatus.Submitted)
                                         {
                                             <form method="post" asp-action="ApproveReport" asp-controller="Manager" style="display: inline-block; margin-left: 6px;">

@@ -272,9 +272,9 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         margin-left: auto;
-        flex-shrink: 0;
+        flex-shrink: 1;
     }
 
     .filter-group {
@@ -547,9 +547,12 @@
     /* Two column layout */
     .dashboard-grid {
         display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
+        /* make the chart column wider so the graph appears longer */
+        grid-template-columns: 1.6fr 0.8fr;
         gap: 12px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+        /* ensure grid children don't stretch to match the tallest column */
+        align-items: start;
     }
 
     /* Chart card - NO WHITE SPACE - FIXED */
@@ -561,7 +564,9 @@
         border: 1px solid #e9eef2;
         display: flex;
         flex-direction: column;
-        height: fit-content;
+        height: auto;
+        /* don't stretch to the grid row height so chart container keeps compact */
+        align-self: start;
     }
 
     body.dark-mode .chart-card {
@@ -579,7 +584,8 @@
         padding: 0;
         margin: 0;
         border-bottom: 1px solid #e9eef2;
-        padding-bottom: 8px;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
     }
 
         .chart-header i {
@@ -587,7 +593,8 @@
         }
 
     .chart-container {
-        height: 140px;
+        /* Make the chart taller so it fills the card and reduces white space */
+        height: 320px;
         width: 100%;
         position: relative;
         margin: 0;
@@ -614,6 +621,8 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #e9eef2;
         height: fit-content;
+        align-self: start;
+        margin-top: 8px;
     }
 
     body.dark-mode .budget-card {
@@ -627,6 +636,7 @@
         color: #334155;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 6px;
         padding-bottom: 8px;
         border-bottom: 1px solid #e9eef2;
@@ -818,6 +828,344 @@
         align-items: center;
         gap: 8px;
     }
+
+    /* RESPONSIVE MEDIA QUERIES */
+    /* Tablet (768px to 1024px) */
+    @@media (max-width: 1024px) {
+        .dash-wrapper {
+            padding: 12px;
+        }
+
+        .top-bar {
+            padding: 12px 16px;
+            gap: 12px;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .welcome-section {
+            width: 100%;
+        }
+
+        .greeting {
+            font-size: 0.95rem;
+        }
+
+        .filter-section {
+            width: 100%;
+            margin-left: 0;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .filter-group {
+            flex: 1;
+            width: 100%;
+        }
+
+        .filter-group input {
+            min-width: 100px;
+            flex: 1;
+        }
+
+        .quick-filters {
+            width: 100%;
+        }
+
+        .filter-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+    }
+
+    /* Mobile (max-width: 768px) */
+    @@media (max-width: 768px) {
+        .dash-wrapper {
+            padding: 10px;
+        }
+
+        .top-bar {
+            flex-direction: column;
+            padding: 10px 12px;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .welcome-section {
+            width: 100%;
+        }
+
+        .greeting {
+            font-size: 0.9rem;
+        }
+
+        .greeting strong {
+            margin-left: 2px;
+        }
+
+        .filter-section {
+            width: 100%;
+            margin-left: 0;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-group {
+            width: 100%;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 0.7rem;
+        }
+
+        .filter-group input {
+            width: 100%;
+            min-width: unset;
+            padding: 8px 10px;
+            font-size: 1rem;
+        }
+
+        .quick-filters {
+            width: 100%;
+            gap: 4px;
+            padding: 2px;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 0.75rem;
+            min-width: 0;
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card {
+            padding: 10px;
+            gap: 8px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+        }
+
+        .stat-number {
+            font-size: 1.1rem;
+        }
+
+        .stat-sub {
+            font-size: 0.6rem;
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .chart-card {
+            padding: 10px;
+        }
+
+        .chart-container {
+            height: 120px;
+        }
+
+        .budget-card {
+            padding: 10px;
+        }
+
+        .budget-header {
+            font-size: 0.8rem;
+            padding-bottom: 6px;
+        }
+
+        .budget-list {
+            max-height: 200px;
+            gap: 8px;
+        }
+
+        .budget-row {
+            font-size: 0.75rem;
+        }
+
+        .budget-numbers {
+            font-size: 0.7rem;
+        }
+
+        .budget-remaining {
+            font-size: 0.65rem;
+        }
+
+        .table-card {
+            margin-bottom: 12px;
+            border-radius: 8px;
+        }
+
+        .table-header {
+            padding: 8px 10px;
+            font-size: 0.8rem;
+        }
+
+        .compact-table {
+            font-size: 0.75rem;
+        }
+
+        .compact-table th {
+            padding: 6px 8px;
+            font-size: 0.7rem;
+        }
+
+        .compact-table td {
+            padding: 6px 8px;
+        }
+
+        .scroll-table {
+            max-height: 150px;
+        }
+
+        .view-link {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+
+        .toast-mini {
+            bottom: 12px;
+            right: 12px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Small Mobile (max-width: 480px) */
+    @@media (max-width: 480px) {
+        .dash-wrapper {
+            padding: 8px;
+        }
+
+        .top-bar {
+            padding: 8px 10px;
+            gap: 8px;
+        }
+
+        .greeting {
+            font-size: 0.85rem;
+        }
+
+        .filter-section {
+            gap: 8px;
+        }
+
+        .filter-group {
+            gap: 3px;
+        }
+
+        .filter-group label {
+            font-size: 0.65rem;
+        }
+
+        .filter-group input {
+            padding: 6px 8px;
+            font-size: 0.95rem;
+        }
+
+        .quick-filters {
+            gap: 2px;
+        }
+
+        .filter-btn {
+            padding: 5px 6px;
+            font-size: 0.7rem;
+        }
+
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            padding: 8px;
+            gap: 6px;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 0.9rem;
+        }
+
+        .stat-label {
+            font-size: 0.6rem;
+        }
+
+        .stat-number {
+            font-size: 1rem;
+        }
+
+        .stat-sub {
+            font-size: 0.55rem;
+        }
+
+        .dashboard-grid {
+            gap: 6px;
+        }
+
+        .chart-header {
+            font-size: 0.8rem;
+        }
+
+        .chart-container {
+            height: 100px;
+        }
+
+        .budget-header {
+            font-size: 0.75rem;
+        }
+
+        .budget-list {
+            max-height: 180px;
+        }
+
+        .compact-table {
+            font-size: 0.7rem;
+        }
+
+        .compact-table th {
+            padding: 4px 6px;
+            font-size: 0.65rem;
+        }
+
+        .compact-table td {
+            padding: 4px 6px;
+        }
+    }
+
 </style>
 
 <div class="dash-wrapper">
@@ -827,7 +1175,7 @@
         <div class="top-bar">
             <div class="welcome-section">
                 <div class="greeting">
-                    Welcome back, <strong>@User.Identity?.Name</strong>
+                    Welcome back, <strong>@(ViewBag.UserFullName ?? User.Identity?.Name ?? "Driver")</strong>
                 </div>
             </div>
 

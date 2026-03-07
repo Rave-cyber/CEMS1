@@ -41,5 +41,8 @@ namespace CEMS.Models
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [MaxLength(500)]
+        public string? ProfileImagePath { get; set; }
     }
 }

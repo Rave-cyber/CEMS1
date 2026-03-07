@@ -135,7 +135,7 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        // Create test users with different roles
+       
         var users = new[]
         {
             new { Email = "superadmin@expense.com", Role = "SuperAdmin", Password = "Test@123", FullName = "Super Admin", Street = "123 Admin St.", Barangay = "Barangay Holy Spirit", City = "Quezon City", Province = "Metro Manila", ZipCode = "1127", Country = "Philippines", ContactNumber = "09170000001" },
@@ -148,7 +148,7 @@ using (var scope = app.Services.CreateScope())
 
         foreach (var userInfo in users)
         {
-            // Check if user already exists
+   
             var existingUser = await userManager.FindByEmailAsync(userInfo.Email);
 
             if (existingUser == null)
@@ -161,14 +161,12 @@ using (var scope = app.Services.CreateScope())
                     LockoutEnabled = false
                 };
 
-                // Create user
                 var result = await userManager.CreateAsync(user, userInfo.Password);
 
                 if (result.Succeeded)
                 {
                     Console.WriteLine($"Created user: {userInfo.Email} with password: {userInfo.Password}");
 
-                    // Add to role
                     await userManager.AddToRoleAsync(user, userInfo.Role);
                     Console.WriteLine($"  -> Added to role: {userInfo.Role}");
                 }

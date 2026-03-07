@@ -141,13 +141,13 @@
     .status-badge--over     { background: rgba(239,68,68,.1);   color: #ef4444; }
 
     .cat-tag {
-        display: inline-block;
-        padding: 3px 9px;
-        background: rgba(26,107,181,.08);
-        color: var(--d-primary);
-        border-radius: 5px;
-        font-size: .78rem;
-        font-weight: 600;
+        display: inline;
+        padding: 0;
+        background: transparent;
+        color: var(--d-text);
+        border-radius: 0;
+        font-size: .88rem;
+        font-weight: 400;
     }
 
     /* Budget grid */
@@ -299,16 +299,21 @@
     }
 
     .receipt-link {
-        font-size: .82rem;
-        color: var(--d-primary);
-        font-weight: 600;
-        text-decoration: none;
+        font-size: .85rem;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(26, 107, 181, .08);
+        color: var(--d-primary);
+        border: 1px solid rgba(26, 107, 181, .2);
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all .2s;
     }
 
-    .receipt-link:hover { color: #154a8a; }
+    .receipt-link:hover { background: rgba(26,107,181,.12); color:#155a9a; text-decoration: none; }
 
     /* Page header layout */
     .page-header-wrapper {
@@ -413,13 +418,13 @@
                                 <td>
                                     @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
                                     {
-                                        <a class="receipt-link" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">
+                                        <a class="receipt-link" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">
                                             <i class="bi bi-file-earmark-image"></i> View
                                         </a>
                                     }
                                     else if (!string.IsNullOrEmpty(item.ReceiptPath))
                                     {
-                                        <a class="receipt-link" target="_blank" href="@item.ReceiptPath">
+                                        <a class="receipt-link" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">
                                             <i class="bi bi-file-earmark-image"></i> View
                                         </a>
                                     }

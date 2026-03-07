@@ -784,7 +784,9 @@ namespace CEMS.Controllers
             {
                 var writer = new PdfWriter(memoryStream);
                 var pdf = new PdfDocument(writer);
-                var document = new Document(pdf);
+                var pageSize = iText.Kernel.Geom.PageSize.A4.Rotate();
+                var document = new Document(pdf, pageSize);
+                document.SetMargins(20, 20, 20, 20);
 
                 // Title
                 var title = new Paragraph("Audit Logs Report")

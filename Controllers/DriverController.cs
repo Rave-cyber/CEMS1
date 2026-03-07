@@ -35,6 +35,17 @@ namespace CEMS.Controllers
         {
             var userId = _userManager.GetUserId(User);
 
+            // Get user's full name from DriverProfile
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var driverProfile = await _db.Set<DriverProfile>().FirstOrDefaultAsync(d => d.UserId == userId);
+                ViewBag.UserFullName = driverProfile?.FullName ?? User.Identity?.Name ?? "Driver";
+            }
+            else
+            {
+                ViewBag.UserFullName = User.Identity?.Name ?? "Driver";
+            }
+
             // Load recent driver expenses
             var expenses = _db.Expenses
                 .Where(e => e.UserId == userId)
@@ -131,7 +142,7 @@ namespace CEMS.Controllers
                 description = i.Description,
                 reportStatus = i.ReportStatus.ToString(),
                 budgetCheck = i.BudgetCheck.ToString(),
-                receiptUrl = i.ReceiptExists ? Url.Action("Receipt", "Driver", new { id = i.Id }) : (string.IsNullOrEmpty(i.ReceiptPath) ? null : i.ReceiptPath)
+                receiptUrl = (i.ReceiptExists || !string.IsNullOrEmpty(i.ReceiptPath)) ? Url.Action("View", "Receipt", new { id = i.Id }) : null
             }).ToList();
 
             // Calculate spent dynamically from reimbursed expense items only (Finance paid)
@@ -249,7 +260,9 @@ namespace CEMS.Controllers
                     Amount = i.Amount,
                     Description = i.Description,
                     HasReceipt = (i.ReceiptData != null && i.ReceiptData.Length > 0) || !string.IsNullOrEmpty(i.ReceiptPath),
-                    ReceiptPath = i.ReceiptPath
+                    ReceiptUrl = (i.ReceiptData != null && i.ReceiptData.Length > 0) || !string.IsNullOrEmpty(i.ReceiptPath)
+                        ? Url.Action("View", "Receipt", new { id = i.Id })
+                        : null
                 }).ToList()
             };
 
@@ -732,70 +745,9 @@ namespace CEMS.Controllers
             }
         }
 
-        
 
-        [HttpGet("Receipt/{id:int}")]
-        public async Task<IActionResult> Receipt(int id)
-        {
-            var currentUserId = _userManager.GetUserId(User);
 
-            var item = await _db.ExpenseItems
-                .Include(i => i.Report)
-                .FirstOrDefaultAsync(i => i.Id == id);
-
-            if (item != null)
-            {
-                var isOwner = item.Report != null && item.Report.UserId == currentUserId;
-                var canView = isOwner || User.IsInRole("Manager") || User.IsInRole("Finance") || User.IsInRole("CEO");
-
-                if (!canView)
-                    return Forbid();
-
-                if (item.ReceiptData != null && item.ReceiptData.Length > 0)
-                    return File(item.ReceiptData, item.ReceiptContentType ?? "application/octet-stream");
-
-                if (!string.IsNullOrEmpty(item.ReceiptPath))
-                {
-                    if (_s3Service.IsEnabled)
-                    {
-                        var url = _s3Service.GetPreSignedUrl(item.ReceiptPath);
-                        if (url != null)
-                            return Redirect(url);
-                    }
-                    return Redirect(item.ReceiptPath);
-                }
-
-                return NotFound();
-            }
-
-            var expense = await _db.Expenses.FindAsync(id);
-            if (expense == null)
-                return NotFound();
-
-            var legacyOwner = expense.UserId != null && expense.UserId == currentUserId;
-            var legacyCanView = legacyOwner || User.IsInRole("Manager") || User.IsInRole("Finance") || User.IsInRole("CEO");
-
-            if (!legacyCanView)
-                return Forbid();
-
-            if (expense.ReceiptData != null && expense.ReceiptData.Length > 0)
-            {
-                return File(expense.ReceiptData, expense.ReceiptContentType ?? "application/octet-stream");
-            }
-
-            if (!string.IsNullOrEmpty(expense.ReceiptPath))
-            {
-                if (_s3Service.IsEnabled)
-                {
-                    var url = _s3Service.GetPreSignedUrl(expense.ReceiptPath);
-                    if (url != null)
-                        return Redirect(url);
-                }
-                return Redirect(expense.ReceiptPath);
-            }
-
-            return NotFound();
-        }
+        // Receipt viewing moved to ReceiptController for cross-role access
 
         [HttpGet("History")]
         public async Task<IActionResult> History(DateTime? start, DateTime? end, string status, int page = 1, int pageSize = 10)

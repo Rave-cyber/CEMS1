@@ -970,11 +970,11 @@
                                                 <td>
                                                     @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
                                                     {
-                                                        <a class="view-btn" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">View</a>
+                                                        <a class="view-btn" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">View</a>
                                                     }
                                                     else if (!string.IsNullOrEmpty(item.ReceiptPath))
                                                     {
-                                                        <a class="view-btn" target="_blank" href="@item.ReceiptPath">View</a>
+                                                        <a class="view-btn" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">View</a>
                                                     }
                                                     else
                                                     {

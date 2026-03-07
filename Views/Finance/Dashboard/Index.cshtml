@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         let financeTrendChart;
+        let financeStatusChart;
 
         function renderFinanceTrendChart(toProcess, processedToday, monthlyTotal) {
             const canvas = document.getElementById('financeTrendChart');
@@ -22,8 +23,8 @@
                     datasets: [{
                         label: 'Amount (₱)',
                         data: [toProcess, processedToday, monthlyTotal],
-                        backgroundColor: ['rgba(245,158,11,0.7)', 'rgba(22,163,74,0.7)', 'rgba(2,132,199,0.7)'],
-                        borderColor: ['#f59e0b', '#16a34a', '#0284c7'],
+                        backgroundColor: ['rgba(251, 146, 60, 0.7)', 'rgba(22, 163, 74, 0.7)', 'rgba(2, 132, 199, 0.7)'],
+                        borderColor: ['#fb923c', '#16a34a', '#0284c7'],
                         borderWidth: 1,
                         borderRadius: 4
                     }]
@@ -36,6 +37,37 @@
                     scales: {
                         y: { beginAtZero: true, grid: { drawBorder: false }, ticks: { font: { size: 9 } } },
                         x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        function renderFinanceStatusChart(submitted, approved, rejected, pending) {
+            const canvas = document.getElementById('financeStatusChart');
+            if (!canvas || !window.Chart) return;
+
+            if (financeStatusChart) financeStatusChart.destroy();
+
+            financeStatusChart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Submitted', 'Approved', 'Rejected', 'Pending CEO'],
+                    datasets: [{
+                        data: [submitted, approved, rejected, pending],
+                        backgroundColor: ['rgba(251, 146, 60, 0.7)', 'rgba(22, 163, 74, 0.7)', 'rgba(220, 38, 38, 0.7)', 'rgba(2, 132, 199, 0.7)'],
+                        borderColor: ['#fb923c', '#16a34a', '#dc2626', '#0284c7'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: 0 },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 10 }, padding: 8, usePointStyle: true }
+                        }
                     }
                 }
             });
@@ -56,14 +88,25 @@
                 if (!res.ok) throw new Error('Server returned ' + res.status);
                 const data = await res.json();
 
-                document.getElementById('toProcessVal').textContent = (data.toProcess ?? 0).toFixed(2);
+                function fmtN(n){ return (Number(n)||0).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+                document.getElementById('toProcessVal').textContent = fmtN(data.toProcess ?? 0);
                 document.getElementById('pendingCount').textContent = (data.toProcessCount ?? 0);
-                document.getElementById('processedVal').textContent = (data.processedToday ?? 0).toFixed(2);
+                document.getElementById('processedVal').textContent = fmtN(data.processedToday ?? 0);
                 document.getElementById('processedCount').textContent = (data.processedCount ?? 0);
-                document.getElementById('monthlyVal').textContent = (data.monthlyTotal ?? 0).toFixed(2);
+                document.getElementById('monthlyVal').textContent = fmtN(data.monthlyTotal ?? 0);
                 document.getElementById('monthlyCount').textContent = (data.monthlyCount ?? 0);
 
                 renderFinanceTrendChart(data.toProcess ?? 0, data.processedToday ?? 0, data.monthlyTotal ?? 0);
+
+                // Render status distribution chart
+                if (data.statusCounts) {
+                    renderFinanceStatusChart(
+                        data.statusCounts.submitted ?? 0,
+                        data.statusCounts.approved ?? 0,
+                        data.statusCounts.rejected ?? 0,
+                        data.statusCounts.pending ?? 0
+                    );
+                }
             } catch (e) {
                 console.error('Failed to load finance metrics:', e);
             }
@@ -136,11 +179,12 @@
     .greeting strong { color: #0288d1; font-weight: 600; margin-left: 4px; }
     body.dark-mode .greeting { color: #e2e8f0; }
 
-    .filter-section { display: flex; align-items: center; gap: 16px; flex-wrap: nowrap; margin-left: auto; flex-shrink: 0; }
+    /* Make filter controls wrap and allow shrinking on smaller screens */
+    .filter-section { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-left: auto; flex-shrink: 1; }
 
-    .filter-group { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
+    .filter-group { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; }
     .filter-group label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.3px; white-space: nowrap; }
-    .filter-group input { padding: 6px 10px; border: 1px solid #e9eef2; border-radius: 6px; font-size: 0.9rem; color: #1e293b; background: white; width: auto; min-width: 120px; }
+    .filter-group input { padding: 6px 10px; border: 1px solid #e9eef2; border-radius: 6px; font-size: 0.9rem; color: #1e293b; background: white; width: auto; min-width: 120px; max-width: 220px; }
     .filter-group input:focus { outline: none; border-color: #0288d1; box-shadow: 0 0 0 3px rgba(2,136,209,0.1); }
     body.dark-mode .filter-group input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
 
@@ -246,6 +290,10 @@
     .action-link-text { font-size: 0.82rem; font-weight: 500; }
     .action-link-desc { font-size: 0.7rem; color: #94a3b8; }
 
+    /* simple paragraph/info card to replace quick actions */
+    .info-card { background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e9eef2; height: fit-content; }
+    .info-card p { color: #475569; font-size: 0.9rem; line-height: 1.4; margin: 0; }
+
     /* TABLE CARD */
     .table-card {
         background: white;
@@ -286,9 +334,11 @@
     @@media (max-width: 768px) {
         .dash-wrapper { padding: 12px; }
         .top-bar { flex-direction: column; align-items: stretch; padding: 12px 16px; gap: 12px; }
-        .filter-section { width: 100%; margin-left: 0; flex-direction: column; }
-        .quick-filters { width: 100%; justify-content: space-between; }
-        .filter-btn { flex: 1; padding: 6px 12px; font-size: 0.8rem; }
+        .filter-section { width: 100%; margin-left: 0; flex-direction: row; gap: 8px; align-items: center; }
+        .filter-section .filter-group { flex: 1 1 140px; min-width: 0; }
+        .filter-section .filter-group input { width: 100%; min-width: 0; max-width: none; }
+        .quick-filters { width: auto; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+        .filter-btn { flex: 0 1 auto; padding: 6px 12px; font-size: 0.8rem; }
         .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     }
 
@@ -304,7 +354,7 @@
         <div class="top-bar">
             <div class="welcome-section">
                 <div class="greeting">
-                    Welcome back, <strong>@User.Identity?.Name</strong>
+                    Welcome back, <strong>@(ViewBag.UserFullName ?? User.Identity?.Name ?? "Finance")</strong>
                 </div>
             </div>
 
@@ -332,7 +382,7 @@
                 <div class="stat-icon orange"><i class="bi bi-hourglass-split"></i></div>
                 <div class="stat-content">
                     <div class="stat-label">TO PROCESS</div>
-                    <div class="stat-number">₱<span id="toProcessVal">@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("0.00"))</span></div>
+                    <div class="stat-number">₱<span id="toProcessVal">@(((decimal?)ViewBag.TotalToProcess ?? 0m).ToString("N2"))</span></div>
                     <div class="stat-sub"><span id="pendingCount">@((int?)ViewBag.PendingCount ?? 0)</span> approved</div>
                 </div>
             </a>
@@ -340,7 +390,7 @@
                 <div class="stat-icon green"><i class="bi bi-check2-circle"></i></div>
                 <div class="stat-content">
                     <div class="stat-label">PROCESSED</div>
-                    <div class="stat-number">₱<span id="processedVal">0.00</span></div>
+                    <div class="stat-number">₱<span id="processedVal">@(((decimal?)ViewBag.ProcessedToday ?? 0m).ToString("N2"))</span></div>
                     <div class="stat-sub"><span id="processedCount">0</span> reimbursements</div>
                 </div>
             </a>
@@ -348,7 +398,7 @@
                 <div class="stat-icon blue"><i class="bi bi-cash-coin"></i></div>
                 <div class="stat-content">
                     <div class="stat-label">MONTHLY TOTAL</div>
-                    <div class="stat-number">₱<span id="monthlyVal">0.00</span></div>
+                    <div class="stat-number">₱<span id="monthlyVal">@(((decimal?)ViewBag.MonthlyTotal ?? 0m).ToString("N2"))</span></div>
                     <div class="stat-sub"><span id="monthlyCount">0</span> processed</div>
                 </div>
             </div>
@@ -362,7 +412,7 @@
             </div>
         </div>
 
-        <!-- CHART + QUICK ACTIONS -->
+        <!-- CHART + STATUS DISTRIBUTION -->
         <div class="dashboard-grid">
             <div class="chart-card">
                 <div class="chart-header">
@@ -373,39 +423,12 @@
                 </div>
             </div>
 
-            <div class="action-card">
-                <div class="action-header">
-                    <i class="bi bi-lightning-fill"></i> Quick Actions
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="bi bi-pie-chart-fill"></i> Report Status
                 </div>
-                <div class="action-list">
-                    <a href="@Url.Action("ApprovedReports", "Finance")" class="action-link">
-                        <div class="action-link-icon"><i class="bi bi-check2-circle"></i></div>
-                        <div>
-                            <div class="action-link-text">Approved Reports</div>
-                            <div class="action-link-desc">Review approved expenses</div>
-                        </div>
-                    </a>
-                    <a href="@Url.Action("Reimbursements", "Finance")" class="action-link">
-                        <div class="action-link-icon"><i class="bi bi-arrow-left-right"></i></div>
-                        <div>
-                            <div class="action-link-text">Process Reimbursement</div>
-                            <div class="action-link-desc">Create reimbursement batches</div>
-                        </div>
-                    </a>
-                    <a href="@Url.Action("Payments", "Finance")" class="action-link">
-                        <div class="action-link-icon"><i class="bi bi-credit-card"></i></div>
-                        <div>
-                            <div class="action-link-text">Payment History</div>
-                            <div class="action-link-desc">View all transactions</div>
-                        </div>
-                    </a>
-                    <a href="@Url.Action("Budget", "Finance")" class="action-link">
-                        <div class="action-link-icon"><i class="bi bi-pie-chart-fill"></i></div>
-                        <div>
-                            <div class="action-link-text">Budget Overview</div>
-                            <div class="action-link-desc">View category budgets</div>
-                        </div>
-                    </a>
+                <div class="chart-container">
+                    <canvas id="financeStatusChart"></canvas>
                 </div>
             </div>
         </div>

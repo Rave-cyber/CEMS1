@@ -89,7 +89,7 @@
                                     <td><span class="status-badge">Pending CEO</span></td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a class="view-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id">View</a>
+                                            <a class="view-btn" asp-controller="CEO" asp-action="ReportDetails" asp-route-id="@r.Id" asp-route-source="Approvals">View</a>
                                             <form method="post" asp-action="ApproveForReimbursement" asp-controller="CEO" style="display:inline;">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@r.Id" />

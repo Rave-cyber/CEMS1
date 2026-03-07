@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using CEMS.Data;
+using CEMS.Models;
 
 namespace CEMS.Areas.Identity.Pages.Account
 {
@@ -21,12 +23,14 @@ namespace CEMS.Areas.Identity.Pages.Account
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly ApplicationDbContext _db;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger, ApplicationDbContext db)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _logger = logger;
+            _db = db;
         }
 
   
@@ -88,7 +92,23 @@ namespace CEMS.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User logged in.");
 
-             
+                    // Fetch user once and record audit log for successful login
+                    var user = await _userManager.FindByEmailAsync(Input.Email);
+                    try
+                    {
+                        var log = new AuditLog
+                        {
+                            Action = "UserLogin",
+                            Module = "Auth",
+                            PerformedByUserId = user?.Id,
+                            Details = $"Login successful for {Input.Email}"
+                        };
+                        _db.AuditLogs.Add(log);
+                        await _db.SaveChangesAsync();
+                    }
+                    catch { /* ignore audit failures */ }
+
+
                     var isDefaultReturn = string.IsNullOrEmpty(returnUrl) || returnUrl == Url.Content("~/") || returnUrl == "/";
 
                     if (!isDefaultReturn)
@@ -96,8 +116,7 @@ namespace CEMS.Areas.Identity.Pages.Account
                         return LocalRedirect(returnUrl);
                     }
 
-          
-                    var user = await _userManager.FindByEmailAsync(Input.Email);
+
                     var roles = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
 
                     if (roles.Contains("SuperAdmin"))
@@ -125,6 +144,21 @@ namespace CEMS.Areas.Identity.Pages.Account
                 }
                 else
                 {
+                    // Log failed login attempt
+                    try
+                    {
+                        var log = new AuditLog
+                        {
+                            Action = "FailedLoginAttempt",
+                            Module = "Auth",
+                            PerformedByUserId = null,
+                            Details = $"Failed login attempt for {Input.Email}"
+                        };
+                        _db.AuditLogs.Add(log);
+                        await _db.SaveChangesAsync();
+                    }
+                    catch { }
+
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                     return Page();
                 }

@@ -38,6 +38,18 @@ namespace CEMS.Controllers
             ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
             ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
 
+            // Get user's full name from ManagerProfile
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var managerProfile = await _db.Set<ManagerProfile>().FirstOrDefaultAsync(m => m.UserId == userId);
+                ViewBag.UserFullName = managerProfile?.FullName ?? User.Identity?.Name ?? "Manager";
+            }
+            else
+            {
+                ViewBag.UserFullName = User.Identity?.Name ?? "Manager";
+            }
+
             var pendingReports = await _db.ExpenseReports
                 .Where(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
                 .OrderByDescending(r => r.SubmissionDate)

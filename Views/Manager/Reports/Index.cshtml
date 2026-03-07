@@ -479,7 +479,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <a class="view-btn" href="@Url.Action("ReportDetails","Manager", new { id = r.Id })">View</a>
+                                        <a class="view-btn" href="@Url.Action("ReportDetails","Manager", new { id = r.Id, source = "Reports" })">View</a>
                                         @if (r.Status == CEMS.Models.ReportStatus.Submitted)
                                         {
                                             @if (r.BudgetCheck == CEMS.Models.BudgetCheckStatus.OverBudget)

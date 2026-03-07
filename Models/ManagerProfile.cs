@@ -46,5 +46,8 @@ namespace CEMS.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string? CreatedByUserId { get; set; }
+
+        [MaxLength(500)]
+        public string? ProfileImagePath { get; set; }
     }
 }

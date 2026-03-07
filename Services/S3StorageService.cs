@@ -10,11 +10,13 @@ namespace CEMS.Services
     {
         private readonly IAmazonS3 _s3Client;
         private readonly string _bucketName;
+        private readonly ILogger<S3StorageService> _logger;
 
         public bool IsEnabled => true;
 
-        public S3StorageService(IConfiguration configuration)
+        public S3StorageService(IConfiguration configuration, ILogger<S3StorageService> logger)
         {
+            _logger = logger;
             var section = configuration.GetSection("AWS");
             _bucketName = section["BucketName"]
                 ?? throw new InvalidOperationException("AWS:BucketName is not configured.");
@@ -29,11 +31,13 @@ namespace CEMS.Services
             {
                 var credentials = new BasicAWSCredentials(accessKey, secretKey);
                 _s3Client = new AmazonS3Client(credentials, region);
+                _logger.LogInformation("S3StorageService initialized with explicit AWS credentials");
             }
             else
             {
                 // Fall back to default credential chain (IAM role, env vars, etc.)
                 _s3Client = new AmazonS3Client(region);
+                _logger.LogWarning("S3StorageService initialized with default credential chain (no explicit credentials found)");
             }
         }
 
@@ -58,17 +62,30 @@ namespace CEMS.Services
 
         public string? GetPreSignedUrl(string key, int expirationMinutes = 15)
         {
-            if (string.IsNullOrEmpty(key))
-                return null;
-
-            var request = new GetPreSignedUrlRequest
+            try
             {
-                BucketName = _bucketName,
-                Key = key,
-                Expires = DateTime.UtcNow.AddMinutes(expirationMinutes)
-            };
+                if (string.IsNullOrEmpty(key))
+                {
+                    _logger.LogWarning("GetPreSignedUrl called with empty key");
+                    return null;
+                }
 
-            return _s3Client.GetPreSignedURL(request);
+                var request = new GetPreSignedUrlRequest
+                {
+                    BucketName = _bucketName,
+                    Key = key,
+                    Expires = DateTime.UtcNow.AddMinutes(expirationMinutes)
+                };
+
+                var url = _s3Client.GetPreSignedURL(request);
+                _logger.LogInformation($"Generated pre-signed URL for key: {key}");
+                return url;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error generating pre-signed URL for key: {key}");
+                return null;
+            }
         }
 
         public async Task DeleteFileAsync(string key)

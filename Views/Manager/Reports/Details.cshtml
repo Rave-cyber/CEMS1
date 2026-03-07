@@ -546,13 +546,13 @@
                                 <td>
                                     @if (item.ReceiptData != null && item.ReceiptData.Length > 0)
                                     {
-                                        <a class="receipt-link" target="_blank" href="@Url.Action("Receipt", "Driver", new { id = item.Id })">
+                                        <a class="receipt-link" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">
                                             <i class="bi bi-image"></i> View
                                         </a>
                                     }
                                     else if (!string.IsNullOrEmpty(item.ReceiptPath))
                                     {
-                                        <a class="receipt-link" target="_blank" href="@item.ReceiptPath">
+                                        <a class="receipt-link" target="_blank" href="@Url.Action("View", "Receipt", new { id = item.Id })">
                                             <i class="bi bi-image"></i> View
                                         </a>
                                     }

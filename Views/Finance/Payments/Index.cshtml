@@ -49,14 +49,94 @@
     .empty-state { background: var(--d-card); border: 1px solid var(--d-border); border-radius: 10px; padding: 40px; text-align: center; }
     .empty-state i { font-size: 3rem; color: var(--d-border); margin-bottom: 16px; }
     .empty-state p { color: var(--d-muted); margin: 0; }
+/* Controls Bottom - Modern Pagination */
+    .controls-bottom {
+        margin-top: 40px;
+        padding: 12px 0;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
 
-    .pagination-wrap { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--d-border); background: #fafbfc; }
-    .pagination-info { font-size: .85rem; color: var(--d-muted); }
-    .pagination-btns { display: flex; gap: 6px; }
-    .pagination-btns a, .pagination-btns span { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; font-size: .85rem; text-decoration: none; border: 1px solid var(--d-border); color: var(--d-text); background: #fff; }
-    .pagination-btns a:hover { background: #e8f4fd; border-color: var(--d-primary); }
-    .pagination-btns span.active { background: var(--d-primary); color: #fff; border-color: var(--d-primary); }
-    .pagination-btns span.disabled { opacity: .4; cursor: default; }
+    .controls-pagination {
+        margin: 0;
+    }
+
+    .controls-pagination .pagination {
+        margin: 0;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .controls-pagination .page-item {
+        margin: 0;
+    }
+
+    .controls-pagination .page-link {
+        color: var(--d-primary);
+        border-color: var(--d-border);
+        background: var(--d-card);
+        font-size: 0.9rem;
+        padding: 8px 11px;
+        min-width: 40px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(26, 107, 181, 0.08);
+        color: #155a9a;
+        border-color: var(--d-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(26, 107, 181, 0.15);
+    }
+
+    body.dark-mode .controls-pagination .page-link {
+        background: #2d3748;
+    }
+
+    body.dark-mode .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(46, 196, 182, 0.12);
+        color: #5eead4;
+    }
+
+    .controls-pagination .page-item.disabled .page-link {
+        background: #f1f5f9;
+        color: #cbd5e1;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    body.dark-mode .controls-pagination .page-item.disabled .page-link {
+        background: #374151;
+        color: #6b7280;
+    }
+
+    .controls-pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--d-primary) 0%, #0a5a9f 100%);
+        border-color: var(--d-primary);
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(26, 107, 181, 0.3);
+    }
+
+    .controls-pagination .page-item.active .page-link:hover {
+        background: linear-gradient(135deg, #155a9a 0%, #094085 100%);
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: var(--d-muted);
+        transition: color 0.3s ease;
+    }
 
     .btn-sync { padding: 3px 8px; font-size: .75rem; border-radius: 5px; }
     .link-id-cell { font-family: monospace; font-size: .78rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -85,7 +165,7 @@
                 <input type="hidden" name="start" value="@filterStart" />
                 <input type="hidden" name="end" value="@filterEnd" />
                 <button type="submit" class="btn btn-sm" style="background-color: #155a9a; color: white; border: 1px solid #155a9a;">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                     Export PDF
                 </button>
             </form>
         </div>
@@ -159,7 +239,6 @@
                                 <th>Status</th>
                                 <th>Paid At</th>
                                 <th>Processed By</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -182,19 +261,6 @@
                                     <td><span class="status-text">@p.Status</span></td>
                                     <td>@(p.PaidAt.HasValue ? p.PaidAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "—")</td>
                                     <td>@processedByName</td>
-                                <td>
-                                    @if (p.Status != "paid")
-                                    {
-                                        <form method="post" asp-action="RefreshPaymentStatus" asp-route-id="@p.Id" style="display:inline;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-info btn-sync" title="Sync status from PayMongo">Sync</button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small">Paid</span>
-                                    }
-                                </td>
                                 </tr>
                             }
                         </tbody>

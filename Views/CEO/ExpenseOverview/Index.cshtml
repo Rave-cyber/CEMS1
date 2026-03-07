@@ -77,6 +77,94 @@
         background: var(--bs-primary); color: #fff; border-color: var(--bs-primary);
         box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
+     /* Controls Bottom - Modern Pagination */
+    .controls-bottom {
+        margin-top: 40px;
+        padding: 12px 0;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .controls-pagination {
+        margin: 0;
+    }
+
+    .controls-pagination .pagination {
+        margin: 0;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .controls-pagination .page-item {
+        margin: 0;
+    }
+
+    .controls-pagination .page-link {
+        color: var(--d-primary);
+        border-color: var(--d-border);
+        background: var(--d-card);
+        font-size: 0.9rem;
+        padding: 8px 11px;
+        min-width: 40px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(26, 107, 181, 0.08);
+        color: #155a9a;
+        border-color: var(--d-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(26, 107, 181, 0.15);
+    }
+
+    body.dark-mode .controls-pagination .page-link {
+        background: #2d3748;
+    }
+
+    body.dark-mode .controls-pagination .page-link:hover:not(.disabled) {
+        background: rgba(46, 196, 182, 0.12);
+        color: #5eead4;
+    }
+
+    .controls-pagination .page-item.disabled .page-link {
+        background: #f1f5f9;
+        color: #cbd5e1;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    body.dark-mode .controls-pagination .page-item.disabled .page-link {
+        background: #374151;
+        color: #6b7280;
+    }
+
+    .controls-pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--d-primary) 0%, #0a5a9f 100%);
+        border-color: var(--d-primary);
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(26, 107, 181, 0.3);
+    }
+
+    .controls-pagination .page-item.active .page-link:hover {
+        background: linear-gradient(135deg, #155a9a 0%, #094085 100%);
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+        color: var(--d-muted);
+        transition: color 0.3s ease;
+    }
 </style>
 
 <div class="page-wrapper">
