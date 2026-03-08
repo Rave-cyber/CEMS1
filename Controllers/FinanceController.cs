@@ -346,8 +346,8 @@ namespace CEMS.Controllers
                     var usersById = await _userManager.Users.ToDictionaryAsync(u => u.Id, u => u.UserName ?? "");
 
                     var matchingUserIds = new List<string>();
-                    var driverProfiles = await _db.DriverProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
-                    matchingUserIds.AddRange(driverProfiles.Select(p => p.UserId));
+                    var searchDriverProfiles = await _db.DriverProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
+                    matchingUserIds.AddRange(searchDriverProfiles.Select(p => p.UserId));
                     var mgrProfiles = await _db.ManagerProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
                     matchingUserIds.AddRange(mgrProfiles.Select(p => p.UserId));
                     var finProfiles = await _db.FinanceProfiles.Where(p => p.FullName != null && p.FullName.ToLower().Contains(lower)).ToListAsync();
@@ -381,6 +381,10 @@ namespace CEMS.Controllers
             ViewBag.Payments = payments
                 .GroupBy(p => p.ReportId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.CreatedAt).First());
+
+            // Load driver profiles for contact number display
+            var driverProfiles = await _db.DriverProfiles.Where(p => userIds.Contains(p.UserId)).ToDictionaryAsync(p => p.UserId, p => p);
+            ViewBag.DriverProfiles = driverProfiles;
 
             return View("Reimbursements/Index");
         }
@@ -659,7 +663,7 @@ namespace CEMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Reimburse(int id)
+        public async Task<IActionResult> Reimburse(int id, string? manualPhone = null)
         {
             var report = await _db.ExpenseReports.FindAsync(id);
             if (report == null) return NotFound();
@@ -685,6 +689,27 @@ namespace CEMS.Controllers
                     ? await _userManager.FindByIdAsync(report.UserId)
                     : null;
 
+                // Get driver's contact number from their profile
+                string? driverPhone = null;
+                if (report.UserId != null)
+                {
+                    var driverProfile = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == report.UserId);
+                    driverPhone = driverProfile?.ContactNumber;
+                }
+
+                // Use manual phone if provided and no driver phone exists
+                if (string.IsNullOrWhiteSpace(driverPhone) && !string.IsNullOrWhiteSpace(manualPhone))
+                {
+                    driverPhone = manualPhone.Trim();
+                }
+
+                // Validate: phone number is REQUIRED for payment processing
+                if (string.IsNullOrWhiteSpace(driverPhone))
+                {
+                    TempData["Error"] = $"Contact number is required to process payment. Driver's profile has no phone number and none was provided.";
+                    return RedirectToAction("Reimbursements");
+                }
+
                 var (sessionId, checkoutUrl) = await _payMongo.CreateCheckoutSessionAsync(
                     report.TotalAmount,
                     $"CEMS Reimbursement - Report #{report.Id}",
@@ -692,7 +717,8 @@ namespace CEMS.Controllers
                     successUrl,
                     cancelUrl,
                     customerEmail: driverUser?.Email,
-                    customerName: driverUser?.UserName
+                    customerName: driverUser?.UserName,
+                    customerPhone: driverPhone
                 );
 
                 // Save the payment record (or update existing)

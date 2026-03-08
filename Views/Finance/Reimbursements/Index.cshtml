@@ -199,6 +199,23 @@
         margin: 0;
     }
 
+    /* Ensure toast notifications use white text on colored backgrounds */
+    .toast.text-bg-success .toast-body,
+    .toast.text-bg-danger .toast-body,
+    .toast.text-bg-info .toast-body,
+    .toast.text-bg-warning .toast-body {
+        color: #fff !important;
+    }
+
+    /* Force Bootstrap toast colored backgrounds (in case of overrides) */
+    .toast.text-bg-success { background-color: #16a34a !important; }
+    .toast.text-bg-danger { background-color: #dc2626 !important; }
+    .toast.text-bg-info { background-color: #0ea5e9 !important; }
+    .toast.text-bg-warning { background-color: #f59e0b !important; }
+
+    /* Keep inner flex container transparent so color shows uniformly */
+    .toast .d-flex { background: transparent !important; }
+
     @@media (max-width: 768px) {
         .page-wrapper { padding: 20px 0 32px; }
         .page-title { font-size: 1.4rem; }
@@ -276,7 +293,7 @@
                             <tr>
                                 <th>Report ID</th>
                                 <th>Driver</th>
-                                <th>Total Amount</th>
+                                <th class="text-right">Total Amount</th>
                                 <th>Submitted Date</th>
                                 <th>Payment Status</th>
                                 <th>Actions</th>
@@ -292,7 +309,7 @@
                                 <tr>
                                     <td><strong>@r.Id</strong></td>
                                     <td>@(dto.UserName ?? "Unknown")</td>
-                                    <td><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
+                                    <td class="text-right"><strong>₱@r.TotalAmount.ToString("N2")</strong></td>
                                     <td>@r.SubmissionDate.ToLocalTime().ToString("MMM d, yyyy")</td>
                                     <td>
                                         @if (hasPayment)
@@ -326,12 +343,10 @@
                                         }
                                         else
                                         {
-                                            <!-- Pay via PayMongo -->
-                                            <form method="post" asp-action="Reimburse" asp-controller="Finance" style="display:inline-block;">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="view-btn">Pay via GCash/Card</button>
-                                            </form>
+                                            <!-- Pay via PayMongo - with contact number modal -->
+                                            <button type="button" class="view-btn" data-bs-toggle="modal" data-bs-target="#phoneModalReport@(r.Id)">
+                                                <i class="bi bi-credit-card"></i> Pay via GCash/Card
+                                            </button>
                                         }
                                     </td>
                                 </tr>
@@ -351,6 +366,79 @@
         }
     </div>
 </div>
+
+<!-- Contact number modals for each report -->
+@if(ViewBag.Reports != null)
+{
+    @foreach(var dto in ViewBag.Reports as List<CEMS.Models.PendingExpenseReportDto>)
+    {
+        var r = dto.Report;
+        var driverProfile = ViewBag.DriverProfiles != null && ((Dictionary<string, CEMS.Models.DriverProfile>)ViewBag.DriverProfiles).ContainsKey(r.UserId ?? "") 
+            ? ((Dictionary<string, CEMS.Models.DriverProfile>)ViewBag.DriverProfiles)[r.UserId ?? ""]
+            : null;
+        var hasPhone = !string.IsNullOrWhiteSpace(driverProfile?.ContactNumber);
+        <div class="modal fade" id="phoneModalReport@(r.Id)" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title">Process Reimbursement - Report #@(r.Id)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Driver:</strong></label>
+                            <p class="text-muted">@(dto.UserName ?? "Unknown")</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Amount to Process:</strong></label>
+                            <p class="text-muted">₱@(r.TotalAmount.ToString("N2"))</p>
+                        </div>
+                        <form method="post" asp-action="Reimburse" asp-controller="Finance" id="reimbForm@(r.Id)">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@r.Id" />
+
+                            <div class="mb-3">
+                                <label for="phone@(r.Id)" class="form-label">
+                                    <strong>Contact Number</strong>
+                                    @if(!hasPhone) { <span class="badge bg-danger">Required</span> }
+                                    @if(hasPhone) { <span class="badge bg-success">Verified</span> }
+                                </label>
+                                <input 
+                                    type="tel" 
+                                    class="form-control" 
+                                    id="phone@(r.Id)" 
+                                    name="manualPhone" 
+                                    placeholder="e.g., +63 9XX XXX XXXX"
+                                    value="@(driverProfile?.ContactNumber ?? "")"
+                                    @if(hasPhone) { @Html.Raw("readonly") }
+                                    @if(!hasPhone) { @Html.Raw("required") }
+                                />
+                                @if(hasPhone)
+                                {
+                                    <small class="text-success d-block mt-2">
+                                        <i class="bi bi-check-circle"></i> Driver's verified contact number (auto-filled from profile)
+                                    </small>
+                                }
+                                else
+                                {
+                                    <small class="text-danger d-block mt-2">
+                                        <i class="bi bi-exclamation-circle"></i> Required - Driver's profile has no contact number. Please enter it below.
+                                    </small>
+                                }
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" form="reimbForm@(r.Id)" class="btn btn-primary">
+                            <i class="bi bi-credit-card"></i> Proceed to Payment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
 
 <script>
     // Setup toast display and search behavior

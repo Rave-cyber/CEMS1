@@ -1330,10 +1330,10 @@
                 </div>
 
                 <div class="quick-filters">
-                    <button class="filter-btn" data-range="today">Today</button>
-                    <button class="filter-btn" data-range="week">Week</button>
-                    <button class="filter-btn active" data-range="month">Month</button>
-                    <button class="filter-btn" data-range="year">Year</button>
+                <button type="button" class="filter-btn" data-range="today">Today</button>
+                    <button type="button" class="filter-btn" data-range="week">Week</button>
+                    <button type="button" class="filter-btn active" data-range="month">Month</button>
+                    <button type="button" class="filter-btn" data-range="year">Year</button>
                 </div>
             </div>
         </div>
@@ -1351,9 +1351,9 @@
             <a href="@Url.Action("Reports", "Manager")" class="stat-card">
                 <div class="stat-icon green"><i class="bi bi-check2-circle"></i></div>
                 <div class="stat-content">
-                    <div class="stat-label">Approved</div>
-                    <div class="stat-number" id="mgrApprovedTotal">₱@totalSpent.ToString("N0")</div>
-                    <div class="stat-sub"><span id="mgrApprovedCount">@approvedTodayCount</span> report(s)</div>
+                    <div class="stat-label">Utilized</div>
+                    <div class="stat-number" id="mgrSpent">₱@totalSpent.ToString("N0")</div>
+                    <div class="stat-sub" id="mgrUtilizationPct">@Math.Round((totalBudget > 0 ? totalSpent / totalBudget : 0) * 100)% of budget</div>
                 </div>
             </a>
             <a href="@Url.Action("OverBudget", "Manager")" class="stat-card">
@@ -1383,9 +1383,9 @@
                 <div class="chart-header"><i class="bi bi-bar-chart-fill"></i> Budget by Category</div>
                 <div class="chart-container"><canvas id="managerBudgetChart"></canvas></div>
             </div>
-            <!-- Monthly Trend -->
+            <!-- Spending Trend (Dynamic Title) -->
             <div class="chart-card">
-                <div class="chart-header"><i class="bi bi-calendar3"></i> Monthly Trend</div>
+                <div class="chart-header"><i class="bi bi-calendar3"></i> <span id="trendChartTitle">Spending Trend</span></div>
                 <div class="chart-container"><canvas id="mgrMonthlyChart"></canvas></div>
             </div>
             <!-- Report Status -->
@@ -1488,7 +1488,6 @@
                             <th class="text-right">Amount</th>
                             <th>Submitted</th>
                             <th>Budget</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1503,22 +1502,16 @@
                                     <td class="text-right">₱@r.TotalAmount.ToString("N0")</td>
                                     <td>@r.SubmissionDate.ToLocalTime().ToString("MM/dd")</td>
                                     <td>
-                                        <span class="status-badge @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "within" : "over")">
-                                            @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "OK" : "Over")
-                                        </span>
+                                        @(r.BudgetCheck == CEMS.Models.BudgetCheckStatus.WithinBudget ? "OK" : "Over")
                                     </td>
-                                    <td>
-                                        <a class="action-btn" href="@Url.Action("ReportDetails", "Manager", new { id = r.Id })">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                    </td>
+
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="6" class="empty-state">No pending reports — all caught up!</td>
+                                <td colspan="5" class="empty-state">No pending reports — all caught up!</td>
                             </tr>
                         }
                     </tbody>
@@ -1533,6 +1526,13 @@
 <script>
     (function () {
         var managerBudgetChart;
+
+        function localDateISO(d) {
+            var y = d.getFullYear();
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + dd;
+        }
 
         function renderManagerBudgetChart(budgets) {
             var canvas = document.getElementById('managerBudgetChart');
@@ -1615,7 +1615,7 @@
             loadManagerMetrics();
         }
 
-        function highlightActiveFilter() {
+            function highlightActiveFilter() {
             var startInput = document.getElementById('dashboardStart');
             var endInput = document.getElementById('dashboardEnd');
             if (!startInput || !endInput) return;
@@ -1624,7 +1624,7 @@
             var endStr = endInput.value;
             var now = new Date();
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            var todayStr = today.toISOString().split('T')[0];
+            var todayStr = localDateISO(today);
 
             document.querySelectorAll('.filter-btn').forEach(function(btn) {
                 btn.classList.remove('active');
@@ -1638,9 +1638,10 @@
             }
             // Week
             else if (!matchingRange) {
+                // Last 7 days (including today)
                 var weekStart = new Date(today);
-                weekStart.setDate(today.getDate() - today.getDay());
-                var weekStartStr = weekStart.toISOString().split('T')[0];
+                weekStart.setDate(today.getDate() - 6);
+                var weekStartStr = localDateISO(weekStart);
                 if (startStr === weekStartStr && endStr === todayStr) {
                     matchingRange = 'week';
                 }
@@ -1649,8 +1650,8 @@
             if (!matchingRange) {
                 var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
                 var monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                var monthStartStr = monthStart.toISOString().split('T')[0];
-                var monthEndStr = monthEnd.toISOString().split('T')[0];
+                var monthStartStr = localDateISO(monthStart);
+                var monthEndStr = localDateISO(monthEnd);
                 if (startStr === monthStartStr && endStr === monthEndStr) {
                     matchingRange = 'month';
                 }
@@ -1659,8 +1660,8 @@
             if (!matchingRange) {
                 var yearStart = new Date(now.getFullYear(), 0, 1);
                 var yearEnd = new Date(now.getFullYear(), 11, 31);
-                var yearStartStr = yearStart.toISOString().split('T')[0];
-                var yearEndStr = yearEnd.toISOString().split('T')[0];
+                var yearStartStr = localDateISO(yearStart);
+                var yearEndStr = localDateISO(yearEnd);
                 if (startStr === yearStartStr && endStr === yearEndStr) {
                     matchingRange = 'year';
                 }
@@ -1688,17 +1689,6 @@
                 var overEl = document.getElementById('mgrOverBudget');
                 if (overEl) overEl.textContent = data.overBudgetCount ?? 0;
 
-                var approvedTotalEl = document.getElementById('mgrApprovedTotal');
-                if (approvedTotalEl && data.approvedTodayTotal !== undefined) {
-                    var formattedAmount = (data.approvedTodayTotal || 0).toLocaleString('en-PH', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-                    approvedTotalEl.textContent = '₱' + formattedAmount;
-                }
-
-                var approvedCountEl = document.getElementById('mgrApprovedCount');
-                if (approvedCountEl && data.approvedTodayCount !== undefined) {
-                    approvedCountEl.textContent = data.approvedTodayCount ?? 0;
-                }
-
                 // Update Team Budget card from budgets data
                 var totalBudgetAmount = 0;
                 var totalSpentAmount = 0;
@@ -1708,6 +1698,20 @@
                         totalSpentAmount += b.spent || 0;
                     });
                 }
+
+                // Update Utilized card (spent amount + percentage)
+                var spentEl = document.getElementById('mgrSpent');
+                if (spentEl) {
+                    var formattedSpent = totalSpentAmount.toLocaleString('en-PH', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                    spentEl.textContent = '₱' + formattedSpent;
+                }
+
+                var utilizationPctEl = document.getElementById('mgrUtilizationPct');
+                if (utilizationPctEl) {
+                    var utilization = totalBudgetAmount > 0 ? Math.round((totalSpentAmount / totalBudgetAmount) * 100) : 0;
+                    utilizationPctEl.textContent = utilization + '% of budget';
+                }
+
                 var totalBudgetEl = document.getElementById('mgrTotalBudget');
                 if (totalBudgetEl) {
                     var formattedBudget = totalBudgetAmount.toLocaleString('en-PH', {minimumFractionDigits: 0, maximumFractionDigits: 0});
@@ -1761,16 +1765,66 @@
 
                 renderManagerBudgetChart(data.budgets || []);
 
-                // Monthly Trend Chart (NEW)
+                // Spending Trend Chart (with dynamic title based on date range)
                 var monthCanvas = document.getElementById('mgrMonthlyChart');
                 if (monthCanvas && window.Chart && data.monthLabels && data.monthLabels.length > 0) {
+                    // Determine trend title based on date range
+                    var startInput = document.getElementById('dashboardStart');
+                    var endInput = document.getElementById('dashboardEnd');
+                    var trendTitle = 'Spending Trend';
+
+                    if (startInput && endInput) {
+                        var startStr = startInput.value;
+                        var endStr = endInput.value;
+                        var now = new Date();
+                        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        var todayStr = localDateISO(today);
+
+                        // Determine which range is active
+                        if (startStr === todayStr && endStr === todayStr) {
+                            trendTitle = 'Hourly Spending Trend';
+                        } else {
+                            // Check for week (last 7 days)
+                            var weekStart = new Date(today);
+                            weekStart.setDate(today.getDate() - 6);
+                            var weekStartStr = localDateISO(weekStart);
+                            if (startStr === weekStartStr && endStr === todayStr) {
+                                trendTitle = 'Weekly Spending Trend';
+                            } else {
+                                // Check for month
+                                var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                                var monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                                var monthStartStr = localDateISO(monthStart);
+                                var monthEndStr = localDateISO(monthEnd);
+                                if (startStr === monthStartStr && endStr === monthEndStr) {
+                                    trendTitle = 'Monthly Spending Trend';
+                                } else {
+                                    // Check for year
+                                    var yearStart = new Date(now.getFullYear(), 0, 1);
+                                    var yearEnd = new Date(now.getFullYear(), 11, 31);
+                                    var yearStartStr = localDateISO(yearStart);
+                                    var yearEndStr = localDateISO(yearEnd);
+                                    if (startStr === yearStartStr && endStr === yearEndStr) {
+                                        trendTitle = 'Yearly Spending Trend';
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Update the chart title in the header
+                    var trendTitleEl = document.getElementById('trendChartTitle');
+                    if (trendTitleEl) {
+                        trendTitleEl.textContent = trendTitle;
+                    }
+
                     if (window._mgrMonthChart) window._mgrMonthChart.destroy();
                     window._mgrMonthChart = new Chart(monthCanvas, {
                         type: 'line',
                         data: {
                             labels: data.monthLabels,
                             datasets: [{
-                                label: 'Monthly Spending',
+                                label: trendTitle,
                                 data: data.monthTotals,
                                 borderColor: '#16a34a',
                                 backgroundColor: 'rgba(22,163,74,0.12)',
@@ -1914,28 +1968,43 @@
             });
 
             document.querySelectorAll('[data-range]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     var range = this.getAttribute('data-range');
                     var now = new Date();
-                    var start, end = now;
+                    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    var start, end;
+
+                    console.log('Button clicked:', range, 'Today is:', localDateISO(today));
 
                     if (range === 'today') {
-                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        start = new Date(today);
+                        end = new Date(today);
                     } else if (range === 'week') {
-                        var day = now.getDay();
-                        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                        // last 7 days (today and previous 6 days)
+                        start = new Date(today);
+                        start.setDate(start.getDate() - 6);
+                        end = new Date(today);
+                        console.log('Week calculation: start =', localDateISO(start), ', end =', localDateISO(end));
                     } else if (range === 'month') {
                         start = new Date(now.getFullYear(), now.getMonth(), 1);
                         end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                     } else if (range === 'year') {
                         start = new Date(now.getFullYear(), 0, 1);
                         end = new Date(now.getFullYear(), 11, 31);
+                    } else {
+                        console.error('Unknown range:', range);
+                        return;
                     }
 
-                    var startStr = start.toISOString().split('T')[0];
-                    var endStr = end.toISOString().split('T')[0];
+                    var startStr = localDateISO(start);
+                    var endStr = localDateISO(end);
+                    console.log('Quick filter clicked:', range, 'final dates:', startStr, '→', endStr);
 
-                    window.location.href = '@Url.Action("Dashboard", "Manager")?start=' + startStr + '&end=' + endStr;
+                    var url = '@Url.Action("Dashboard", "Manager")?start=' + startStr + '&end=' + endStr;
+                    console.log('Navigating to URL:', url);
+                    window.location.href = url;
                 });
             });
         });

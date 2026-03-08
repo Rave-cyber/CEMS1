@@ -115,7 +115,6 @@
                         <td>${item.description?.substring(0, 15) || '—'}</td>
                         <td>${item.reportStatus}</td>
                         <td class="${item.budgetCheck === 'OverBudget' ? 'text-danger' : 'text-success'}">${item.budgetCheck === 'OverBudget' ? 'Over' : 'OK'}</td>
-                        <td>${item.receiptUrl ? `<a href="${item.receiptUrl}" style="color:#0288d1;">View</a>` : '—'}</td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -176,10 +175,14 @@
 
                     const range = this.dataset.range;
                     const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                     let start = new Date();
 
-                    if(range === 'today') start = new Date(now.setHours(0,0,0,0));
-                    else if(range === 'week') start = new Date(now.setDate(now.getDate() - now.getDay()));
+                    if(range === 'today') start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    else if(range === 'week') {
+                        start = new Date(today);
+                        start.setDate(today.getDate() - 6);
+                    }
                     else if(range === 'month') start = new Date(now.getFullYear(), now.getMonth(), 1);
                     else if(range === 'year') start = new Date(now.getFullYear(), 0, 1);
 
@@ -1262,7 +1265,6 @@
             <div class="table-card">
                 <div class="table-header">
                     <span><i class="bi bi-file-text me-1" style="color:#0288d1;"></i> Recent Reports</span>
-                    <a href="@Url.Action("MyReports", "Driver")" class="view-link">View All</a>
                 </div>
                 <div class="scroll-table">
                     <table class="compact-table">
@@ -1309,7 +1311,6 @@
                             <th>Description</th>
                             <th>Status</th>
                             <th>Budget</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="recentItems">

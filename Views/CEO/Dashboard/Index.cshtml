@@ -181,10 +181,10 @@
                     </div>
                 </div>
                 <div class="quick-filters">
-                    <button class="filter-btn" data-range="today">Today</button>
-                    <button class="filter-btn" data-range="week">Week</button>
-                    <button class="filter-btn" data-range="month">Month</button>
-                    <button class="filter-btn" data-range="year">Year</button>
+                    <button type="button" class="filter-btn" data-range="today">Today</button>
+                    <button type="button" class="filter-btn" data-range="week">Week</button>
+                    <button type="button" class="filter-btn" data-range="month">Month</button>
+                    <button type="button" class="filter-btn" data-range="year">Year</button>
                 </div>
             </div>
         </div>
@@ -525,21 +525,39 @@
             var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             document.querySelectorAll('.filter-btn').forEach(function (btn) { btn.classList.remove('active'); });
             var match = null;
-            if (start && start.getTime() === today.getTime() && end && end.getTime() === today.getTime()) { match = 'today'; }
+
+            // Today
+            if (start && start.getTime() === today.getTime() && end && end.getTime() === today.getTime()) { 
+                match = 'today'; 
+            }
+            // Week (last 7 days: today - 6 days through today)
             else {
-                var ws = new Date(today); ws.setDate(today.getDate() - today.getDay());
-                if (start && start.getTime() === ws.getTime() && end && end.getTime() === today.getTime()) { match = 'week'; }
-                else {
-                    var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                    var mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                    if (start && start.getTime() === mStart.getTime() && end && (end.getTime() === mEnd.getTime() || end.getTime() === today.getTime())) { match = 'month'; }
-                    else {
-                        var ys = new Date(now.getFullYear(), 0, 1);
-                        if (start && start.getTime() === ys.getTime() && end && end.getTime() === today.getTime()) { match = 'year'; }
-                    }
+                var weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - 6);
+                if (start && start.getTime() === weekStart.getTime() && end && end.getTime() === today.getTime()) { 
+                    match = 'week'; 
                 }
             }
-            if (match) { var btn = document.querySelector('[data-range="' + match + '"]'); if (btn) btn.classList.add('active'); }
+            // Month
+            if (!match) {
+                var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                var mEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                if (start && start.getTime() === mStart.getTime() && end && (end.getTime() === mEnd.getTime() || end.getTime() === today.getTime())) { 
+                    match = 'month'; 
+                }
+            }
+            // Year
+            if (!match) {
+                var ys = new Date(now.getFullYear(), 0, 1);
+                if (start && start.getTime() === ys.getTime() && end && end.getTime() === today.getTime()) { 
+                    match = 'year'; 
+                }
+            }
+
+            if (match) { 
+                var btn = document.querySelector('[data-range="' + match + '"]'); 
+                if (btn) btn.classList.add('active'); 
+            }
         }
 
         // ── Fuel prices (unchanged) ──
@@ -589,21 +607,36 @@
 
             // Quick-filter buttons → set dates + AJAX
             document.querySelectorAll('[data-range]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     var range = this.getAttribute('data-range');
                     var now = new Date();
+                    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                     var s;
-                    if (range === 'today') { s = new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
-                    else if (range === 'week') { s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()); }
-                    else if (range === 'month') { s = new Date(now.getFullYear(), now.getMonth(), 1); }
-                    else if (range === 'year') { s = new Date(now.getFullYear(), 0, 1); }
+
+                    if (range === 'today') { 
+                        s = new Date(today);
+                    }
+                    else if (range === 'week') { 
+                        // last 7 days (today and previous 6 days)
+                        s = new Date(today);
+                        s.setDate(today.getDate() - 6);
+                    }
+                    else if (range === 'month') { 
+                        s = new Date(now.getFullYear(), now.getMonth(), 1); 
+                    }
+                    else if (range === 'year') { 
+                        s = new Date(now.getFullYear(), 0, 1); 
+                    }
+
                     if (startEl) startEl.value = formatLocalDate(s);
                     if (endEl) {
                         if (range === 'month') {
                             var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                             endEl.value = formatLocalDate(lastDay);
                         } else {
-                            endEl.value = formatLocalDate(now);
+                            endEl.value = formatLocalDate(today);
                         }
                     }
                     // immediate visual feedback

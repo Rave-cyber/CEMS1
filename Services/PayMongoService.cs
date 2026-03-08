@@ -5,12 +5,12 @@ namespace CEMS.Services
 {
     public interface IPayMongoService
     {
-       
+
         Task<(string SessionId, string CheckoutUrl)> CreateCheckoutSessionAsync(
             decimal amount, string description, int reportId, string successUrl, string cancelUrl,
-            string? customerEmail = null, string? customerName = null);
+            string? customerEmail = null, string? customerName = null, string? customerPhone = null);
 
-     
+
         Task<string> GetCheckoutStatusAsync(string sessionId);
     }
 
@@ -27,9 +27,9 @@ namespace CEMS.Services
 
         public async Task<(string SessionId, string CheckoutUrl)> CreateCheckoutSessionAsync(
             decimal amount, string description, int reportId, string successUrl, string cancelUrl,
-            string? customerEmail = null, string? customerName = null)
+            string? customerEmail = null, string? customerName = null, string? customerPhone = null)
         {
-         
+
             var amountInCentavos = (long)(amount * 100m);
 
             if (amountInCentavos < 100)
@@ -56,11 +56,16 @@ namespace CEMS.Services
             if (!string.IsNullOrEmpty(customerEmail))
             {
                 attributes["customer_email"] = customerEmail;
-                attributes["billing"] = new System.Text.Json.Nodes.JsonObject
+                var billingObj = new System.Text.Json.Nodes.JsonObject
                 {
                     ["email"] = customerEmail,
                     ["name"] = customerName ?? customerEmail
                 };
+                if (!string.IsNullOrEmpty(customerPhone))
+                {
+                    billingObj["phone"] = customerPhone;
+                }
+                attributes["billing"] = billingObj;
             }
 
             var payload = new System.Text.Json.Nodes.JsonObject
