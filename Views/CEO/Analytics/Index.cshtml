@@ -296,18 +296,29 @@
     // Monthly trend chart (loaded via API). Also provide an export that includes chart images.
     async function loadTrend() {
         try {
-            // Include current querystring so the Metrics endpoint receives any start/end filters from the page
-            const res = await fetch('@Url.Action("Metrics", "CEO")' + window.location.search);
+            // NOTE: use the actual controller action that returns JSON for dashboard/metrics data.
+            // The controller provides categoryLabels/categoryAllocated/categorySpent and trendLabels/trendData.
+            const res = await fetch('@Url.Action("GetDashboardData", "CEO")' + window.location.search);
+            if (!res.ok) throw new Error('Metrics endpoint failed: ' + res.status);
             const data = await res.json();
+
+            // Normalize monthly data from controller's trendLabels/trendData (controller returns trendLabels & trendData)
+            let monthlyData = [];
+            if (Array.isArray(data.trendLabels) && Array.isArray(data.trendData)) {
+                monthlyData = data.trendLabels.map((label, i) => ({ label: label, total: Number(data.trendData[i] || 0) }));
+            } else if (Array.isArray(data.monthlyData)) {
+                // backward compatibility if endpoint uses monthlyData
+                monthlyData = data.monthlyData.map(m => ({ label: m.label, total: Number(m.total || 0) }));
+            }
 
             const trendCtx = document.getElementById('trendChart').getContext('2d');
             const trendChart = new Chart(trendCtx, {
                 type: 'line',
                 data: {
-                    labels: data.monthlyData.map(m => m.label),
+                    labels: monthlyData.map(m => m.label),
                     datasets: [{
                         label: 'Monthly Expenses (₱)',
-                        data: data.monthlyData.map(m => m.total),
+                        data: monthlyData.map(m => m.total),
                         borderColor: 'rgba(26, 107, 181, 1)',
                         backgroundColor: 'rgba(26, 107, 181, 0.1)',
                         fill: true,
@@ -319,6 +330,34 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
             });
+
+            // Build budgetsData from API response if available, otherwise fallback to server-side Razor arrays
+            let budgetsData = [];
+            if (Array.isArray(data.categoryLabels) && Array.isArray(data.categoryAllocated) && Array.isArray(data.categorySpent)) {
+                budgetsData = data.categoryLabels.map((cat, i) => ({
+                    Category: cat || 'Unspecified',
+                    Allocated: Number(data.categoryAllocated[i] || 0),
+                    Spent: Number(data.categorySpent[i] || 0)
+                }));
+            } else if (Array.isArray(data.budgets)) {
+                budgetsData = data.budgets.map(b => ({ Category: b.Category || 'Unspecified', Allocated: Number(b.Allocated || 0), Spent: Number(b.Spent || 0) }));
+            } else {
+                // fallback to server-side serialized arrays prepared by Razor (safe JSON literals)
+                try {
+                    const fallbackLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetLabels));
+                    const fallbackAllocs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetAllocated));
+                    const fallbackSpents = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetSpent));
+                    for (let i = 0; i < Math.max(fallbackLabels.length, fallbackAllocs.length, fallbackSpents.length); i++) {
+                        budgetsData.push({
+                            Category: fallbackLabels[i] || 'Unspecified',
+                            Allocated: Number(fallbackAllocs[i] || 0),
+                            Spent: Number(fallbackSpents[i] || 0)
+                        });
+                    }
+                } catch (e) {
+                    budgetsData = [];
+                }
+            }
 
             // Expose export button to produce a text-only summary PDF (no graphs)
             const exportBtn = document.getElementById('exportPdfBtn');
@@ -358,30 +397,6 @@
                         doc.text('Budget Summary:', margin, y); y += 16;
                         doc.setFontSize(10);
 
-                        // prepare fallback arrays from server-side Razor variables (they are JSON literals)
-                        var fallbackLabels = [];
-                        var fallbackAllocs = [];
-                        var fallbackSpents = [];
-                        try {
-                            fallbackLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetLabels));
-                        } catch(e) { fallbackLabels = []; }
-                        try {
-                            fallbackAllocs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetAllocated));
-                        } catch(e) { fallbackAllocs = []; }
-                        try {
-                            fallbackSpents = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(budgetSpent));
-                        } catch(e) { fallbackSpents = []; }
-
-                        const budgetsData = (data && data.budgets && data.budgets.length) ? data.budgets : (
-                            (function(){
-                                const arr = [];
-                                for (var i=0;i< Math.max(fallbackLabels.length, fallbackAllocs.length, fallbackSpents.length); i++) {
-                                    arr.push({ Category: fallbackLabels[i] || 'Unspecified', Allocated: Number(fallbackAllocs[i] || 0), Spent: Number(fallbackSpents[i] || 0) });
-                                }
-                                return arr;
-                            })()
-                        );
-
                         // Write each budget line and compute totals for conclusion
                         var totalAlloc = 0;
                         var totalSpentCalc = 0;
@@ -404,8 +419,8 @@
                         doc.text('Monthly Trend (last 6 months):', margin, y); y += 14;
                         doc.setFontSize(10);
                         var monthly = [];
-                        if (data.monthlyData && data.monthlyData.length) {
-                            data.monthlyData.forEach(function(m){
+                        if (monthlyData && monthlyData.length) {
+                            monthlyData.forEach(function(m){
                                 if (y > doc.internal.pageSize.getHeight() - 60) { doc.addPage(); y = margin; }
                                 doc.text(`${m.label}: PHP ${(m.total||0).toFixed(2)}`, margin, y);
                                 y += 12;

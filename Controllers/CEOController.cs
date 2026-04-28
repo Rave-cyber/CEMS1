@@ -27,7 +27,6 @@ namespace CEMS.Controllers
             _notificationService = notificationService;
         }
 
-        // ───────────── Dashboard ─────────────
         public async Task<IActionResult> Dashboard(DateTime? start = null, DateTime? end = null)
         {
             // Set default date range to current month

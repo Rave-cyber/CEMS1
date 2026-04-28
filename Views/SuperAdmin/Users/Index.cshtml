@@ -985,7 +985,6 @@
         document.getElementById('barangayDropdown').classList.remove('show');
         document.getElementById('createCountry').value = 'Philippines';
 
-        // Preload provinces if not cached
         psgcLoadProvinces();
 
         currentStep = 1;
@@ -1001,10 +1000,10 @@
     var psgcProvinces = [];
     var psgcCities = [];
     var psgcBarangays = [];
-    var psgcActiveIndex = -1; // keyboard navigation index
+    var psgcActiveIndex = -1; 
 
     function psgcLoadProvinces() {
-        if (psgcProvinces.length > 0) return; // already cached
+        if (psgcProvinces.length > 0) return; 
         var dd = document.getElementById('provinceDropdown');
         dd.innerHTML = '<div class="psgc-spinner"><i class="bi bi-arrow-repeat"></i> Loading provinces...</div>';
         fetch(PSGC_BASE + '/provinces/')

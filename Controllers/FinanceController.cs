@@ -32,8 +32,6 @@ namespace CEMS.Controllers
             _notificationService = notificationService;
         }
 
-        // Dashboard: list reports ready for reimbursement with optional date filter
-        // Defaults to current month when no dates are provided
         public async Task<IActionResult> Dashboard(DateTime? start, DateTime? end)
         {
             var now = DateTime.UtcNow.Date;
@@ -87,11 +85,19 @@ namespace CEMS.Controllers
 
             // processed in the selected range: finance approvals whose DecisionDate falls inside
             var processedQuery = _db.Approvals
-                .Include(a => a.Report)
                 .Where(a => a.Stage == "Finance" && a.Status == ApprovalStatus.Approved && a.DecisionDate.HasValue && a.DecisionDate.Value >= startDate && a.DecisionDate.Value < endExclusive);
 
-            var processedTodayCount = await processedQuery.CountAsync();
-            var processedTodayTotal = await processedQuery.SumAsync(a => (decimal?)(a.Report != null ? a.Report.TotalAmount : 0m)) ?? 0m;
+            // Use distinct ReportIds to avoid double-counting when multiple approval rows exist for the same report
+            var processedReportIds = await processedQuery
+                .Select(a => a.ReportId)
+                .Where(id => id != null)
+                .Distinct()
+                .ToListAsync();
+
+            var processedTodayCount = processedReportIds.Count;
+            var processedTodayTotal = await _db.ExpenseReports
+                .Where(r => processedReportIds.Contains(r.Id))
+                .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
 
             // totals for the range (kept in ViewBag as Monthly* for backward-compat with the view)
             var rangeCount = processedTodayCount;
@@ -119,11 +125,18 @@ namespace CEMS.Controllers
             var endExclusive = endDate.AddDays(1);
 
             var processedQuery = _db.Approvals
-                .Include(a => a.Report)
                 .Where(a => a.Stage == "Finance" && a.Status == ApprovalStatus.Approved && a.DecisionDate.HasValue && a.DecisionDate.Value >= startDate && a.DecisionDate.Value < endExclusive);
 
-            var processedCount = await processedQuery.CountAsync();
-            var processedTotal = await processedQuery.SumAsync(a => (decimal?)(a.Report != null ? a.Report.TotalAmount : 0m)) ?? 0m;
+            var processedReportIds = await processedQuery
+                .Select(a => a.ReportId)
+                .Where(id => id != null)
+                .Distinct()
+                .ToListAsync();
+
+            var processedCount = processedReportIds.Count;
+            var processedTotal = await _db.ExpenseReports
+                .Where(r => processedReportIds.Contains(r.Id))
+                .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
 
             // to-process reports in the selected range
             var toProcessQuery = _db.ExpenseReports
@@ -142,10 +155,17 @@ namespace CEMS.Controllers
             {
                 var mStart = monthCursor;
                 var mEnd = mStart.AddMonths(1);
-                var total = await _db.Approvals
-                    .Include(a => a.Report)
+                // Sum totals by distinct reports approved in the month to avoid double-counting approvals
+                var monthApprovedIds = await _db.Approvals
                     .Where(a => a.Stage == "Finance" && a.Status == ApprovalStatus.Approved && a.DecisionDate.HasValue && a.DecisionDate.Value >= mStart && a.DecisionDate.Value < mEnd)
-                    .SumAsync(a => (decimal?)(a.Report != null ? a.Report.TotalAmount : 0m)) ?? 0m;
+                    .Select(a => a.ReportId)
+                    .Where(id => id != null)
+                    .Distinct()
+                    .ToListAsync();
+
+                var total = await _db.ExpenseReports
+                    .Where(r => monthApprovedIds.Contains(r.Id))
+                    .SumAsync(r => (decimal?)r.TotalAmount) ?? 0m;
                 monthlyData.Add(new { label = mStart.ToString("MMM yyyy"), total });
                 monthCursor = monthCursor.AddMonths(1);
             }

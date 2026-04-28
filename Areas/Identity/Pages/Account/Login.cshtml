@@ -445,10 +445,10 @@
                         </div>
                     }
 
-                    <div class="form-links">
+                    @* <div class="form-links">
                         <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
                         <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
-                    </div>
+                    </div> *@
                 </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
@@ -457,9 +457,9 @@
                     </form>
                 }
 
-                <div style="text-align: center;">
+                @* <div style="text-align: center;">
                     <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
-                </div>
+                </div> *@
             </div>
         </div>
     </div>

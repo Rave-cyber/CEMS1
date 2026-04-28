@@ -26,12 +26,21 @@ namespace CEMS.Controllers
         }
 
         // ───────────── Dashboard ─────────────
-        public async Task<IActionResult> Dashboard()
+        public async Task<IActionResult> Dashboard(DateTime? start, DateTime? end)
         {
+            // Set default date range if not provided (first of current month to today)
+            if (!start.HasValue) start = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            if (!end.HasValue) end = DateTime.UtcNow.Date;
+
+            ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
+            ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
+
             ViewBag.TotalUsers = await _userManager.Users.CountAsync();
             ViewBag.TotalRoles = await _roleManager.Roles.CountAsync();
 
+            // Recent logs within selected range
             var recentLogs = await _db.AuditLogs
+                .Where(l => l.Timestamp >= start.Value.Date && l.Timestamp <= end.Value.Date.AddDays(1))
                 .OrderByDescending(l => l.Timestamp)
                 .Take(10)
                 .ToListAsync();
@@ -57,20 +66,22 @@ namespace CEMS.Controllers
             }
             ViewBag.RoleCounts = roleCounts;
 
-            // Expense report stats for dashboard charts
-            var totalExpenseReports = await _db.ExpenseReports.CountAsync();
+            // Expense report stats for dashboard charts (respect selected date range)
+            var totalExpenseReports = await _db.ExpenseReports
+                .Where(r => r.SubmissionDate >= start.Value.Date && r.SubmissionDate < end.Value.Date.AddDays(1))
+                .CountAsync();
             ViewBag.TotalExpenseReports = totalExpenseReports;
 
             var expenseStatusCounts = await _db.ExpenseReports
+                .Where(r => r.SubmissionDate >= start.Value.Date && r.SubmissionDate < end.Value.Date.AddDays(1))
                 .GroupBy(e => e.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync();
             ViewBag.ExpenseStatusCounts = expenseStatusCounts.ToDictionary(x => x.Status.ToString(), x => x.Count);
 
-            // Monthly audit activity for the last 6 months
-            var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
+            // Monthly audit activity for the selected date range
             var monthlyAuditData = await _db.AuditLogs
-                .Where(l => l.Timestamp >= sixMonthsAgo)
+                .Where(l => l.Timestamp >= start.Value.Date && l.Timestamp < end.Value.Date.AddDays(1))
                 .GroupBy(l => new { l.Timestamp.Year, l.Timestamp.Month })
                 .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
                 .OrderBy(g => g.Year).ThenBy(g => g.Month)
@@ -78,7 +89,7 @@ namespace CEMS.Controllers
             ViewBag.MonthlyAuditLabels = monthlyAuditData.Select(m => new DateTime(m.Year, m.Month, 1).ToString("MMM yyyy")).ToList();
             ViewBag.MonthlyAuditCounts = monthlyAuditData.Select(m => m.Count).ToList();
 
-            // Active vs locked users
+            // Active vs locked users (within date range does not apply; keep total status)
             var allUsersForStats = await _userManager.Users.ToListAsync();
             var lockedCount = allUsersForStats.Count(u => u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow);
             ViewBag.ActiveUsers = allUsersForStats.Count - lockedCount;
