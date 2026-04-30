@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model LoginModel
 
 @{
@@ -427,35 +427,33 @@
                     <button id="login-submit" type="submit" class="btn-signin">
                          Sign In
                     </button>
+                </form>
 
-                    @if ((Model.ExternalLogins?.Count ?? 0) > 0)
-                    {
-                        <div class="form-divider">or continue with</div>
+                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+                {
+                    <div class="form-divider">or continue with</div>
 
-                        <div class="external-login">
+                    <div class="external-login">
+                        <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
                             @foreach (var provider in Model.ExternalLogins!)
                             {
                                 <button type="submit" class="external-btn" name="provider"
-                                        value="@provider.Name" form="external-account"
+                                        value="@provider.Name"
                                         title="Log in using your @provider.DisplayName account">
                                     <i class="fab fa-@provider.Name.ToLower()"></i>
                                     <span>@provider.DisplayName</span>
                                 </button>
                             }
-                        </div>
-                    }
-
-                    @* <div class="form-links">
-                        <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
-                    </div> *@
-                </form>
-
-                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" style="display: none;">
-                    </form>
+                        </form>
+                    </div>
                 }
+
+                @* <div class="form-links">
+                    <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
+                    <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
+                </div> *@
+
+                @* Custom Identity forms end *@
 
                 @* <div style="text-align: center;">
                     <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>

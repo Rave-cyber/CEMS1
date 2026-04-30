@@ -1,6 +1,7 @@
-﻿using CEMS.Data;
+using CEMS.Data;
 using CEMS.Models;
 using CEMS.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -29,7 +30,30 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultUI()
 .AddDefaultTokenProviders();
+
+// ✅ Configure Google OAuth as External Login Provider
+var googleClientId = builder.Configuration["Gmail:ClientId"];
+var googleClientSecret = builder.Configuration["Gmail:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+            options.Scope.Add("email");
+            options.ClaimActions.MapJsonKey("urn:google:profile", "picture");
+            
+            // Force Google to show the account selection screen
+            options.Events.OnRedirectToAuthorizationEndpoint = context =>
+            {
+                context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
+                return Task.CompletedTask;
+            };
+        });
+}
 
 // ✅ Configure Authorization
 builder.Services.ConfigureApplicationCookie(options =>
@@ -45,6 +69,14 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<IGmailService, GmailService>();
+builder.Services.AddHttpClient<IGmailService, GmailService>();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
@@ -321,6 +353,7 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();

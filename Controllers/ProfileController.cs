@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Data;
 using CEMS.Models;
+using CEMS.Services;
 
 namespace CEMS.Controllers
 {
@@ -13,12 +14,14 @@ namespace CEMS.Controllers
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IWebHostEnvironment _env;
+        private readonly IGmailService _gmailService;
 
-        public ProfileController(ApplicationDbContext db, UserManager<IdentityUser> userManager, IWebHostEnvironment env)
+        public ProfileController(ApplicationDbContext db, UserManager<IdentityUser> userManager, IWebHostEnvironment env, IGmailService gmailService)
         {
             _db = db;
             _userManager = userManager;
             _env = env;
+            _gmailService = gmailService;
         }
 
         [HttpGet]
@@ -44,7 +47,9 @@ namespace CEMS.Controllers
                 province = data.Province,
                 zipCode = data.Zip,
                 country = data.Country,
-                profileImagePath = data.ImagePath
+                profileImagePath = data.ImagePath,
+                gmailAddress = data.GmailEmail,
+                isGmailConnected = !string.IsNullOrEmpty(data.GmailEmail)
             });
         }
 
@@ -214,24 +219,150 @@ namespace CEMS.Controllers
             {
                 case "CEO":
                     var ceo = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-                    if (ceo != null) return new ProfileData(ceo.FullName, ceo.ContactNumber, ceo.Street, ceo.Barangay, ceo.City, ceo.Province, ceo.ZipCode, ceo.Country, ceo.ProfileImagePath);
+                    if (ceo != null) return new ProfileData(ceo.FullName, ceo.ContactNumber, ceo.Street, ceo.Barangay, ceo.City, ceo.Province, ceo.ZipCode, ceo.Country, ceo.ProfileImagePath, ceo.GmailAddress);
                     break;
                 case "Manager":
                     var mgr = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-                    if (mgr != null) return new ProfileData(mgr.FullName, mgr.ContactNumber, mgr.Street, mgr.Barangay, mgr.City, mgr.Province, mgr.ZipCode, mgr.Country, mgr.ProfileImagePath);
+                    if (mgr != null) return new ProfileData(mgr.FullName, mgr.ContactNumber, mgr.Street, mgr.Barangay, mgr.City, mgr.Province, mgr.ZipCode, mgr.Country, mgr.ProfileImagePath, mgr.GmailAddress);
                     break;
                 case "Finance":
                     var fin = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-                    if (fin != null) return new ProfileData(fin.FullName, fin.ContactNumber, fin.Street, fin.Barangay, fin.City, fin.Province, fin.ZipCode, fin.Country, fin.ProfileImagePath);
+                    if (fin != null) return new ProfileData(fin.FullName, fin.ContactNumber, fin.Street, fin.Barangay, fin.City, fin.Province, fin.ZipCode, fin.Country, fin.ProfileImagePath, fin.GmailAddress);
                     break;
                 case "Driver":
                     var drv = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-                    if (drv != null) return new ProfileData(drv.FullName, drv.ContactNumber, drv.Street, drv.Barangay, drv.City, drv.Province, drv.ZipCode, drv.Country, drv.ProfileImagePath);
+                    if (drv != null) return new ProfileData(drv.FullName, drv.ContactNumber, drv.Street, drv.Barangay, drv.City, drv.Province, drv.ZipCode, drv.Country, drv.ProfileImagePath, drv.GmailAddress);
                     break;
             }
             return new ProfileData();
         }
 
-        private record ProfileData(string? FullName = null, string? Contact = null, string? Street = null, string? Barangay = null, string? City = null, string? Province = null, string? Zip = null, string? Country = null, string? ImagePath = null);
+        private record ProfileData(string? FullName = null, string? Contact = null, string? Street = null, string? Barangay = null, string? City = null, string? Province = null, string? Zip = null, string? Country = null, string? ImagePath = null, string? GmailEmail = null);
+
+        [HttpGet("/profile/gmail-connect")]
+        public IActionResult GmailConnect()
+        {
+            var state = Guid.NewGuid().ToString();
+            HttpContext.Session.SetString("gmail_state", state);
+
+            var authUrl = _gmailService.GetAuthorizationUrl(state);
+            return Redirect(authUrl);
+        }
+
+        [HttpGet("/profile/gmail-callback")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GmailCallback(string code, string state)
+        {
+            if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+                return RedirectToAction("GetProfile");
+
+            var savedState = HttpContext.Session.GetString("gmail_state");
+            if (savedState != state)
+                return RedirectToAction("GoToDashboard", "Home");
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized();
+
+            var tokenResponse = await _gmailService.ExchangeCodeForToken(code);
+            if (tokenResponse == null)
+                return RedirectToAction("GoToDashboard", "Home");
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault() ?? "User";
+            var gmailEmail = user.Email ?? "Unknown";
+
+            switch (role)
+            {
+                case "CEO":
+                    var ceo = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (ceo != null)
+                    {
+                        ceo.GmailAddress = gmailEmail;
+                        ceo.GmailRefreshToken = tokenResponse.RefreshToken;
+                    }
+                    break;
+                case "Manager":
+                    var mgr = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (mgr != null)
+                    {
+                        mgr.GmailAddress = gmailEmail;
+                        mgr.GmailRefreshToken = tokenResponse.RefreshToken;
+                    }
+                    break;
+                case "Finance":
+                    var fin = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (fin != null)
+                    {
+                        fin.GmailAddress = gmailEmail;
+                        fin.GmailRefreshToken = tokenResponse.RefreshToken;
+                    }
+                    break;
+                case "Driver":
+                    var drv = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (drv != null)
+                    {
+                        drv.GmailAddress = gmailEmail;
+                        drv.GmailRefreshToken = tokenResponse.RefreshToken;
+                    }
+                    break;
+            }
+
+            await _db.SaveChangesAsync();
+            HttpContext.Session.Remove("gmail_state");
+
+            return RedirectToAction("GoToDashboard", "Home");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DisconnectGmail()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized();
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault() ?? "User";
+
+            switch (role)
+            {
+                case "CEO":
+                    var ceo = await _db.CEOProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (ceo != null)
+                    {
+                        ceo.GmailAddress = null;
+                        ceo.GmailRefreshToken = null;
+                    }
+                    break;
+                case "Manager":
+                    var mgr = await _db.ManagerProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (mgr != null)
+                    {
+                        mgr.GmailAddress = null;
+                        mgr.GmailRefreshToken = null;
+                    }
+                    break;
+                case "Finance":
+                    var fin = await _db.FinanceProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (fin != null)
+                    {
+                        fin.GmailAddress = null;
+                        fin.GmailRefreshToken = null;
+                    }
+                    break;
+                case "Driver":
+                    var drv = await _db.DriverProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    if (drv != null)
+                    {
+                        drv.GmailAddress = null;
+                        drv.GmailRefreshToken = null;
+                    }
+                    break;
+            }
+
+            await _db.SaveChangesAsync();
+            return Json(new { success = true, message = "Gmail account disconnected." });
+        }
     }
 }

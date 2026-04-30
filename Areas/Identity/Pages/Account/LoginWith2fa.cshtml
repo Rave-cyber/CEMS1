@@ -1,0 +1,204 @@
+@page
+@model LoginWith2faModel
+@{
+    ViewData["Title"] = "Two-Factor Authentication";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CEMS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2ec4b6;
+            --primary-dark: #0d8b7d;
+            --accent: #1a6bb5;
+            --accent-dark: #12507d;
+            --surface: #ffffff;
+            --bg: #f0f7fa;
+            --text: #0f1724;
+            --text-muted: #5a6a7a;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%; width: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body { background: var(--bg); overflow-x: hidden; }
+
+        /* ── Animated background ── */
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: radial-gradient(circle at 1px 1px, rgba(26,107,181,.07) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+        .bg-glow {
+            position: fixed; z-index: 0; pointer-events: none; border-radius: 50%;
+            filter: blur(100px); opacity: .45;
+        }
+        .bg-glow--1 { width: 600px; height: 600px; top: -10%; left: -5%; background: rgba(46,196,182,.3); animation: glow-drift 18s ease-in-out infinite alternate; }
+        .bg-glow--2 { width: 500px; height: 500px; bottom: -8%; right: -5%; background: rgba(26,107,181,.25); animation: glow-drift 22s ease-in-out infinite alternate-reverse; }
+
+        @@keyframes glow-drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(60px, -40px) scale(1.15); }
+        }
+
+        /* ── Layout ── */
+        .login-page {
+            position: relative; z-index: 1;
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+
+        /* ── Form ── */
+        .form-card {
+            width: 100%; max-width: 500px;
+            background: rgba(255,255,255,.82);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(26,107,181,.1);
+            border-radius: 24px; padding: 52px 48px;
+            box-shadow: 0 20px 60px rgba(15,23,36,.08), 0 1px 3px rgba(15,23,36,.04);
+            opacity: 0; transform: translateY(30px) scale(.97);
+            animation: cardIn .7s ease forwards;
+        }
+        @@keyframes cardIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .form-header { text-align: center; margin-bottom: 36px; }
+
+        .form-icon {
+            width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px;
+            background: rgba(26,107,181,.1); color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem;
+        }
+
+        .form-title {
+            font-size: 1.75rem; font-weight: 700; color: var(--text); margin-bottom: 8px;
+        }
+        .form-subtitle {
+            font-size: .95rem; color: var(--text-muted); font-weight: 400; line-height: 1.5;
+        }
+
+        /* Inputs */
+        .input-group { margin-bottom: 26px; }
+        .input-label {
+            display: block; font-size: .9rem; font-weight: 600;
+            color: var(--text); margin-bottom: 10px;
+        }
+        .input-wrap {
+            position: relative; display: flex; align-items: center;
+        }
+        .input-wrap i.input-icon {
+            position: absolute; left: 16px;
+            font-size: 1rem; color: var(--text-muted);
+            pointer-events: none; transition: color .25s;
+        }
+        .input-wrap input {
+            width: 100%; padding: 16px 16px 16px 46px;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 1.2rem; background: var(--surface); letter-spacing: 2px;
+            transition: border-color .25s, box-shadow .25s;
+            color: var(--text); font-weight: 600;
+        }
+        .input-wrap input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(46,196,182,.1);
+        }
+        .input-wrap input:focus ~ i.input-icon { color: var(--primary); }
+
+        .checkbox-group {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--primary);
+        }
+        .checkbox-group label {
+            font-size: .95rem; color: var(--text-muted); cursor: pointer; user-select: none;
+        }
+
+        /* Validation */
+        .validation-summary-errors {
+            background: rgba(239,68,68,.06); color: var(--danger);
+            padding: 12px 16px; border-radius: 10px; margin-bottom: 20px;
+            border: 1px solid rgba(239,68,68,.15); font-size: .88rem;
+        }
+        .field-validation-error {
+            color: var(--danger); font-size: .8rem; margin-top: 6px; display: block;
+        }
+
+        /* Submit button */
+        .btn-signin {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            font-size: 1.08rem; font-weight: 700; color: #fff; cursor: pointer;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            box-shadow: 0 8px 24px rgba(26,107,181,.2);
+            transition: transform .3s, box-shadow .3s;
+            position: relative; overflow: hidden;
+        }
+        .btn-signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(26,107,181,.3);
+        }
+
+        /* ── Responsive ── */
+        @@media (max-width: 576px) {
+            .form-card { padding: 32px 24px; border-radius: 18px; }
+            .form-title { font-size: 1.5rem; }
+            .input-wrap input { padding: 14px 14px 14px 42px; font-size: 1.1rem; }
+            .btn-signin { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+
+    <div class="login-page">
+        <div class="form-card">
+            <div class="form-header">
+                <div class="form-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2 class="form-title">Two-Factor Authentication</h2>
+                <p class="form-subtitle">Your login is protected with an authenticator app. Enter your authenticator code below.</p>
+            </div>
+
+            <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+                <input asp-for="RememberMe" type="hidden" />
+                
+                <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
+
+                <div class="input-group">
+                    <label class="input-label" asp-for="Input.TwoFactorCode"></label>
+                    <div class="input-wrap">
+                        <input asp-for="Input.TwoFactorCode" autocomplete="off" placeholder="123456" />
+                        <i class="fas fa-key input-icon"></i>
+                    </div>
+                    <span asp-validation-for="Input.TwoFactorCode" class="field-validation-error"></span>
+                </div>
+
+                <div class="checkbox-group">
+                    <input asp-for="Input.RememberMachine" id="remember-machine" />
+                    <label for="remember-machine">@Html.DisplayNameFor(m => m.Input.RememberMachine)</label>
+                </div>
+
+                <button type="submit" class="btn-signin">
+                    Verify & Continue
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

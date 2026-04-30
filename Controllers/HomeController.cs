@@ -8,10 +8,12 @@ namespace CEMS.Controllers
     public class HomeController : Controller
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
-        public HomeController(UserManager<IdentityUser> userManager)
+        public HomeController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
         {
             _userManager = userManager;
+            _signInManager = signInManager;
         }
 
         public async Task<IActionResult> Index()
@@ -19,11 +21,22 @@ namespace CEMS.Controllers
             // If user is authenticated, show dashboard option
             if (User.Identity.IsAuthenticated)
             {
-                ViewBag.IsAuthenticated = true;
-                
                 var user = await _userManager.GetUserAsync(User);
-                var roles = await _userManager.GetRolesAsync(user);
-                ViewBag.UserRole = roles.FirstOrDefault();
+                
+                // If user is null, their cookie is stale (e.g. database was reset).
+                if (user != null)
+                {
+                    ViewBag.IsAuthenticated = true;
+                    var roles = await _userManager.GetRolesAsync(user);
+                    ViewBag.UserRole = roles.FirstOrDefault();
+                }
+                else
+                {
+                    // Cookie exists but user does not. Treat as unauthenticated.
+                    ViewBag.IsAuthenticated = false;
+                    await _signInManager.SignOutAsync();
+                    return RedirectToAction("Index");
+                }
             }
             else
             {
@@ -43,6 +56,13 @@ namespace CEMS.Controllers
         public async Task<IActionResult> GoToDashboard()
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null) 
+            {
+                // Stale cookie, sign them out
+                await _signInManager.SignOutAsync();
+                return RedirectToAction("Index");
+            }
+            
             var roles = await _userManager.GetRolesAsync(user);
 
             if (roles.Contains("CEO"))

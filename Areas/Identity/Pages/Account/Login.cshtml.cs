@@ -1,4 +1,4 @@
-﻿
+
 #nullable disable
 
 using System;
@@ -117,17 +117,24 @@ namespace CEMS.Areas.Identity.Pages.Account
                     }
 
 
-                    var roles = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
+                    var rolesList = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
 
-                    if (roles.Contains("SuperAdmin"))
+                    // Self-heal: If user has no roles, assign them to Manager
+                    if (user != null && rolesList.Count == 0)
+                    {
+                        await _userManager.AddToRoleAsync(user, "Manager");
+                        rolesList.Add("Manager");
+                    }
+
+                    if (rolesList.Contains("SuperAdmin"))
                         return RedirectToAction("Dashboard", "SuperAdmin");
-                    if (roles.Contains("CEO"))
+                    if (rolesList.Contains("CEO"))
                         return RedirectToAction("Dashboard", "CEO");
-                    if (roles.Contains("Manager"))
+                    if (rolesList.Contains("Manager"))
                         return RedirectToAction("Dashboard", "Manager");
-                    if (roles.Contains("Driver"))
+                    if (rolesList.Contains("Driver"))
                         return RedirectToAction("Dashboard", "Driver");
-                    if (roles.Contains("Finance"))
+                    if (rolesList.Contains("Finance"))
                         return RedirectToAction("Dashboard", "Finance");
 
                     // Fallback to home index

@@ -38,6 +38,12 @@ namespace CEMS.Models
         [MaxLength(20)]
         public string? ContactNumber { get; set; }
 
+        [MaxLength(255)]
+        public string? GmailAddress { get; set; }
+
+        [MaxLength(500)]
+        public string? GmailRefreshToken { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

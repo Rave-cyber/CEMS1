@@ -39,6 +39,31 @@
                 <!-- Divider -->
                 <hr style="border: none; border-top: 1px solid #eef2f7; margin: 24px 0;">
 
+                <!-- Gmail Connection Section -->
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <h6 style="font-weight: 700; color: var(--d-text); margin: 0;">
+                            <i class="bi bi-envelope" style="color: #ea4335; margin-right: 8px;"></i>Gmail Account
+                        </h6>
+                    </div>
+                    <div style="padding: 12px 14px; background: #fafbfc; border-radius: 8px; border: 1px solid #eef2f7;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                            <div style="flex: 1;">
+                                <div id="gmailStatusText" style="font-size: 0.9rem; color: #6b7280; font-weight: 500;">Not connected</div>
+                                <div id="gmailAddressDisplay" style="font-size: 0.85rem; color: #9ca3af; margin-top: 4px;"></div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" id="gmailConnectBtn" class="btn btn-sm" style="background: linear-gradient(135deg, #ea4335 0%, #d33426 100%); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+                                    <i class="bi bi-link-45deg me-1"></i>Connect
+                                </button>
+                                <button type="button" id="gmailDisconnectBtn" class="btn btn-sm" style="background: #fee; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: none; white-space: nowrap;">
+                                    <i class="bi bi-trash me-1"></i>Disconnect
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Address Configuration Status -->
                 <div id="addressStatusContainer" style="display: none; margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #f0f9ff; border-left: 4px solid #0284c7;">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -109,11 +134,16 @@
             </div>
 
             <!-- ── Footer ── -->
-            <div class="modal-footer" style="border-top: 1px solid #eef2f7; padding: 16px 24px; background: #fafbfc;">
-                <button type="button" class="btn btn-sm" data-bs-dismiss="modal" style="padding: 8px 20px; border: 1px solid #d1d5db; border-radius: 8px; color: #4b5563; font-weight: 600; background: #fff; transition: all 0.2s;">Cancel</button>
-                <button type="button" class="btn btn-sm" id="profileSaveBtn" style="padding: 8px 20px; border-radius: 8px; background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%); color: #fff; border: none; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26,107,181,0.25);">
-                    <i class="bi bi-check-lg me-1"></i>Save Changes
-                </button>
+            <div class="modal-footer" style="border-top: 1px solid #eef2f7; padding: 16px 24px; background: #fafbfc; justify-content: space-between;">
+                <a href="/Identity/Account/Manage" class="btn btn-sm" style="padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; color: #4b5563; background: #fff; font-weight: 600; transition: all 0.2s; text-decoration: none;">
+                    <i class="bi bi-shield-lock me-1"></i>Security Settings
+                </a>
+                <div>
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal" style="padding: 8px 20px; border: 1px solid #d1d5db; border-radius: 8px; color: #4b5563; font-weight: 600; background: #fff; transition: all 0.2s;">Cancel</button>
+                    <button type="button" class="btn btn-sm" id="profileSaveBtn" style="padding: 8px 20px; border-radius: 8px; background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%); color: #fff; border: none; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26,107,181,0.25);">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -208,6 +238,26 @@
                     img.style.display = 'none';
                     init.style.display = 'flex';
                     init.textContent = (d.fullName || d.email || 'U')[0].toUpperCase();
+                }
+
+                // Update Gmail connection status
+                var gmailConnectBtn = document.getElementById('gmailConnectBtn');
+                var gmailDisconnectBtn = document.getElementById('gmailDisconnectBtn');
+                var gmailStatusText = document.getElementById('gmailStatusText');
+                var gmailAddressDisplay = document.getElementById('gmailAddressDisplay');
+
+                if (d.isGmailConnected) {
+                    gmailStatusText.textContent = 'Connected';
+                    gmailStatusText.style.color = '#10b981';
+                    gmailAddressDisplay.textContent = '✓ ' + (d.gmailAddress || 'Gmail Email');
+                    gmailConnectBtn.style.display = 'none';
+                    gmailDisconnectBtn.style.display = 'block';
+                } else {
+                    gmailStatusText.textContent = 'Not connected';
+                    gmailStatusText.style.color = '#6b7280';
+                    gmailAddressDisplay.textContent = '';
+                    gmailConnectBtn.style.display = 'block';
+                    gmailDisconnectBtn.style.display = 'none';
                 }
 
                 // Check address status after loading profile
@@ -611,6 +661,51 @@
     // Initialize PSGC when modal opens
     modal.addEventListener('show.bs.modal', function () {
         profilePsgcLoadProvinces();
+    });
+
+    // Gmail Connect Button
+    document.getElementById('gmailConnectBtn').addEventListener('click', function() {
+        window.location.href = '/profile/gmail-connect';
+    });
+
+    // Gmail Disconnect Button
+    document.getElementById('gmailDisconnectBtn').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat me-1" style="animation: spin 1s linear infinite;"></i>Disconnecting...';
+
+        var fd = new FormData();
+        fd.append('__RequestVerificationToken', getToken());
+
+        fetch('/Profile/DisconnectGmail', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                btn.disabled = false;
+                if (d.success) {
+                    showToast('success', 'Gmail Disconnected', d.message || 'Gmail account has been disconnected.');
+                    // Reload profile data
+                    setTimeout(function() {
+                        fetch('/Profile/GetProfile')
+                            .then(function (r) { return r.json(); })
+                            .then(function (data) {
+                                document.getElementById('gmailConnectBtn').style.display = 'block';
+                                document.getElementById('gmailDisconnectBtn').style.display = 'none';
+                                document.getElementById('gmailStatusText').textContent = 'Not connected';
+                                document.getElementById('gmailStatusText').style.color = '#6b7280';
+                                document.getElementById('gmailAddressDisplay').textContent = '';
+                                btn.innerHTML = '<i class="bi bi-trash me-1"></i>Disconnect';
+                            });
+                    }, 500);
+                } else {
+                    showToast('error', 'Disconnection Failed', d.message || 'Failed to disconnect Gmail account.');
+                    btn.innerHTML = '<i class="bi bi-trash me-1"></i>Disconnect';
+                }
+            })
+            .catch(function (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1"></i>Disconnect';
+                showToast('error', 'Error', 'An error occurred while disconnecting Gmail.');
+            });
     });
 })();
 </script>

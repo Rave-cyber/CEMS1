@@ -1,0 +1,100 @@
+@page
+@model ExternalLoginModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CEMS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2ec4b6;
+            --accent: #1a6bb5;
+            --surface: #ffffff;
+            --bg: #f0f7fa;
+            --text: #0f1724;
+            --text-muted: #5a6a7a;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%; width: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+        }
+
+        .login-page {
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+            padding: 20px;
+        }
+
+        .form-card {
+            width: 100%; max-width: 500px;
+            background: rgba(255,255,255,.82);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(26,107,181,.1);
+            border-radius: 24px; padding: 52px 48px;
+            box-shadow: 0 20px 60px rgba(15,23,36,.08);
+            text-align: center;
+        }
+
+        .form-title { font-size: 1.75rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .form-subtitle { font-size: .95rem; color: var(--text-muted); margin-bottom: 30px; }
+
+        .input-group { margin-bottom: 26px; text-align: left; }
+        .input-label { display: block; font-size: .9rem; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+        .input-wrap input {
+            width: 100%; padding: 16px;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 1rem;
+        }
+        
+        .btn-signin {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            font-size: 1.08rem; font-weight: 700; color: #fff; cursor: pointer;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            box-shadow: 0 8px 24px rgba(26,107,181,.2);
+        }
+
+        .validation-summary-errors {
+            background: rgba(239,68,68,.06); color: var(--danger);
+            padding: 12px 16px; border-radius: 10px; margin-bottom: 20px;
+            text-align: left; font-size: .88rem;
+        }
+        .field-validation-error { color: var(--danger); font-size: .8rem; margin-top: 6px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="form-card">
+            <h2 class="form-title">Complete Registration</h2>
+            <p class="form-subtitle" id="external-login-description">
+                You've successfully authenticated with <strong>@Model.ProviderDisplayName</strong>.<br/>
+                Please verify your email address below and click Register to finish logging in.
+            </p>
+
+            <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
+                <div class="input-group">
+                    <label asp-for="Input.Email" class="input-label"></label>
+                    <div class="input-wrap">
+                        <input asp-for="Input.Email" class="form-control" autocomplete="email" />
+                    </div>
+                    <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+                </div>
+                <button type="submit" class="btn-signin">Register</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
