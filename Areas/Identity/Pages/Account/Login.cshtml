@@ -327,6 +327,114 @@
             .external-login { flex-direction: column; }
             .external-btn { min-width: 100%; }
         }
+
+        /* ── Toast Notification ── */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 10px 40px rgba(15,23,36,.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            pointer-events: auto;
+            animation: slideInRight .4s ease forwards;
+        }
+
+        .toast--error {
+            background: linear-gradient(135deg, #fecaca, #fca5a5);
+            border-left: 4px solid #ef4444;
+            color: #7f1d1d;
+        }
+
+        .toast--success {
+            background: linear-gradient(135deg, #bbf7d0, #86efac);
+            border-left: 4px solid #22c55e;
+            color: #166534;
+        }
+
+        .toast--warning {
+            background: linear-gradient(135deg, #fed7aa, #fdba74);
+            border-left: 4px solid #f97316;
+            color: #7c2d12;
+        }
+
+        .toast--info {
+            background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+            border-left: 4px solid #3b82f6;
+            color: #1e3a8a;
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-message {
+            font-weight: 500;
+            font-size: .95rem;
+        }
+
+        .toast-countdown {
+            font-size: .85rem;
+            margin-top: 4px;
+            opacity: .8;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: currentColor;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            opacity: .7;
+            transition: opacity .2s;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        @@keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @@keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight .3s ease forwards;
+        }
     </style>
 </head>
 <body>
@@ -335,6 +443,9 @@
     <div class="bg-glow bg-glow--1"></div>
     <div class="bg-glow bg-glow--2"></div>
     <div class="bg-glow bg-glow--3"></div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <div class="login-page">
         <!-- Left Panel — Brand / Info -->
@@ -467,7 +578,80 @@
     }
 
     <script>
+        // Toast notification system
+        class ToastNotifier {
+            static show(message, type = 'info', duration = 5000, countdown = null) {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast toast--${type}`;
+
+                let icon = 'info-circle';
+                if (type === 'error') icon = 'exclamation-circle';
+                if (type === 'success') icon = 'check-circle';
+                if (type === 'warning') icon = 'warning';
+
+                let countdownHtml = '';
+                if (countdown !== null && countdown > 0) {
+                    countdownHtml = `<div class="toast-countdown">Wait <span id="countdown-${Date.now()}">@Model.RemainingSeconds ?? 30</span>s before retrying</div>`;
+                }
+
+                toast.innerHTML = `
+                    <i class="fas fa-${icon} toast-icon"></i>
+                    <div class="toast-content">
+                        <div class="toast-message">${message}</div>
+                        ${countdownHtml}
+                    </div>
+                    <button class="toast-close" aria-label="Close notification">&times;</button>
+                `;
+
+                container.appendChild(toast);
+
+                // Countdown functionality
+                if (countdown !== null && countdown > 0) {
+                    const countdownEl = toast.querySelector('[id^="countdown-"]');
+                    let remaining = countdown;
+                    const interval = setInterval(() => {
+                        remaining--;
+                        if (countdownEl) countdownEl.textContent = remaining;
+                        if (remaining <= 0) clearInterval(interval);
+                    }, 1000);
+                }
+
+                // Close button
+                toast.querySelector('.toast-close').addEventListener('click', () => {
+                    toast.classList.add('hiding');
+                    setTimeout(() => toast.remove(), 300);
+                });
+
+                // Auto-remove after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        toast.classList.add('hiding');
+                        setTimeout(() => toast.remove(), 300);
+                    }, duration);
+                }
+
+                return toast;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Show lockout toast if locked out
+            @if (Model.IsLockedOut && Model.RemainingSeconds.HasValue)
+            {
+                <text>
+                    ToastNotifier.show(
+                        'Too many failed attempts. Account temporarily locked.',
+                        'error',
+                        0,
+                        @Model.RemainingSeconds
+                    );
+                    document.getElementById('login-submit').disabled = true;
+                    document.getElementById('login-submit').style.opacity = '0.5';
+                    document.getElementById('login-submit').style.cursor = 'not-allowed';
+                </text>
+            }
+
             // Password visibility toggle
             document.querySelectorAll('.pw-toggle').forEach(function (btn) {
                 btn.addEventListener('click', function () {

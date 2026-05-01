@@ -66,6 +66,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ILoginAttemptTracker, LoginAttemptTracker>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();

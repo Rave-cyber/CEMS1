@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace CEMS.Data
 
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
             // DEBUG: Check database connection
             Console.WriteLine("🔍 Checking database...");
@@ -43,6 +45,15 @@ namespace CEMS.Data
 
             // 2. Create users
             Console.WriteLine("\n👤 Creating users...");
+            
+            // Get temporary seed password from configuration (should be set via User Secrets)
+            var tempPassword = configuration["Seeder:TempPassword"] ?? GenerateSecurePassword();
+            
+            if (string.IsNullOrEmpty(configuration["Seeder:TempPassword"]))
+            {
+                Console.WriteLine($"   ⚠️ WARNING: Using auto-generated temporary password. Set 'Seeder:TempPassword' in User Secrets for consistency.");
+            }
+
             var users = new[]
             {
         new { Email = "superadmin@expense.com", Role = "SuperAdmin" },
@@ -80,13 +91,14 @@ namespace CEMS.Data
                     EmailConfirmed = true
                 };
 
-                // Try to create user with password - MAKE SURE THIS MATCHES YOUR REQUIREMENTS
-                var createResult = await userManager.CreateAsync(user, "P@ssw0rd123");
+                // Try to create user with temporary password from configuration
+                var createResult = await userManager.CreateAsync(user, tempPassword);
 
                 if (createResult.Succeeded)
                 {
                     Console.WriteLine($"   ✅ User created: {userInfo.Email}");
                     Console.WriteLine($"   User ID: {user.Id}");
+                    Console.WriteLine($"   ℹ️  Temporary password set (user should change on first login)");
 
                     // Add role
                     var roleResult = await userManager.AddToRoleAsync(user, userInfo.Role);
@@ -106,6 +118,23 @@ namespace CEMS.Data
             }
 
             Console.WriteLine("\n🎯 SEEDER COMPLETE!");
+        }
+
+        /// <summary>
+        /// Generates a secure random password if one is not configured
+        /// </summary>
+        private static string GenerateSecurePassword()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+            var random = new Random();
+            var password = new char[16];
+            
+            for (int i = 0; i < password.Length; i++)
+            {
+                password[i] = chars[random.Next(chars.Length)];
+            }
+            
+            return new string(password);
         }
     }
 }

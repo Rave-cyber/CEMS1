@@ -8,9 +8,35 @@ obj/
 
 # Local configuration and secrets (do NOT commit)
 appsettings.Development.json
+appsettings.Local.json
 secrets.json
 *.usersecrets
+secrets/
+
+# User Secrets directory
+*/Properties/launchSettings.json
+**/Properties/launchSettings.json
 
 # PayMongo or other service credential files (local)
 # any file that might contain API keys for third-party services
 paymongo.*
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# IDE settings (may contain local paths/credentials)
+.vscode/settings.json
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+~*

@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using CEMS.Data;
 using CEMS.Models;
+using CEMS.Services;
 
 namespace CEMS.Areas.Identity.Pages.Account
 {
@@ -24,13 +25,15 @@ namespace CEMS.Areas.Identity.Pages.Account
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
         private readonly ApplicationDbContext _db;
+        private readonly ILoginAttemptTracker _attemptTracker;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger, ApplicationDbContext db)
+        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger, ApplicationDbContext db, ILoginAttemptTracker attemptTracker)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _logger = logger;
             _db = db;
+            _attemptTracker = attemptTracker;
         }
 
   
@@ -43,6 +46,11 @@ namespace CEMS.Areas.Identity.Pages.Account
 
         [TempData]
         public string ErrorMessage { get; set; }
+
+        // Properties for lockout display
+        public bool IsLockedOut { get; set; }
+        public int? RemainingSeconds { get; set; }
+        public int FailedAttempts { get; set; }
 
       
         public class InputModel
@@ -76,6 +84,15 @@ namespace CEMS.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             ReturnUrl = returnUrl;
+
+            // Check for lockout on page load
+            var emailFromQuery = HttpContext.Request.Query["email"].ToString();
+            if (!string.IsNullOrEmpty(emailFromQuery))
+            {
+                IsLockedOut = await _attemptTracker.IsLockedOutAsync(emailFromQuery);
+                RemainingSeconds = await _attemptTracker.GetRemainingSecondsAsync(emailFromQuery);
+                FailedAttempts = await _attemptTracker.GetFailedAttemptsAsync(emailFromQuery);
+            }
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -84,12 +101,26 @@ namespace CEMS.Areas.Identity.Pages.Account
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
+            // Check if user is locked out
+            IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
+            RemainingSeconds = await _attemptTracker.GetRemainingSecondsAsync(Input.Email);
+            FailedAttempts = await _attemptTracker.GetFailedAttemptsAsync(Input.Email);
+
+            if (IsLockedOut)
+            {
+                ModelState.AddModelError(string.Empty, $"Too many failed attempts. Please wait {RemainingSeconds} seconds before trying again.");
+                return Page();
+            }
+
             if (ModelState.IsValid)
             {
          
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
+                    // Clear failed attempts on successful login
+                    await _attemptTracker.ClearAttemptsAsync(Input.Email);
+
                     _logger.LogInformation("User logged in.");
 
                     // Fetch user once and record audit log for successful login
@@ -142,6 +173,8 @@ namespace CEMS.Areas.Identity.Pages.Account
                 }
                 if (result.RequiresTwoFactor)
                 {
+                    // Clear attempts before 2FA
+                    await _attemptTracker.ClearAttemptsAsync(Input.Email);
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
                 }
                 if (result.IsLockedOut)
@@ -151,6 +184,11 @@ namespace CEMS.Areas.Identity.Pages.Account
                 }
                 else
                 {
+                    // Record failed attempt
+                    await _attemptTracker.RecordFailedAttemptAsync(Input.Email);
+                    FailedAttempts = await _attemptTracker.GetFailedAttemptsAsync(Input.Email);
+                    RemainingSeconds = await _attemptTracker.GetRemainingSecondsAsync(Input.Email);
+
                     // Log failed login attempt
                     try
                     {
@@ -159,14 +197,25 @@ namespace CEMS.Areas.Identity.Pages.Account
                             Action = "FailedLoginAttempt",
                             Module = "Auth",
                             PerformedByUserId = null,
-                            Details = $"Failed login attempt for {Input.Email}"
+                            Details = $"Failed login attempt for {Input.Email} (Attempt {FailedAttempts}/3)"
                         };
                         _db.AuditLogs.Add(log);
                         await _db.SaveChangesAsync();
                     }
                     catch { }
 
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    // Check if locked out after recording attempt
+                    IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
+
+                    if (IsLockedOut && RemainingSeconds.HasValue)
+                    {
+                        ModelState.AddModelError(string.Empty, $"Too many failed attempts ({FailedAttempts}/3). Account locked for {RemainingSeconds} seconds.");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, $"Invalid login attempt. Attempts remaining: {3 - FailedAttempts}");
+                    }
+
                     return Page();
                 }
             }
