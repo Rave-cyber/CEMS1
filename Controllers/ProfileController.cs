@@ -144,6 +144,17 @@ namespace CEMS.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            _db.AuditLogs.Add(new CEMS.Models.AuditLog
+            {
+                Action = "UpdateProfile",
+                Module = "Profile",
+                Role = role,
+                PerformedByUserId = user.Id,
+                Details = $"User updated profile information"
+            });
+            await _db.SaveChangesAsync();
+
             return Json(new { success = true });
         }
 
@@ -171,8 +182,12 @@ namespace CEMS.Controllers
             var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "profiles");
             Directory.CreateDirectory(uploadsDir);
 
+            // Use only the user ID + validated extension — never trust the original filename
             var fileName = $"{user.Id}{ext}";
-            var filePath = Path.Combine(uploadsDir, fileName);
+            // Resolve the full path and verify it stays within the uploads directory (path traversal guard)
+            var filePath = Path.GetFullPath(Path.Combine(uploadsDir, fileName));
+            if (!filePath.StartsWith(Path.GetFullPath(uploadsDir), StringComparison.OrdinalIgnoreCase))
+                return Json(new { success = false, message = "Invalid file path." });
 
             // Delete old files with different extensions
             foreach (var oldExt in allowed)
@@ -182,10 +197,13 @@ namespace CEMS.Controllers
                     System.IO.File.Delete(oldFile);
             }
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            // Path already validated above with GetFullPath bounds check — SCS0018 suppressed (false positive)
+#pragma warning disable SCS0018
+            using (var stream = System.IO.File.Create(filePath))
             {
                 await photo.CopyToAsync(stream);
             }
+#pragma warning restore SCS0018
 
             var relativePath = $"/uploads/profiles/{fileName}";
 
@@ -210,6 +228,17 @@ namespace CEMS.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            _db.AuditLogs.Add(new CEMS.Models.AuditLog
+            {
+                Action = "UploadProfilePhoto",
+                Module = "Profile",
+                Role = role,
+                PerformedByUserId = user.Id,
+                Details = $"User uploaded a new profile photo"
+            });
+            await _db.SaveChangesAsync();
+
             return Json(new { success = true, profileImagePath = relativePath });
         }
 
@@ -311,6 +340,16 @@ namespace CEMS.Controllers
             await _db.SaveChangesAsync();
             HttpContext.Session.Remove("gmail_state");
 
+            _db.AuditLogs.Add(new CEMS.Models.AuditLog
+            {
+                Action = "GmailConnected",
+                Module = "Profile",
+                Role = role,
+                PerformedByUserId = user.Id,
+                Details = $"User connected Gmail account: {gmailEmail}"
+            });
+            await _db.SaveChangesAsync();
+
             return RedirectToAction("GoToDashboard", "Home");
         }
 
@@ -362,6 +401,17 @@ namespace CEMS.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            _db.AuditLogs.Add(new CEMS.Models.AuditLog
+            {
+                Action = "GmailDisconnected",
+                Module = "Profile",
+                Role = role,
+                PerformedByUserId = user.Id,
+                Details = $"User disconnected Gmail account"
+            });
+            await _db.SaveChangesAsync();
+
             return Json(new { success = true, message = "Gmail account disconnected." });
         }
     }

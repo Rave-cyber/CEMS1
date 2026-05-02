@@ -22,6 +22,7 @@ namespace CEMS.Models
         [Required]
         public DateTime Date { get; set; }
 
+        [MaxLength(300)]
         public string? Description { get; set; }
 
         public string? ReceiptPath { get; set; }

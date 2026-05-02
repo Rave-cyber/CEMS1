@@ -322,6 +322,15 @@ namespace CEMS.Controllers
                 var file = Request.Form.Files.FirstOrDefault(f => f.Name == prefix + ".Receipt");
                 if (file != null && file.Length > 0)
                 {
+                    var receiptError = ValidateReceiptFile(file);
+                    if (receiptError != null)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = $"Row {index + 1} receipt: {receiptError}" });
+                        TempData["Error"] = receiptError;
+                        return RedirectToAction("MyReports");
+                    }
+
                     if (_s3Service.IsEnabled)
                     {
                         using var stream = file.OpenReadStream();
@@ -426,6 +435,18 @@ namespace CEMS.Controllers
 
             await _db.SaveChangesAsync();
 
+            // Audit log
+            _db.AuditLogs.Add(new CEMS.Models.AuditLog
+            {
+                Action = "EditExpenseReport",
+                Module = "Expense Reports",
+                Role = "Driver",
+                PerformedByUserId = userId,
+                RelatedRecordId = report.Id,
+                Details = $"Driver edited and resubmitted expense report #{report.Id} — ₱{report.TotalAmount:N2}, {report.BudgetCheck}"
+            });
+            await _db.SaveChangesAsync();
+
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Json(new { success = true, message = "Report updated and resubmitted for review." });
@@ -480,6 +501,15 @@ namespace CEMS.Controllers
 
                 if (receipt != null && receipt.Length > 0)
                 {
+                    var receiptError = ValidateReceiptFile(receipt);
+                    if (receiptError != null)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                            return Json(new { success = false, message = receiptError });
+                        ModelState.AddModelError("receipt", receiptError);
+                        return View("Submit/Index", model);
+                    }
+
                     if (_s3Service.IsEnabled)
                     {
                         using var stream = receipt.OpenReadStream();
@@ -591,6 +621,7 @@ namespace CEMS.Controllers
 
         [HttpPost("SubmitMultiple")]
         [Authorize(Roles = "Driver")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SubmitMultiple()
         {
             try
@@ -625,6 +656,10 @@ namespace CEMS.Controllers
                     var file = files.FirstOrDefault(f => f.Name == prefix + ".Receipt");
                     if (file != null && file.Length > 0)
                     {
+                        var receiptError = ValidateReceiptFile(file);
+                        if (receiptError != null)
+                            return Json(new { success = false, message = $"Row {index + 1} receipt: {receiptError}" });
+
                         if (_s3Service.IsEnabled)
                         {
                             using var stream = file.OpenReadStream();
@@ -728,6 +763,18 @@ namespace CEMS.Controllers
                 await _db.ExpenseItems.AddRangeAsync(items);
                 await _db.SaveChangesAsync();
 
+                // Audit log
+                _db.AuditLogs.Add(new CEMS.Models.AuditLog
+                {
+                    Action = "SubmitExpenseReport",
+                    Module = "Expense Reports",
+                    Role = "Driver",
+                    PerformedByUserId = user.Id,
+                    RelatedRecordId = report.Id,
+                    Details = $"Driver submitted expense report #{report.Id} with {items.Count} item(s) totalling ₱{report.TotalAmount:N2} — {report.BudgetCheck}"
+                });
+                await _db.SaveChangesAsync();
+
                 // Notify managers about the new submission
                 await _notificationService.NotifyReportSubmitted(report.Id, report.TotalAmount, user.UserName ?? user.Email ?? "Driver");
 
@@ -747,7 +794,40 @@ namespace CEMS.Controllers
 
 
 
-        // Receipt viewing moved to ReceiptController for cross-role access
+        // ── Receipt upload validation ──────────────────────────────────────────
+        private static readonly string[] _allowedReceiptExtensions =
+            { ".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx" };
+
+        // Allowed MIME types mapped to extensions (guards against extension spoofing)
+        private static readonly string[] _allowedReceiptMimeTypes =
+        {
+            "image/jpeg", "image/png", "image/webp",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        };
+
+        private const long MaxReceiptBytes = 5 * 1024 * 1024; // 5 MB
+
+        /// <summary>Returns an error message if the file is invalid, or null if it passes.</summary>
+        private static string? ValidateReceiptFile(IFormFile file)
+        {
+            if (file.Length > MaxReceiptBytes)
+                return $"Receipt file is too large (max 5 MB). Your file is {file.Length / 1024 / 1024.0:F1} MB.";
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!_allowedReceiptExtensions.Contains(ext))
+                return $"File type '{ext}' is not allowed. Use JPG, PNG, WebP, PDF, DOC, or DOCX.";
+
+            if (!_allowedReceiptMimeTypes.Contains(file.ContentType.ToLowerInvariant()))
+                return $"File content type '{file.ContentType}' is not allowed.";
+
+            return null; // valid
+        }
+
+        // ── End receipt validation ─────────────────────────────────────────────
+
+
 
         [HttpGet("History")]
         public async Task<IActionResult> History(DateTime? start, DateTime? end, string status, int page = 1, int pageSize = 10)

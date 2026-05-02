@@ -21,7 +21,7 @@ namespace CEMS.Models
 
         public string? TargetUserId { get; set; }
 
-        [MaxLength(500)]
+        [MaxLength(1000)]
         public string? Details { get; set; }
 
         public int? RelatedRecordId { get; set; }

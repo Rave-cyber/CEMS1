@@ -122,6 +122,11 @@
                 <span>Fuel Prices</span>
                 <i class="bi bi-check-circle nav-indicator"></i>
             </a>
+            <a class="nav-link driver-nav-link @(active("SuperAdmin","BackupRecovery"))" asp-controller="SuperAdmin" asp-action="BackupRecovery">
+                <i class="bi bi-database-down"></i>
+                <span>Backup & Recovery</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
         </nav>
     </aside>
 
@@ -155,6 +160,11 @@
                 <a class="nav-link driver-nav-link @(active("SuperAdmin","FuelPrices"))" asp-controller="SuperAdmin" asp-action="FuelPrices">
                     <i class="bi bi-fuel-pump"></i>
                     <span>Fuel Prices</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("SuperAdmin","BackupRecovery"))" asp-controller="SuperAdmin" asp-action="BackupRecovery">
+                    <i class="bi bi-database-down"></i>
+                    <span>Backup & Recovery</span>
                     <i class="bi bi-check-circle nav-indicator"></i>
                 </a>
             </nav>

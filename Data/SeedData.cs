@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace CEMS.Data
@@ -121,19 +122,20 @@ namespace CEMS.Data
         }
 
         /// <summary>
-        /// Generates a secure random password if one is not configured
+        /// Generates a cryptographically secure random password if one is not configured.
+        /// Uses RandomNumberGenerator instead of System.Random (SCS0005 fix).
         /// </summary>
         private static string GenerateSecurePassword()
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-            var random = new Random();
             var password = new char[16];
-            
+
             for (int i = 0; i < password.Length; i++)
             {
-                password[i] = chars[random.Next(chars.Length)];
+                // RandomNumberGenerator.GetInt32 is cryptographically secure
+                password[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
             }
-            
+
             return new string(password);
         }
     }

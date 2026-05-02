@@ -1,0 +1,457 @@
+@{
+    ViewData["Title"] = "Backup & Recovery";
+    Layout = "~/Views/Shared/_SuperAdminLayout.cshtml";
+    var backupHistory = ViewBag.BackupHistory as List<string> ?? new List<string>();
+}
+
+<style>
+    :root {
+        --d-primary: #1a6bb5;
+        --d-accent: #2ec4b6;
+        --d-bg: #f7fbfc;
+        --d-card: #ffffff;
+        --d-border: #e9eef6;
+        --d-text: #0f1724;
+        --d-muted: #6b7280;
+        --d-danger: #ef4444;
+        --d-success: #10b981;
+        --d-warning: #f59e0b;
+        --d-radius: 8px;
+        --d-radius-lg: 10px;
+    }
+
+    .backup-wrapper {
+        padding: 24px;
+        background: var(--d-bg);
+        min-height: 100vh;
+    }
+
+    /* Page header */
+    .page-header {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-lg);
+        padding: 20px 24px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .page-header-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--d-radius);
+        background: rgba(26,107,181,.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--d-primary);
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .page-header-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin: 0;
+    }
+    .page-header-sub {
+        font-size: .82rem;
+        color: var(--d-muted);
+        margin: 2px 0 0;
+    }
+
+    /* Cards */
+    .bk-card {
+        background: var(--d-card);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius-lg);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .bk-card-head {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--d-border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .bk-card-head-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: var(--d-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .icon-blue  { background: rgba(26,107,181,.1);  color: var(--d-primary); }
+    .icon-green { background: rgba(16,185,129,.1);  color: var(--d-success); }
+    .icon-amber { background: rgba(245,158,11,.1);  color: var(--d-warning); }
+    .icon-red   { background: rgba(239,68,68,.1);   color: var(--d-danger);  }
+    .icon-slate { background: rgba(100,116,139,.1); color: #64748b; }
+
+    .bk-card-head-title {
+        font-size: .95rem;
+        font-weight: 700;
+        color: var(--d-text);
+        margin: 0;
+    }
+    .bk-card-head-sub {
+        font-size: .78rem;
+        color: var(--d-muted);
+        margin: 1px 0 0;
+    }
+    .bk-card-body {
+        padding: 20px 24px;
+    }
+
+    /* Info banners */
+    .info-banner {
+        border-radius: var(--d-radius);
+        padding: 14px 16px;
+        font-size: .84rem;
+        line-height: 1.7;
+        color: var(--d-text);
+        margin-bottom: 18px;
+    }
+    .info-banner.blue   { background: rgba(26,107,181,.07);  border-left: 3px solid var(--d-primary); }
+    .info-banner.amber  { background: rgba(245,158,11,.08);  border-left: 3px solid var(--d-warning); }
+    .info-banner.green  { background: rgba(16,185,129,.07);  border-left: 3px solid var(--d-success); }
+
+    /* Buttons */
+    .btn-primary-bk {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--d-primary);
+        color: #fff;
+        border: none;
+        padding: 10px 22px;
+        border-radius: var(--d-radius);
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s, transform .15s, box-shadow .18s;
+        text-decoration: none;
+    }
+    .btn-primary-bk:hover {
+        background: #155a9a;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(26,107,181,.25);
+        color: #fff;
+    }
+    .btn-success-bk {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--d-success);
+        color: #fff;
+        border: none;
+        padding: 10px 22px;
+        border-radius: var(--d-radius);
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s, transform .15s, box-shadow .18s;
+    }
+    .btn-success-bk:hover {
+        background: #0d9e6e;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16,185,129,.25);
+        color: #fff;
+    }
+    .btn-danger-bk {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--d-danger);
+        color: #fff;
+        border: none;
+        padding: 10px 22px;
+        border-radius: var(--d-radius);
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s, transform .15s, box-shadow .18s;
+    }
+    .btn-danger-bk:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239,68,68,.25);
+        color: #fff;
+    }
+
+    /* File upload row */
+    .upload-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .file-pick-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--d-bg);
+        border: 1px solid var(--d-border);
+        color: var(--d-text);
+        padding: 9px 18px;
+        border-radius: var(--d-radius);
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color .18s, background .18s;
+    }
+    .file-pick-btn:hover { border-color: var(--d-primary); background: rgba(26,107,181,.05); }
+    #backupFile { display: none; }
+    #fileNameDisplay {
+        font-size: .82rem;
+        color: var(--d-muted);
+        font-style: italic;
+    }
+
+    /* Table list */
+    .table-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 8px;
+    }
+    .table-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--d-bg);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        font-size: .82rem;
+        color: var(--d-text);
+    }
+    .table-chip i { color: var(--d-primary); font-size: .85rem; }
+
+    /* History list */
+    .history-list { list-style: none; padding: 0; margin: 0; }
+    .history-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--d-border);
+        font-size: .84rem;
+        color: var(--d-text);
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--d-success);
+        flex-shrink: 0;
+    }
+
+    /* Best practices grid */
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+    }
+    .tip-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        background: var(--d-bg);
+        border: 1px solid var(--d-border);
+        border-radius: var(--d-radius);
+        font-size: .83rem;
+        color: var(--d-text);
+        line-height: 1.5;
+    }
+    .tip-item i { color: var(--d-success); margin-top: 1px; flex-shrink: 0; }
+
+    @@media (max-width: 640px) {
+        .backup-wrapper { padding: 12px; }
+        .bk-card-body { padding: 16px; }
+        .upload-row { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+
+<div class="backup-wrapper">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-icon">
+            <i class="bi bi-database-down"></i>
+        </div>
+        <div>
+            <p class="page-header-title">Backup & Recovery</p>
+            <p class="page-header-sub">Create, download, and restore full database backups</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-8">
+
+            <!-- Create Backup -->
+            <div class="bk-card">
+                <div class="bk-card-head">
+                    <div class="bk-card-head-icon icon-blue"><i class="bi bi-cloud-arrow-down"></i></div>
+                    <div>
+                        <p class="bk-card-head-title">Create New Backup</p>
+                        <p class="bk-card-head-sub">Export all database tables to a ZIP file</p>
+                    </div>
+                </div>
+                <div class="bk-card-body">
+                    <div class="info-banner blue">
+                        <strong>What gets backed up:</strong> User accounts &amp; roles &nbsp;·&nbsp;
+                        Expense reports &amp; items &nbsp;·&nbsp; Budgets &amp; approvals &nbsp;·&nbsp;
+                        All profiles &nbsp;·&nbsp; Fuel prices &nbsp;·&nbsp; Payments &nbsp;·&nbsp; Audit logs
+                        <br><strong>Format:</strong> ZIP file containing individual JSON files per table
+                    </div>
+                    <form method="post" action="@Url.Action("CreateBackup", "SuperAdmin")"
+                          onsubmit="return confirm('Create a new backup? This may take a moment.')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary-bk">
+                            <i class="bi bi-cloud-arrow-down"></i> Create Backup Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Restore Backup -->
+            <div class="bk-card">
+                <div class="bk-card-head">
+                    <div class="bk-card-head-icon icon-red"><i class="bi bi-cloud-arrow-up"></i></div>
+                    <div>
+                        <p class="bk-card-head-title">Restore from Backup</p>
+                        <p class="bk-card-head-sub">Upload a ZIP backup file to restore the database</p>
+                    </div>
+                </div>
+                <div class="bk-card-body">
+                    <div class="info-banner amber">
+                        <strong>Warning:</strong> Restoring a backup will <strong>delete all current data</strong>
+                        and replace it with the backup contents. This action cannot be undone.
+                    </div>
+                    <form method="post" action="@Url.Action("RestoreBackup", "SuperAdmin")"
+                          enctype="multipart/form-data"
+                          onsubmit="return confirm('WARNING: This will DELETE all current data and restore the backup. Are you absolutely sure?')">
+                        @Html.AntiForgeryToken()
+                        <input type="file" id="backupFile" name="backupFile" accept=".zip" required>
+                        <div class="upload-row">
+                            <label for="backupFile" class="file-pick-btn">
+                                <i class="bi bi-file-earmark-zip"></i> Choose ZIP File
+                            </label>
+                            <span id="fileNameDisplay">No file chosen</span>
+                            <button type="submit" class="btn-danger-bk">
+                                <i class="bi bi-arrow-counterclockwise"></i> Restore Backup
+                            </button>
+                        </div>
+                        <p style="margin-top:10px; font-size:.78rem; color:var(--d-muted);">
+                            Only ZIP files created by this system are supported.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Backup History -->
+            <div class="bk-card">
+                <div class="bk-card-head">
+                    <div class="bk-card-head-icon icon-amber"><i class="bi bi-clock-history"></i></div>
+                    <div>
+                        <p class="bk-card-head-title">Backup History</p>
+                        <p class="bk-card-head-sub">
+                            @(backupHistory.Count > 0 ? $"{backupHistory.Count} backup(s) found on disk" : "No backups found on disk")
+                        </p>
+                    </div>
+                </div>
+                <div class="bk-card-body">
+                    @if (backupHistory.Count > 0)
+                    {
+                        <ul class="history-list">
+                            @foreach (var b in backupHistory)
+                            {
+                                <li class="history-item">
+                                    <span class="history-dot"></span>
+                                    <i class="bi bi-file-earmark-zip" style="color:var(--d-primary);"></i>
+                                    @b
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p style="font-size:.84rem; color:var(--d-muted); margin:0;">
+                            No backup files found. Create your first backup above.
+                        </p>
+                    }
+                </div>
+            </div>
+
+        </div><!-- /col-lg-8 -->
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-lg-4">
+
+            <!-- Best Practices -->
+            <div class="bk-card">
+                <div class="bk-card-head">
+                    <div class="bk-card-head-icon icon-green"><i class="bi bi-shield-check"></i></div>
+                    <div>
+                        <p class="bk-card-head-title">Best Practices</p>
+                        <p class="bk-card-head-sub">Keep your data safe</p>
+                    </div>
+                </div>
+                <div class="bk-card-body" style="padding-top:16px;">
+                    <div class="tips-grid">
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Back up at least weekly</div>
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Test restores periodically</div>
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Store backups securely off-site</div>
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Keep multiple versions</div>
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Log changes between backups</div>
+                        <div class="tip-item"><i class="bi bi-check-circle-fill"></i> Encrypt sensitive backups</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Included -->
+            <div class="bk-card">
+                <div class="bk-card-head">
+                    <div class="bk-card-head-icon icon-slate"><i class="bi bi-table"></i></div>
+                    <div>
+                        <p class="bk-card-head-title">Tables Included</p>
+                        <p class="bk-card-head-sub">16 tables backed up</p>
+                    </div>
+                </div>
+                <div class="bk-card-body" style="padding-top:16px;">
+                    <div class="table-grid">
+                        @foreach (var t in new[]{ "AspNetUsers","AspNetRoles","AspNetUserRoles","Expenses",
+                            "ExpenseReports","ExpenseItems","Approvals","Budgets",
+                            "CEOProfiles","ManagerProfiles","FinanceProfiles","DriverProfiles",
+                            "ReimbursementPayments","AuditLogs","Notifications","FuelPrices" })
+                        {
+                            <div class="table-chip">
+                                <i class="bi bi-database"></i> @t
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /col-lg-4 -->
+
+    </div><!-- /row -->
+</div>
+
+<script>
+    document.getElementById('backupFile').addEventListener('change', function () {
+        const file = this.files[0];
+        const display = document.getElementById('fileNameDisplay');
+        display.textContent = file
+            ? `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+            : 'No file chosen';
+        display.style.color = file ? 'var(--d-text)' : 'var(--d-muted)';
+    });
+</script>

@@ -1,0 +1,121 @@
+﻿
+C:\Users\Lenovo\source\repos\CEMS\Controllers\DriverController.cs(594,42): 
+warning SCS0016: Controller method is potentially vulnerable to Cross Site 
+Request Forgery (CSRF). (https://security-code-scan.github.io/#SCS0016) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Data\SeedData.cs(134,37): warning SCS0005: 
+Weak random number generator. (https://security-code-scan.github.io/#SCS0005) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(54,45): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(63,41): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(67,37): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(95,41): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(103,37): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(107,33): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ProfileController.cs(185,48): 
+warning SCS0018: Potential Path Traversal vulnerability was found where 'path' 
+in 'FileStream.FileStream(string path, FileMode mode)' may be tainted by 
+user-controlled data from 'IFormFile photo' in method 'Task<IActionResult> 
+ProfileController.UploadPhoto(IFormFile photo)'. 
+(https://security-code-scan.github.io/#SCS0018) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\DriverController.cs(594,42): 
+warning SCS0016: Controller method is potentially vulnerable to Cross Site 
+Request Forgery (CSRF). (https://security-code-scan.github.io/#SCS0016) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Data\SeedData.cs(134,37): warning SCS0005: 
+Weak random number generator. (https://security-code-scan.github.io/#SCS0005) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(54,45): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(63,41): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(67,37): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<ExpenseItem> 
+ApplicationDbContext.ExpenseItems' in method 'Task<IActionResult> 
+ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(95,41): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(103,37): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ReceiptController.cs(107,33): 
+warning SCS0027: Potential Open Redirect vulnerability was found where 'url' 
+in 'RedirectResult ControllerBase.Redirect(string url)' may be tainted by 
+user-controlled data from 'DbSet<Expense> ApplicationDbContext.Expenses' in 
+method 'Task<IActionResult> ReceiptController.View(int id)'. 
+(https://security-code-scan.github.io/#SCS0027) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+C:\Users\Lenovo\source\repos\CEMS\Controllers\ProfileController.cs(185,48): 
+warning SCS0018: Potential Path Traversal vulnerability was found where 'path' 
+in 'FileStream.FileStream(string path, FileMode mode)' may be tainted by 
+user-controlled data from 'IFormFile photo' in method 'Task<IActionResult> 
+ProfileController.UploadPhoto(IFormFile photo)'. 
+(https://security-code-scan.github.io/#SCS0018) 
+[C:\Users\Lenovo\source\repos\CEMS\CEMS.csproj]
+
+

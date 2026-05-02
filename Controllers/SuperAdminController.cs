@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
+using CEMS.Services;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
@@ -17,12 +18,18 @@ namespace CEMS.Controllers
         private readonly Data.ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IDatabaseBackupService _backupService;
 
-        public SuperAdminController(Data.ApplicationDbContext db, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public SuperAdminController(
+            Data.ApplicationDbContext db,
+            UserManager<IdentityUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IDatabaseBackupService backupService)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
+            _backupService = backupService;
         }
 
         // ───────────── Dashboard ─────────────
@@ -972,6 +979,94 @@ namespace CEMS.Controllers
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Fuel type '{name}' has been deleted.";
             return RedirectToAction("FuelPrices");
+        }
+
+        // ───────────── Database Backup & Recovery ─────────────
+        public async Task<IActionResult> BackupRecovery()
+        {
+            var backupHistory = await _backupService.GetBackupHistoryAsync();
+            ViewBag.BackupHistory = backupHistory;
+            return View("Backup/Index");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateBackup()
+        {
+            try
+            {
+                var backupData = await _backupService.CreateFullBackupAsync();
+                var fileName = $"CEMS_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+                
+                // Log backup creation
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    Action = "CreateBackup",
+                    Module = "Database",
+                    Role = "SuperAdmin",
+                    PerformedByUserId = _userManager.GetUserId(User),
+                    Details = $"Created database backup: {fileName} ({backupData.Length / 1024 / 1024} MB)"
+                });
+                await _db.SaveChangesAsync();
+
+                TempData["Success"] = $"✅ Backup created successfully! File size: {backupData.Length / 1024 / 1024} MB";
+                return File(backupData, "application/zip", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"❌ Backup failed: {ex.Message}";
+                return RedirectToAction("BackupRecovery");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreBackup(IFormFile backupFile)
+        {
+            if (backupFile == null || backupFile.Length == 0)
+            {
+                TempData["Error"] = "Please select a backup file to restore.";
+                return RedirectToAction("BackupRecovery");
+            }
+
+            if (!backupFile.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Only ZIP files are supported.";
+                return RedirectToAction("BackupRecovery");
+            }
+
+            try
+            {
+                using (var stream = backupFile.OpenReadStream())
+                {
+                    var (success, message) = await _backupService.RestoreBackupAsync(stream);
+                    
+                    if (success)
+                    {
+                        _db.AuditLogs.Add(new AuditLog
+                        {
+                            Action = "RestoreBackup",
+                            Module = "Database",
+                            Role = "SuperAdmin",
+                            PerformedByUserId = _userManager.GetUserId(User),
+                            Details = $"Restored database from backup: {backupFile.FileName} ({backupFile.Length / 1024 / 1024} MB)"
+                        });
+                        await _db.SaveChangesAsync();
+
+                        TempData["Success"] = $"✅ {message}";
+                    }
+                    else
+                    {
+                        TempData["Error"] = $"❌ {message}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"❌ Restore failed: {ex.Message}";
+            }
+
+            return RedirectToAction("BackupRecovery");
         }
     }
 

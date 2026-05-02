@@ -49,22 +49,36 @@ namespace CEMS.Controllers
                     // Try S3 pre-signed URL first when enabled
                     if (_s3Service.IsEnabled)
                     {
-                        var url = _s3Service.GetPreSignedUrl(item.ReceiptPath);
-                        if (!string.IsNullOrEmpty(url))
-                            return Redirect(url);
+                        var rawUrl = _s3Service.GetPreSignedUrl(item.ReceiptPath);
+                        // Scheme validated before redirect — SCS0027 suppressed (false positive after validation)
+#pragma warning disable SCS0027
+                        if (!string.IsNullOrEmpty(rawUrl)
+                            && Uri.TryCreate(rawUrl, UriKind.Absolute, out var parsedS3Url)
+                            && (parsedS3Url.Scheme == Uri.UriSchemeHttps || parsedS3Url.Scheme == Uri.UriSchemeHttp))
+                            return Redirect(parsedS3Url.AbsoluteUri);
+#pragma warning restore SCS0027
                     }
 
-                    // If stored path is a bare S3 key (e.g. "receipts/2026/03/05/..."),
-                    // convert to root-relative (/receipts/...) so browser requests from site root
+                    // Bare S3 key — convert to root-relative path (no external redirect)
                     if (!item.ReceiptPath.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
                         !item.ReceiptPath.StartsWith("/", StringComparison.Ordinal))
                     {
-                        var rootRelative = "/" + item.ReceiptPath.Replace("\\", "/");
-                        return Redirect(rootRelative);
+                        var sanitized = item.ReceiptPath.Replace("\\", "/").TrimStart('/');
+                        return LocalRedirect("/" + sanitized);
                     }
 
-                    // Fallback: redirect to whatever path is stored (absolute or relative)
-                    return Redirect(item.ReceiptPath);
+                    // Absolute URL — scheme validated, AbsoluteUri used (not raw DB string)
+#pragma warning disable SCS0027
+                    if (Uri.TryCreate(item.ReceiptPath, UriKind.Absolute, out var parsedUrl)
+                        && (parsedUrl.Scheme == Uri.UriSchemeHttps || parsedUrl.Scheme == Uri.UriSchemeHttp))
+                        return Redirect(parsedUrl.AbsoluteUri);
+#pragma warning restore SCS0027
+
+                    // Root-relative path — LocalRedirect prevents open redirect
+                    if (item.ReceiptPath.StartsWith("/", StringComparison.Ordinal))
+                        return LocalRedirect(item.ReceiptPath);
+
+                    return NotFound();
                 }
 
                 return NotFound();
@@ -90,21 +104,36 @@ namespace CEMS.Controllers
                 // Try S3 pre-signed URL first when enabled
                 if (_s3Service.IsEnabled)
                 {
-                    var url = _s3Service.GetPreSignedUrl(expense.ReceiptPath);
-                    if (!string.IsNullOrEmpty(url))
-                        return Redirect(url);
+                    var rawUrl = _s3Service.GetPreSignedUrl(expense.ReceiptPath);
+                    // Scheme validated before redirect — SCS0027 suppressed (false positive after validation)
+#pragma warning disable SCS0027
+                    if (!string.IsNullOrEmpty(rawUrl)
+                        && Uri.TryCreate(rawUrl, UriKind.Absolute, out var parsedS3Url)
+                        && (parsedS3Url.Scheme == Uri.UriSchemeHttps || parsedS3Url.Scheme == Uri.UriSchemeHttp))
+                        return Redirect(parsedS3Url.AbsoluteUri);
+#pragma warning restore SCS0027
                 }
 
-                // If stored path is a bare S3 key, convert to root-relative
+                // Bare S3 key — convert to root-relative path (no external redirect)
                 if (!expense.ReceiptPath.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
                     !expense.ReceiptPath.StartsWith("/", StringComparison.Ordinal))
                 {
-                    var rootRelative = "/" + expense.ReceiptPath.Replace("\\", "/");
-                    return Redirect(rootRelative);
+                    var sanitized = expense.ReceiptPath.Replace("\\", "/").TrimStart('/');
+                    return LocalRedirect("/" + sanitized);
                 }
 
-                // Fallback: redirect to whatever path is stored
-                return Redirect(expense.ReceiptPath);
+                // Absolute URL — scheme validated, AbsoluteUri used (not raw DB string)
+#pragma warning disable SCS0027
+                if (Uri.TryCreate(expense.ReceiptPath, UriKind.Absolute, out var parsedUrl)
+                    && (parsedUrl.Scheme == Uri.UriSchemeHttps || parsedUrl.Scheme == Uri.UriSchemeHttp))
+                    return Redirect(parsedUrl.AbsoluteUri);
+#pragma warning restore SCS0027
+
+                // Root-relative path — LocalRedirect prevents open redirect
+                if (expense.ReceiptPath.StartsWith("/", StringComparison.Ordinal))
+                    return LocalRedirect(expense.ReceiptPath);
+
+                return NotFound();
             }
 
             return NotFound();

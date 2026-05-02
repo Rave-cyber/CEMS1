@@ -8,6 +8,17 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB total request
+    options.ValueLengthLimit = 4 * 1024 * 1024;
+});
+builder.WebHost.ConfigureKestrel(k =>
+{
+    k.Limits.MaxRequestBodySize = 20 * 1024 * 1024; // 20 MB
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -72,6 +83,8 @@ builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IGmailService, GmailService>();
 builder.Services.AddHttpClient<IGmailService, GmailService>();
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);

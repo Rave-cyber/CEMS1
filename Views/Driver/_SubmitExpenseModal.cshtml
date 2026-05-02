@@ -55,26 +55,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     feedback.innerHTML = '';
 
-    try {
-      var response = await fetch(form.action, {
-        method: 'POST',
-        headers: {
+      try {
+        // Include antiforgery token header if present (helps server-side validation for AJAX requests)
+        var tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+        var headers = {
           'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-      });
+        };
+        if (tokenInput && tokenInput.value) {
+          headers['RequestVerificationToken'] = tokenInput.value;
+        }
 
-      var json = await response.json();
-      if (json.success) {
-        feedback.innerHTML = '<div class="alert alert-success">' + json.message + '</div>';
-        setTimeout(function() { location.reload(); }, 900);
-      } else {
-        var msg = json.message || (json.errors ? json.errors.join('<br/>') : 'Failed to submit.');
-        feedback.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+        var response = await fetch(form.action, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: headers,
+          body: formData
+        });
+
+        var contentType = response.headers.get('content-type') || '';
+        if (contentType.indexOf('application/json') !== -1) {
+          var json = await response.json();
+          if (json.success) {
+            feedback.innerHTML = '<div class="alert alert-success">' + json.message + '</div>';
+            setTimeout(function() { location.reload(); }, 900);
+          } else {
+            var msg = json.message || (json.errors ? json.errors.join('<br/>') : 'Failed to submit.');
+            feedback.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+          }
+        } else {
+          // Non-JSON response (e.g. HTML login page or error page) — surface text for debugging
+          var text = await response.text();
+          feedback.innerHTML = '<div class="alert alert-danger">Unexpected response: ' + (text.length > 300 ? text.substring(0,300) + '...' : text) + '</div>';
+          console.warn('Non-JSON response received when submitting expense:', text);
+        }
+      } catch (err) {
+        // Network-level failures show err.message (e.g. "Failed to fetch")
+        feedback.innerHTML = '<div class="alert alert-danger">Network error: ' + (err.message || 'Unable to submit expenses. Please check your connection and try again.') + '</div>';
+        console.error('Error submitting expense:', err);
       }
-    } catch (err) {
-      feedback.innerHTML = '<div class="alert alert-danger">' + err.message + '</div>';
-    }
   });
 });
 </script>

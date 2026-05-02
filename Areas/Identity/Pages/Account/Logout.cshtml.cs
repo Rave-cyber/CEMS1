@@ -17,20 +17,35 @@ namespace CEMS.Areas.Identity.Pages.Account
     public class LogoutModel : PageModel
     {
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LogoutModel> _logger;
-
         private readonly ApplicationDbContext _db;
 
-        public LogoutModel(SignInManager<IdentityUser> signInManager, ILogger<LogoutModel> logger, ApplicationDbContext db)
+        public LogoutModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LogoutModel> logger, ApplicationDbContext db)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
             _db = db;
         }
 
         public async Task<IActionResult> OnPost(string returnUrl = null)
         {
-            var userId = User?.Identity?.Name;
+            // Capture identity before signing out
+            var userId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = User?.Identity?.Name;
+
+            string? role = null;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var identityUser = await _userManager.FindByIdAsync(userId);
+                if (identityUser != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(identityUser);
+                    role = roles.FirstOrDefault();
+                }
+            }
+
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
 
@@ -40,8 +55,9 @@ namespace CEMS.Areas.Identity.Pages.Account
                 {
                     Action = "UserLogout",
                     Module = "Auth",
-                    PerformedByUserId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-                    Details = "User logged out"
+                    Role = role,
+                    PerformedByUserId = userId,
+                    Details = $"User logged out: {userEmail ?? userId ?? "unknown"}"
                 };
                 _db.AuditLogs.Add(log);
                 await _db.SaveChangesAsync();

@@ -127,10 +127,12 @@ namespace CEMS.Areas.Identity.Pages.Account
                     var user = await _userManager.FindByEmailAsync(Input.Email);
                     try
                     {
+                        var userRoles = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
                         var log = new AuditLog
                         {
                             Action = "UserLogin",
                             Module = "Auth",
+                            Role = userRoles.FirstOrDefault(),
                             PerformedByUserId = user?.Id,
                             Details = $"Login successful for {Input.Email}"
                         };
@@ -192,11 +194,13 @@ namespace CEMS.Areas.Identity.Pages.Account
                     // Log failed login attempt
                     try
                     {
+                        var failedUser = await _userManager.FindByEmailAsync(Input.Email);
                         var log = new AuditLog
                         {
                             Action = "FailedLoginAttempt",
                             Module = "Auth",
                             PerformedByUserId = null,
+                            TargetUserId = failedUser?.Id,
                             Details = $"Failed login attempt for {Input.Email} (Attempt {FailedAttempts}/3)"
                         };
                         _db.AuditLogs.Add(log);
