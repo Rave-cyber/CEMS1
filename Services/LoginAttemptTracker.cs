@@ -13,15 +13,23 @@ namespace CEMS.Services
         Task<int?> GetRemainingSecondsAsync(string email);
         Task RecordFailedAttemptAsync(string email);
         Task ClearAttemptsAsync(string email);
+
+        // IP-level tracking
+        Task RecordFailedAttemptByIpAsync(string ipAddress);
+        Task<bool> IsIpBlockedAsync(string ipAddress);
     }
 
     public class LoginAttemptTracker : ILoginAttemptTracker
     {
         private readonly IMemoryCache _cache;
-        private const int MAX_ATTEMPTS = 3;
-        private const int LOCKOUT_SECONDS = 30;
+        private const int MAX_ATTEMPTS = 5;           // raised from 3 — detector handles alerting
+        private const int LOCKOUT_SECONDS = 300;      // 5 minutes (was 30 seconds)
+        private const int IP_MAX_ATTEMPTS = 20;       // block an IP after 20 failures
+        private const int IP_BLOCK_SECONDS = 900;     // 15 minutes IP block
         private const string ATTEMPT_KEY_PREFIX = "login_attempt_";
-        private const string LOCKOUT_KEY_PREFIX = "login_lockout_";
+        private const string LOCKOUT_KEY_PREFIX  = "login_lockout_";
+        private const string IP_ATTEMPT_PREFIX   = "ip_attempt_";
+        private const string IP_BLOCK_PREFIX     = "ip_block_";
 
         public LoginAttemptTracker(IMemoryCache cache)
         {
@@ -30,102 +38,96 @@ namespace CEMS.Services
 
         public async Task<int> GetFailedAttemptsAsync(string email)
         {
-            var normalizedEmail = NormalizeEmail(email);
-            var key = ATTEMPT_KEY_PREFIX + normalizedEmail;
-
-            if (_cache.TryGetValue(key, out int attempts))
-            {
-                return attempts;
-            }
-
-            return 0;
+            var key = ATTEMPT_KEY_PREFIX + NormalizeEmail(email);
+            return _cache.TryGetValue(key, out int attempts) ? attempts : 0;
         }
 
         public async Task<bool> IsLockedOutAsync(string email)
         {
-            var normalizedEmail = NormalizeEmail(email);
-            var key = LOCKOUT_KEY_PREFIX + normalizedEmail;
-
+            var key = LOCKOUT_KEY_PREFIX + NormalizeEmail(email);
             if (_cache.TryGetValue(key, out DateTime lockoutTime))
             {
-                if (DateTime.UtcNow < lockoutTime)
-                {
-                    return true;
-                }
-                else
-                {
-                    // Lockout expired, clear it
-                    _cache.Remove(key);
-                    _cache.Remove(ATTEMPT_KEY_PREFIX + normalizedEmail);
-                }
+                if (DateTime.UtcNow < lockoutTime) return true;
+                _cache.Remove(key);
+                _cache.Remove(ATTEMPT_KEY_PREFIX + NormalizeEmail(email));
             }
-
             return false;
         }
 
         public async Task<int?> GetRemainingSecondsAsync(string email)
         {
-            var normalizedEmail = NormalizeEmail(email);
-            var key = LOCKOUT_KEY_PREFIX + normalizedEmail;
-
+            var key = LOCKOUT_KEY_PREFIX + NormalizeEmail(email);
             if (_cache.TryGetValue(key, out DateTime lockoutTime))
             {
                 var remaining = (int)(lockoutTime - DateTime.UtcNow).TotalSeconds;
-                if (remaining > 0)
-                {
-                    return remaining;
-                }
-                else
-                {
-                    _cache.Remove(key);
-                    _cache.Remove(ATTEMPT_KEY_PREFIX + normalizedEmail);
-                }
+                if (remaining > 0) return remaining;
+                _cache.Remove(key);
+                _cache.Remove(ATTEMPT_KEY_PREFIX + NormalizeEmail(email));
             }
-
             return null;
         }
 
         public async Task RecordFailedAttemptAsync(string email)
         {
-            var normalizedEmail = NormalizeEmail(email);
-            var attemptKey = ATTEMPT_KEY_PREFIX + normalizedEmail;
-            var lockoutKey = LOCKOUT_KEY_PREFIX + normalizedEmail;
+            var normalized    = NormalizeEmail(email);
+            var attemptKey    = ATTEMPT_KEY_PREFIX + normalized;
+            var lockoutKey    = LOCKOUT_KEY_PREFIX + normalized;
 
-            // Get current attempt count
-            if (!_cache.TryGetValue(attemptKey, out int attempts))
-            {
-                attempts = 0;
-            }
-
+            if (!_cache.TryGetValue(attemptKey, out int attempts)) attempts = 0;
             attempts++;
 
             if (attempts >= MAX_ATTEMPTS)
             {
-                // Lock out the user for LOCKOUT_SECONDS
                 var lockoutTime = DateTime.UtcNow.AddSeconds(LOCKOUT_SECONDS);
-                _cache.Set(lockoutKey, lockoutTime, TimeSpan.FromSeconds(LOCKOUT_SECONDS + 5));
-                _cache.Set(attemptKey, attempts, TimeSpan.FromSeconds(LOCKOUT_SECONDS + 5));
+                _cache.Set(lockoutKey, lockoutTime, TimeSpan.FromSeconds(LOCKOUT_SECONDS + 10));
+                _cache.Set(attemptKey, attempts,    TimeSpan.FromSeconds(LOCKOUT_SECONDS + 10));
             }
             else
             {
-                // Keep track of attempts for 24 hours (they'll be cleared if successful or after lockout)
                 _cache.Set(attemptKey, attempts, TimeSpan.FromHours(24));
             }
         }
 
         public async Task ClearAttemptsAsync(string email)
         {
-            var normalizedEmail = NormalizeEmail(email);
-            var attemptKey = ATTEMPT_KEY_PREFIX + normalizedEmail;
-            var lockoutKey = LOCKOUT_KEY_PREFIX + normalizedEmail;
-
-            _cache.Remove(attemptKey);
-            _cache.Remove(lockoutKey);
+            var normalized = NormalizeEmail(email);
+            _cache.Remove(ATTEMPT_KEY_PREFIX + normalized);
+            _cache.Remove(LOCKOUT_KEY_PREFIX + normalized);
         }
 
-        private string NormalizeEmail(string email)
+        public async Task RecordFailedAttemptByIpAsync(string ipAddress)
         {
-            return email?.ToLower().Trim() ?? "";
+            var attemptKey = IP_ATTEMPT_PREFIX + ipAddress;
+            var blockKey   = IP_BLOCK_PREFIX   + ipAddress;
+
+            if (!_cache.TryGetValue(attemptKey, out int attempts)) attempts = 0;
+            attempts++;
+
+            if (attempts >= IP_MAX_ATTEMPTS)
+            {
+                var blockUntil = DateTime.UtcNow.AddSeconds(IP_BLOCK_SECONDS);
+                _cache.Set(blockKey,   blockUntil, TimeSpan.FromSeconds(IP_BLOCK_SECONDS + 10));
+                _cache.Set(attemptKey, attempts,   TimeSpan.FromSeconds(IP_BLOCK_SECONDS + 10));
+            }
+            else
+            {
+                _cache.Set(attemptKey, attempts, TimeSpan.FromHours(1));
+            }
         }
+
+        public async Task<bool> IsIpBlockedAsync(string ipAddress)
+        {
+            var blockKey = IP_BLOCK_PREFIX + ipAddress;
+            if (_cache.TryGetValue(blockKey, out DateTime blockUntil))
+            {
+                if (DateTime.UtcNow < blockUntil) return true;
+                _cache.Remove(blockKey);
+                _cache.Remove(IP_ATTEMPT_PREFIX + ipAddress);
+            }
+            return false;
+        }
+
+        private static string NormalizeEmail(string email) =>
+            email?.ToLower().Trim() ?? "";
     }
 }

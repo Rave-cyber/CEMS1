@@ -19,17 +19,20 @@ namespace CEMS.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IDatabaseBackupService _backupService;
+        private readonly ISecurityThreatDetector _threatDetector;
 
         public SuperAdminController(
             Data.ApplicationDbContext db,
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IDatabaseBackupService backupService)
+            IDatabaseBackupService backupService,
+            ISecurityThreatDetector threatDetector)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
             _backupService = backupService;
+            _threatDetector = threatDetector;
         }
 
         // ───────────── Dashboard ─────────────
@@ -101,6 +104,10 @@ namespace CEMS.Controllers
             var lockedCount = allUsersForStats.Count(u => u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow);
             ViewBag.ActiveUsers = allUsersForStats.Count - lockedCount;
             ViewBag.LockedUsers = lockedCount;
+
+            // Security threat summary
+            var threatSummary = await _threatDetector.GetThreatSummaryAsync();
+            ViewBag.ThreatSummary = threatSummary;
 
             return View("Dashboard/Index");
         }

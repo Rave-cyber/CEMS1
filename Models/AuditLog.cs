@@ -27,5 +27,13 @@ namespace CEMS.Models
         public int? RelatedRecordId { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        /// <summary>IP address of the request — used for intrusion detection.</summary>
+        [MaxLength(45)] // supports IPv6
+        public string? IpAddress { get; set; }
+
+        /// <summary>Browser/client user-agent — used for session anomaly detection.</summary>
+        [MaxLength(500)]
+        public string? UserAgent { get; set; }
     }
 }

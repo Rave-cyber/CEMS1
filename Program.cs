@@ -79,6 +79,7 @@ builder.Services.AddScoped<SignInManager<IdentityUser>>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ILoginAttemptTracker, LoginAttemptTracker>();
+builder.Services.AddScoped<ISecurityThreatDetector, SecurityThreatDetector>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();

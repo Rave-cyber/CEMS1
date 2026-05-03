@@ -26,14 +26,18 @@ namespace CEMS.Areas.Identity.Pages.Account
         private readonly ILogger<LoginModel> _logger;
         private readonly ApplicationDbContext _db;
         private readonly ILoginAttemptTracker _attemptTracker;
+        private readonly ISecurityThreatDetector _threatDetector;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger, ApplicationDbContext db, ILoginAttemptTracker attemptTracker)
+        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager,
+            ILogger<LoginModel> logger, ApplicationDbContext db,
+            ILoginAttemptTracker attemptTracker, ISecurityThreatDetector threatDetector)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
-            _logger = logger;
-            _db = db;
-            _attemptTracker = attemptTracker;
+            _signInManager    = signInManager;
+            _userManager      = userManager;
+            _logger           = logger;
+            _db               = db;
+            _attemptTracker   = attemptTracker;
+            _threatDetector   = threatDetector;
         }
 
   
@@ -101,6 +105,19 @@ namespace CEMS.Areas.Identity.Pages.Account
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
+            // Capture request context for threat detection
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+                         ?? HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                         ?? "unknown";
+            var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+            // Check IP-level block first
+            if (await _attemptTracker.IsIpBlockedAsync(ipAddress))
+            {
+                ModelState.AddModelError(string.Empty, "Too many failed attempts from your network. Please try again later.");
+                return Page();
+            }
+
             // Check if user is locked out
             IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
             RemainingSeconds = await _attemptTracker.GetRemainingSecondsAsync(Input.Email);
@@ -114,68 +131,53 @@ namespace CEMS.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-         
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
-                    // Clear failed attempts on successful login
                     await _attemptTracker.ClearAttemptsAsync(Input.Email);
-
                     _logger.LogInformation("User logged in.");
 
-                    // Fetch user once and record audit log for successful login
                     var user = await _userManager.FindByEmailAsync(Input.Email);
                     try
                     {
                         var userRoles = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
-                        var log = new AuditLog
+                        _db.AuditLogs.Add(new AuditLog
                         {
                             Action = "UserLogin",
                             Module = "Auth",
                             Role = userRoles.FirstOrDefault(),
                             PerformedByUserId = user?.Id,
+                            IpAddress = ipAddress,
+                            UserAgent = userAgent,
                             Details = $"Login successful for {Input.Email}"
-                        };
-                        _db.AuditLogs.Add(log);
+                        });
                         await _db.SaveChangesAsync();
                     }
-                    catch { /* ignore audit failures */ }
+                    catch { }
 
+                    // Run threat analysis (new IP detection etc.) — fire and forget errors
+                    try { await _threatDetector.AnalyzeLoginAsync(Input.Email, ipAddress, userAgent, succeeded: true); } catch { }
 
                     var isDefaultReturn = string.IsNullOrEmpty(returnUrl) || returnUrl == Url.Content("~/") || returnUrl == "/";
-
-                    if (!isDefaultReturn)
-                    {
-                        return LocalRedirect(returnUrl);
-                    }
-
+                    if (!isDefaultReturn) return LocalRedirect(returnUrl);
 
                     var rolesList = user == null ? new List<string>() : (await _userManager.GetRolesAsync(user)).ToList();
-
-                    // Self-heal: If user has no roles, assign them to Manager
                     if (user != null && rolesList.Count == 0)
                     {
                         await _userManager.AddToRoleAsync(user, "Manager");
                         rolesList.Add("Manager");
                     }
 
-                    if (rolesList.Contains("SuperAdmin"))
-                        return RedirectToAction("Dashboard", "SuperAdmin");
-                    if (rolesList.Contains("CEO"))
-                        return RedirectToAction("Dashboard", "CEO");
-                    if (rolesList.Contains("Manager"))
-                        return RedirectToAction("Dashboard", "Manager");
-                    if (rolesList.Contains("Driver"))
-                        return RedirectToAction("Dashboard", "Driver");
-                    if (rolesList.Contains("Finance"))
-                        return RedirectToAction("Dashboard", "Finance");
+                    if (rolesList.Contains("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
+                    if (rolesList.Contains("CEO"))        return RedirectToAction("Dashboard", "CEO");
+                    if (rolesList.Contains("Manager"))    return RedirectToAction("Dashboard", "Manager");
+                    if (rolesList.Contains("Driver"))     return RedirectToAction("Dashboard", "Driver");
+                    if (rolesList.Contains("Finance"))    return RedirectToAction("Dashboard", "Finance");
 
-                    // Fallback to home index
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
                 {
-                    // Clear attempts before 2FA
                     await _attemptTracker.ClearAttemptsAsync(Input.Email);
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
                 }
@@ -186,39 +188,37 @@ namespace CEMS.Areas.Identity.Pages.Account
                 }
                 else
                 {
-                    // Record failed attempt
                     await _attemptTracker.RecordFailedAttemptAsync(Input.Email);
-                    FailedAttempts = await _attemptTracker.GetFailedAttemptsAsync(Input.Email);
+                    await _attemptTracker.RecordFailedAttemptByIpAsync(ipAddress);
+
+                    FailedAttempts   = await _attemptTracker.GetFailedAttemptsAsync(Input.Email);
                     RemainingSeconds = await _attemptTracker.GetRemainingSecondsAsync(Input.Email);
 
-                    // Log failed login attempt
                     try
                     {
                         var failedUser = await _userManager.FindByEmailAsync(Input.Email);
-                        var log = new AuditLog
+                        _db.AuditLogs.Add(new AuditLog
                         {
                             Action = "FailedLoginAttempt",
                             Module = "Auth",
                             PerformedByUserId = null,
                             TargetUserId = failedUser?.Id,
-                            Details = $"Failed login attempt for {Input.Email} (Attempt {FailedAttempts}/3)"
-                        };
-                        _db.AuditLogs.Add(log);
+                            IpAddress = ipAddress,
+                            UserAgent = userAgent,
+                            Details = $"Failed login attempt for {Input.Email} (Attempt {FailedAttempts}/5)"
+                        });
                         await _db.SaveChangesAsync();
                     }
                     catch { }
 
-                    // Check if locked out after recording attempt
-                    IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
+                    // Run threat analysis — brute force / credential stuffing detection
+                    try { await _threatDetector.AnalyzeLoginAsync(Input.Email, ipAddress, userAgent, succeeded: false); } catch { }
 
+                    IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
                     if (IsLockedOut && RemainingSeconds.HasValue)
-                    {
-                        ModelState.AddModelError(string.Empty, $"Too many failed attempts ({FailedAttempts}/3). Account locked for {RemainingSeconds} seconds.");
-                    }
+                        ModelState.AddModelError(string.Empty, $"Too many failed attempts ({FailedAttempts}/5). Account locked for {RemainingSeconds} seconds.");
                     else
-                    {
-                        ModelState.AddModelError(string.Empty, $"Invalid login attempt. Attempts remaining: {3 - FailedAttempts}");
-                    }
+                        ModelState.AddModelError(string.Empty, $"Invalid login attempt. Attempts remaining: {5 - FailedAttempts}");
 
                     return Page();
                 }
