@@ -686,6 +686,11 @@ namespace CEMS.Controllers
                     return Json(new { success = false, message = "No expenses to submit." });
                 }
 
+                if (items.Count > 20)
+                {
+                    return Json(new { success = false, message = "Maximum 20 expense items per submission." });
+                }
+
                 // Resolve trip dates from form or infer from item dates
                 DateTime? tripStart = null;
                 DateTime? tripEnd = null;

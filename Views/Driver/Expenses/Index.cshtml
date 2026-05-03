@@ -870,7 +870,14 @@
                 });
             }
 
+            const MAX_ROWS = 20;
+
             function addRow() {
+                if (rows.children.length >= MAX_ROWS) {
+                    showToast(`Maximum ${MAX_ROWS} expense rows per submission.`, 'error');
+                    return;
+                }
+
                 // Collapse all existing rows when adding a new one
                 Array.from(rows.children).forEach(existingRow => {
                     const content = existingRow.querySelector('.expense-row-content');

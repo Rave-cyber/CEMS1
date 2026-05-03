@@ -11,12 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB total request
+    // Max 20 rows × 5 MB per receipt = 100 MB, plus overhead for form fields
+    options.MultipartBodyLengthLimit = 110 * 1024 * 1024; // 110 MB total request
     options.ValueLengthLimit = 4 * 1024 * 1024;
 });
 builder.WebHost.ConfigureKestrel(k =>
 {
-    k.Limits.MaxRequestBodySize = 20 * 1024 * 1024; // 20 MB
+    k.Limits.MaxRequestBodySize = 110 * 1024 * 1024; // 110 MB
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
