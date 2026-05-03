@@ -22,8 +22,8 @@
   - [ ] Verify application reconnects successfully
 
 ### AWS S3 Credentials - 🔴 EXPOSED
-- **Access Key**: `[REDACTED]`
-- **Secret Key**: `[REDACTED]`
+- **Access Key**: `[REDACTED - rotate immediately]`
+- **Secret Key**: `[REDACTED - rotate immediately]`
 - **Bucket**: `cems13`
 - **Region**: `ap-southeast-1`
 - **Status**: ⏳ **MUST ROTATE**
@@ -36,8 +36,8 @@
   - [ ] Monitor AWS logs for unauthorized access attempts
 
 ### Gmail OAuth Credentials - 🔴 EXPOSED
-- **Client ID**: `[REDACTED]`
-- **Client Secret**: `[REDACTED]`
+- **Client ID**: `[REDACTED - rotate immediately]`
+- **Client Secret**: `[REDACTED - rotate immediately]`
 - **Redirect URI**: `http://localhost:62449/profile/gmail-callback`
 - **Status**: ⏳ **MUST ROTATE**
 - **Action**:
