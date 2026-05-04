@@ -881,6 +881,61 @@ namespace CEMS.Controllers
             return RedirectToAction("Dashboard");
         }
 
+        // ───────────── Security Logs ─────────────
+        public async Task<IActionResult> SecurityLogs(string? severity, string? action, string? ip, DateTime? start, DateTime? end, int page = 1, int pageSize = 15)
+        {
+            var securityActions = new[] {
+                "BruteForceDetected", "CredentialStuffingDetected",
+                "SuspiciousLoginSuccess", "NewIpLogin",
+                "FailedLoginAttempt", "UserLogin", "UserLogout"
+            };
+
+            var q = _db.AuditLogs
+                .Where(l => l.Module == "Security" || securityActions.Contains(l.Action))
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(action))
+                q = q.Where(l => l.Action == action);
+
+            if (!string.IsNullOrWhiteSpace(ip))
+                q = q.Where(l => l.IpAddress != null && l.IpAddress.Contains(ip));
+
+            if (!string.IsNullOrWhiteSpace(severity))
+                q = q.Where(l => l.Details != null && l.Details.Contains($"[{severity}]"));
+
+            if (start.HasValue)
+                q = q.Where(l => l.Timestamp >= start.Value.Date);
+            if (end.HasValue)
+                q = q.Where(l => l.Timestamp < end.Value.Date.AddDays(1));
+
+            var totalCount = await q.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var logs = await q
+                .OrderByDescending(l => l.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Threat summary for the stats cards
+            var threatSummary = await _threatDetector.GetThreatSummaryAsync();
+
+            ViewBag.Logs = logs;
+            ViewBag.ThreatSummary = threatSummary;
+            ViewBag.FilterSeverity = severity;
+            ViewBag.FilterAction = action;
+            ViewBag.FilterIp = ip;
+            ViewBag.FilterStart = start;
+            ViewBag.FilterEnd = end;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.SecurityActions = securityActions.OrderBy(a => a).ToList();
+
+            return View("SecurityLogs/Index");
+        }
+
         // ───────────── Fuel Price Management ─────────────
         public async Task<IActionResult> FuelPrices()
         {

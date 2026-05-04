@@ -246,6 +246,47 @@ namespace CEMS.Services
             await _db.SaveChangesAsync();
         }
 
+        /// <summary>Security threat detected → notify all SuperAdmins.</summary>
+        public async Task NotifySecurityThreat(string action, string severity, string details, string? ipAddress)
+        {
+            var superAdmins = await _userManager.GetUsersInRoleAsync("SuperAdmin");
+            if (!superAdmins.Any()) return;
+
+            // Deduplicate: skip if same action+IP was already notified in the last 5 minutes
+            var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
+            foreach (var admin in superAdmins)
+            {
+                var recentExists = await _db.Notifications
+                    .AnyAsync(n => n.UserId == admin.Id
+                               && n.Type == "SecurityThreat"
+                               && n.Message.Contains(action)
+                               && (ipAddress == null || n.Message.Contains(ipAddress))
+                               && n.CreatedAt >= fiveMinutesAgo);
+
+                if (recentExists) continue;
+
+                var severityIcon = severity switch
+                {
+                    "Critical" => "🔴",
+                    "High"     => "🟠",
+                    "Medium"   => "🟡",
+                    _          => "🔵"
+                };
+
+                var ipInfo = string.IsNullOrWhiteSpace(ipAddress) ? "" : $" from IP {ipAddress}";
+                _db.Notifications.Add(new Notification
+                {
+                    Title = $"{severityIcon} [{severity}] Security Alert: {action}",
+                    Message = $"{details}{ipInfo}",
+                    UserId = admin.Id,
+                    Role = "SuperAdmin",
+                    Type = "SecurityThreat"
+                });
+            }
+
+            await _db.SaveChangesAsync();
+        }
+
         /// <summary>Budget threshold reached (e.g. 80%) → notify CEO.</summary>
         public async Task NotifyBudgetThreshold(string category, decimal allocated, decimal spent, int percentUsed)
         {

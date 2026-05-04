@@ -1,0 +1,100 @@
+@page
+@model ProfileModel
+@{
+    ViewData["Title"] = "Profile";
+    ViewData["ActivePage"] = ManageNavPages.Profile;
+}
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    var isSuccess = Model.StatusMessage.StartsWith("✅") || Model.StatusMessage.Contains("updated");
+    <div style="background:@(isSuccess ? "#f0fdf4" : "#fef2f2");border:1px solid @(isSuccess ? "#86efac" : "#fca5a5");border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+        <i class="bi @(isSuccess ? "bi-check-circle-fill" : "bi-exclamation-circle-fill")"
+           style="color:@(isSuccess ? "#16a34a" : "#dc2626");font-size:1.1rem;flex-shrink:0;"></i>
+        <span style="font-size:0.9rem;color:@(isSuccess ? "#166534" : "#991b1b");font-weight:500;">@Model.StatusMessage</span>
+    </div>
+}
+
+<div style="display:flex;align-items:flex-start;gap:32px;flex-wrap:wrap;">
+
+    <!-- ── Avatar column ── -->
+    <div style="flex-shrink:0;text-align:center;min-width:120px;">
+        @if (!string.IsNullOrEmpty(Model.ProfileImagePath))
+        {
+            <img src="@Model.ProfileImagePath" alt="Profile"
+                 style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #e9eef6;box-shadow:0 4px 12px rgba(0,0,0,0.1);" />
+        }
+        else
+        {
+            <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#1a6bb5,#2ec4b6);display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 4px 12px rgba(26,107,181,0.25);">
+                <span style="color:white;font-size:2.2rem;font-weight:700;">
+                    @((Model.Input.FullName ?? Model.UserEmail ?? "U")[0].ToString().ToUpper())
+                </span>
+            </div>
+        }
+        <div style="margin-top:10px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg,rgba(26,107,181,.1),rgba(46,196,182,.1));color:#1a6bb5;border:1px solid rgba(26,107,181,.15);">
+                <i class="bi bi-shield-check"></i> @Model.UserRole
+            </span>
+        </div>
+    </div>
+
+    <!-- ── Form column ── -->
+    <div style="flex:1;min-width:260px;">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small" role="alert"></div>
+
+            <!-- Email (read-only) -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:0.78rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px;">
+                    Email Address
+                </label>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#475569;font-size:0.9rem;">
+                    <i class="bi bi-envelope" style="color:#94a3b8;"></i>
+                    @Model.UserEmail
+                    <span style="margin-left:auto;font-size:0.72rem;background:#e0f2fe;color:#0284c7;padding:2px 8px;border-radius:10px;font-weight:600;">Verified</span>
+                </div>
+            </div>
+
+            <!-- Full Name -->
+            <div style="margin-bottom:16px;">
+                <label asp-for="Input.FullName"
+                       style="font-size:0.78rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px;"></label>
+                <div style="position:relative;">
+                    <input asp-for="Input.FullName"
+                           class="form-control"
+                           placeholder="Your full name"
+                           style="padding:10px 40px 10px 14px;border-color:#e2e8f0;border-radius:8px;" />
+                    <i class="bi bi-person" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
+                </div>
+                <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+            </div>
+
+            <!-- Contact Number -->
+            <div style="margin-bottom:24px;">
+                <label asp-for="Input.ContactNumber"
+                       style="font-size:0.78rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px;"></label>
+                <div style="position:relative;">
+                    <input asp-for="Input.ContactNumber"
+                           class="form-control"
+                           placeholder="e.g. +63 912 345 6789"
+                           inputmode="tel"
+                           style="padding:10px 40px 10px 14px;border-color:#e2e8f0;border-radius:8px;" />
+                    <i class="bi bi-phone" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
+                </div>
+                <span asp-validation-for="Input.ContactNumber" class="text-danger small"></span>
+                <div style="font-size:0.78rem;color:#94a3b8;margin-top:5px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Required for OTP verification when changing your password.
+                </div>
+            </div>
+
+            <button type="submit"
+                    style="background:linear-gradient(135deg,#1a6bb5 0%,#2ec4b6 100%);color:white;border:none;border-radius:8px;padding:11px 28px;font-weight:600;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+                <i class="bi bi-check-circle"></i> Save Profile
+            </button>
+        </form>
+    </div>
+
+</div>

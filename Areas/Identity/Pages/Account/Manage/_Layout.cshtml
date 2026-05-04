@@ -1,39 +1,217 @@
 @{
-    Layout = "/Views/Shared/_Layout.cshtml";
+    // Use a completely blank outer layout — no sidebar, no Home/Privacy nav
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CEMS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body style="background:#f1f5f9; min-height:100vh;">
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <!-- Back to App Button -->
-            <div class="mb-3">
-                <a href="/" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+<style>
+    /* ── Reset the global sidebar body offset — this page has no sidebar ── */
+    body {
+        padding-left: 0 !important;
+        padding-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    /* ── Page wrapper ── */
+    .manage-page {
+        min-height: 100vh;
+        padding: 24px 12px 48px;
+        background: #f1f5f9;
+    }
+
+    .manage-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 4px;
+    }
+
+    /* ── Back button ── */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 7px 14px;
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: all 0.15s;
+    }
+    .back-btn:hover { background: #f8fafc; color: #0288d1; border-color: #0288d1; }
+
+    /* ── Hero header ── */
+    .manage-hero {
+        background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+        border-radius: 16px 16px 0 0;
+        padding: 28px 36px;
+        color: white;
+    }
+    .manage-hero h2 { font-size: 1.45rem; font-weight: 700; margin: 0 0 4px; }
+    .manage-hero p  { font-size: 0.88rem; color: rgba(255,255,255,0.85); margin: 0; }
+
+    /* ── Tab nav ── */
+    .manage-tabs {
+        background: white;
+        border-bottom: 1px solid #e9eef6;
+        padding: 0 28px;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .manage-tabs::-webkit-scrollbar { display: none; }
+
+    .manage-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 14px 18px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        transition: all 0.15s;
+    }
+    .manage-tab:hover { color: #0288d1; }
+    .manage-tab.active {
+        color: #1a6bb5;
+        font-weight: 600;
+        border-bottom-color: #1a6bb5;
+    }
+    .manage-tab i { font-size: 1rem; }
+
+    /* ── Content body ── */
+    .manage-body {
+        background: white;
+        border-radius: 0 0 16px 16px;
+        padding: 36px;
+        border: 1px solid #e9eef6;
+        border-top: none;
+    }
+
+    /* ── Privacy policy section ── */
+    .privacy-section {
+        margin-top: 32px;
+        padding: 24px;
+        background: #f8fafc;
+        border: 1px solid #e9eef6;
+        border-radius: 12px;
+    }
+    .privacy-section h5 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .privacy-section p {
+        font-size: 0.83rem;
+        color: #64748b;
+        line-height: 1.75;
+        margin: 0;
+    }
+    .privacy-section a { color: #0288d1; text-decoration: none; }
+    .privacy-section a:hover { text-decoration: underline; }
+</style>
+
+<div class="manage-page">
+    <div class="manage-container">
+
+        <!-- Back button -->
+        <a href="/" class="back-btn">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <!-- Card -->
+        <div style="border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(15,23,36,0.09);">
+
+            <!-- Hero -->
+            <div class="manage-hero">
+                <h2><i class="bi bi-person-circle me-2"></i>Account Settings</h2>
+                <p>Manage your profile, password, two-factor authentication, and account data.</p>
+            </div>
+
+            <!-- Tabs -->
+            @inject SignInManager<IdentityUser> SignInManager
+            @{
+                var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+            }
+            <nav class="manage-tabs">
+                <a class="manage-tab @ManageNavPages.ProfileNavClass(ViewContext)"
+                   asp-page="./Profile">
+                    <i class="bi bi-person-circle"></i> Profile
                 </a>
-            </div>
-            
-            <div class="card shadow border-0" style="border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(15,23,36,0.08) !important;">
-                <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%); border: none;">
-                    <h2 class="h4 mb-0 fw-bold"><i class="bi bi-shield-check me-2"></i>Security Settings</h2>
-                    <p class="mb-0 small mt-1" style="color: rgba(255,255,255,0.85);">Manage your password and two-factor authentication.</p>
+                <a class="manage-tab @ManageNavPages.ChangePasswordNavClass(ViewContext)"
+                   asp-page="./ChangePassword">
+                    <i class="bi bi-key"></i> Password
+                </a>
+                <a class="manage-tab @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)"
+                   asp-page="./TwoFactorAuthentication">
+                    <i class="bi bi-shield-lock"></i> Two-Factor Auth
+                </a>
+                @if (hasExternalLogins)
+                {
+                    <a class="manage-tab @ManageNavPages.ExternalLoginsNavClass(ViewContext)"
+                       asp-page="./ExternalLogins">
+                        <i class="bi bi-box-arrow-in-right"></i> External Logins
+                    </a>
+                }
+                <a class="manage-tab @ManageNavPages.PersonalDataNavClass(ViewContext)"
+                   asp-page="./PersonalData">
+                    <i class="bi bi-download"></i> Personal Data
+                </a>
+            </nav>
+
+            <!-- Body -->
+            <div class="manage-body">
+                @RenderBody()
+
+                <!-- Privacy Policy -->
+                <div class="privacy-section">
+                    <h5>
+                        <i class="bi bi-lock-fill" style="color:#0288d1;"></i>
+                        Privacy &amp; Data Policy
+                    </h5>
+                    <p>
+                        CEMS is committed to protecting your personal information. The data collected on this platform —
+                        including your name, contact details, and expense records — is used solely for the purpose of
+                        managing courier expense operations within your organisation. We do not sell, share, or disclose
+                        your personal data to third parties without your explicit consent, except where required by law.
+                        <br><br>
+                        All data is stored securely using industry-standard encryption (AES-256) and access is restricted
+                        to authorised personnel only. You have the right to request a copy of your personal data, correct
+                        inaccuracies, or request deletion at any time by contacting your system administrator.
+                        <br><br>
+                        By using this system you agree to our data handling practices as described above.
+                        For questions or concerns, please reach out to your organisation's data officer.
+                    </p>
                 </div>
-                <div class="card-body p-0">
-                    <div class="row g-0">
-                        <div class="col-md-3 col-lg-3 border-end" style="background: #fafbfc; min-height: 400px;">
-                            <div class="p-3">
-                                <partial name="_ManageNav" />
-                            </div>
-                        </div>
-                        <div class="col-md-9 col-lg-9 p-4 p-md-5 bg-white">
-                            @RenderBody()
-                        </div>
-                    </div>
-                </div>
             </div>
+
         </div>
     </div>
 </div>
 
-@section Scripts {
-    @RenderSection("Scripts", required: false)
-}
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

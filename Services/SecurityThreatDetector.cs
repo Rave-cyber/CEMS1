@@ -1,5 +1,6 @@
 using CEMS.Data;
 using CEMS.Models;
+using CEMS.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace CEMS.Services
@@ -36,6 +37,7 @@ namespace CEMS.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly ILogger<SecurityThreatDetector> _logger;
+        private readonly NotificationService _notificationService;
 
         // Thresholds
         private const int BruteForceWindowMinutes = 10;
@@ -43,10 +45,11 @@ namespace CEMS.Services
         private const int CredentialStuffingThreshold = 10; // 10 different emails from same IP in 10 min
         private const int AccountEnumerationThreshold = 8;  // 8 failures on non-existent accounts in 10 min
 
-        public SecurityThreatDetector(ApplicationDbContext db, ILogger<SecurityThreatDetector> logger)
+        public SecurityThreatDetector(ApplicationDbContext db, ILogger<SecurityThreatDetector> logger, NotificationService notificationService)
         {
             _db = db;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task AnalyzeLoginAsync(string email, string? ipAddress, string? userAgent, bool succeeded)
@@ -166,7 +169,7 @@ namespace CEMS.Services
                 LockedAccountsLast1h = await _db.AuditLogs
                     .CountAsync(l => l.Action == "FailedLoginAttempt"
                                   && l.Timestamp >= oneHourAgo
-                                  && l.Details!.Contains("3/3")),
+                                  && l.Details!.Contains("5/5")),
                 SuspiciousIpCount = threats
                     .Where(t => t.IpAddress != null)
                     .Select(t => t.IpAddress)
@@ -215,6 +218,16 @@ namespace CEMS.Services
             });
 
             await _db.SaveChangesAsync();
+
+            // Notify all SuperAdmins about the detected threat
+            try
+            {
+                await _notificationService.NotifySecurityThreat(action, severity, details, ipAddress);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send security threat notification for action {Action}", action);
+            }
         }
     }
 }

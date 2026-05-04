@@ -117,6 +117,11 @@
                 <span>Audit Logs</span>
                 <i class="bi bi-check-circle nav-indicator"></i>
             </a>
+            <a class="nav-link driver-nav-link @(active("SuperAdmin","SecurityLogs"))" asp-controller="SuperAdmin" asp-action="SecurityLogs">
+                <i class="bi bi-shield-lock"></i>
+                <span>Security Logs</span>
+                <i class="bi bi-check-circle nav-indicator"></i>
+            </a>
             <a class="nav-link driver-nav-link @(active("SuperAdmin","FuelPrices"))" asp-controller="SuperAdmin" asp-action="FuelPrices">
                 <i class="bi bi-fuel-pump"></i>
                 <span>Fuel Prices</span>
@@ -155,6 +160,11 @@
                 <a class="nav-link driver-nav-link @(active("SuperAdmin","AuditLogs"))" asp-controller="SuperAdmin" asp-action="AuditLogs">
                     <i class="bi bi-journal-text"></i>
                     <span>Audit Logs</span>
+                    <i class="bi bi-check-circle nav-indicator"></i>
+                </a>
+                <a class="nav-link driver-nav-link @(active("SuperAdmin","SecurityLogs"))" asp-controller="SuperAdmin" asp-action="SecurityLogs">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Security Logs</span>
                     <i class="bi bi-check-circle nav-indicator"></i>
                 </a>
                 <a class="nav-link driver-nav-link @(active("SuperAdmin","FuelPrices"))" asp-controller="SuperAdmin" asp-action="FuelPrices">

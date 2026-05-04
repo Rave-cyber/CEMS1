@@ -354,6 +354,7 @@
                             <th>Role</th>
                             <th>Performed By</th>
                             <th>Target User</th>
+                            <th>IP Address</th>
                             <th>Record</th>
                             <th>Details</th>
                             <th>Timestamp</th>
@@ -402,6 +403,16 @@
                                     else if (log.TargetUserId != null)
                                     {
                                         <span style="color: #94a3b8;">@log.TargetUserId</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: #94a3b8;">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(log.IpAddress))
+                                    {
+                                        <code style="font-size:0.78rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;color:#475569;">@log.IpAddress</code>
                                     }
                                     else
                                     {

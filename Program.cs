@@ -111,6 +111,7 @@ builder.Services.AddScoped<ISecurityThreatDetector, SecurityThreatDetector>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddHttpClient<ISmsService, SemaphoreSmsService>();
 var gmailConfigured = !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret) && !string.IsNullOrWhiteSpace(googleRedirectUri);
 if (gmailConfigured)
 {
