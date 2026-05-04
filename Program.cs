@@ -8,6 +8,20 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
+static bool HasConfiguredValue(IConfiguration configuration, params string[] keys)
+{
+    foreach (var key in keys)
+    {
+        var value = configuration[key];
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
@@ -46,18 +60,28 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // ✅ Configure Google OAuth as External Login Provider
-var googleClientId = builder.Configuration["Gmail:ClientId"];
-var googleClientSecret = builder.Configuration["Gmail:ClientSecret"];
-if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+var googleClientId = builder.Configuration["Gmail:ClientId"] ?? builder.Configuration["Gmail__ClientId"];
+var googleClientSecret = builder.Configuration["Gmail:ClientSecret"] ?? builder.Configuration["Gmail__ClientSecret"];
+var googleRedirectUri = builder.Configuration["Gmail:RedirectUri"] ?? builder.Configuration["Gmail__RedirectUri"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret) && !string.IsNullOrWhiteSpace(googleRedirectUri))
 {
     builder.Services.AddAuthentication()
         .AddGoogle(options =>
         {
             options.ClientId = googleClientId;
             options.ClientSecret = googleClientSecret;
+            if (Uri.TryCreate(googleRedirectUri, UriKind.Absolute, out var parsedRedirectUri))
+            {
+                options.CallbackPath = new PathString(parsedRedirectUri.AbsolutePath);
+            }
+            else
+            {
+                options.CallbackPath = new PathString("/profile/gmail-callback");
+                Console.WriteLine("WARNING: Gmail:RedirectUri is not an absolute URL. Falling back to /profile/gmail-callback for the Google callback path.");
+            }
             options.Scope.Add("email");
             options.ClaimActions.MapJsonKey("urn:google:profile", "picture");
-            
+
             // Force Google to show the account selection screen
             options.Events.OnRedirectToAuthorizationEndpoint = context =>
             {
@@ -65,6 +89,10 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
                 return Task.CompletedTask;
             };
         });
+}
+else
+{
+    Console.WriteLine("WARNING: Gmail OAuth is not configured. Gmail connect will be disabled until Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri are set.");
 }
 
 // ✅ Configure Authorization
@@ -83,9 +111,29 @@ builder.Services.AddScoped<ISecurityThreatDetector, SecurityThreatDetector>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<IGmailService, GmailService>();
-builder.Services.AddHttpClient<IGmailService, GmailService>();
-builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+var gmailConfigured = !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret) && !string.IsNullOrWhiteSpace(googleRedirectUri);
+if (gmailConfigured)
+{
+    builder.Services.AddScoped<IGmailService, GmailService>();
+    builder.Services.AddHttpClient<IGmailService, GmailService>();
+}
+else
+{
+    builder.Services.AddSingleton<IGmailService, NoopGmailService>();
+}
+
+// Register encryption service: real implementation only if keys present, otherwise fallback to Noop.
+var encKey = builder.Configuration["Encryption:Key"] ?? builder.Configuration["Encryption__Key"];
+var encIv = builder.Configuration["Encryption:IV"] ?? builder.Configuration["Encryption__IV"];
+if (!string.IsNullOrWhiteSpace(encKey) && !string.IsNullOrWhiteSpace(encIv))
+{
+    builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+}
+else
+{
+    builder.Services.AddSingleton<IEncryptionService, NoopEncryptionService>();
+    Console.WriteLine("WARNING: Encryption keys not found in configuration. Using NoopEncryptionService (no encryption). Set Encryption__Key and Encryption__IV as environment variables to enable AES-256.");
+}
 builder.Services.AddScoped<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddSession(options =>
 {
@@ -96,21 +144,33 @@ builder.Services.AddSession(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// AWS S3 configuration – when BucketName is set, use real S3; otherwise fall back to DB storage
+// AWS S3 configuration – use real S3 only when BucketName and credentials are present.
 var awsBucket = builder.Configuration["AWS:BucketName"] ?? "";
-if (!string.IsNullOrWhiteSpace(awsBucket))
+var awsAccessKey = builder.Configuration["AWS:AccessKey"] ?? builder.Configuration["AWS__AccessKey"] ?? "";
+var awsSecretKey = builder.Configuration["AWS:SecretKey"] ?? builder.Configuration["AWS__SecretKey"] ?? "";
+
+if (!string.IsNullOrWhiteSpace(awsBucket) && !string.IsNullOrWhiteSpace(awsAccessKey) && !string.IsNullOrWhiteSpace(awsSecretKey))
 {
     builder.Services.AddSingleton<IS3StorageService, S3StorageService>();
 }
 else
 {
     builder.Services.AddSingleton<IS3StorageService, NoopS3StorageService>();
-    Console.WriteLine("WARNING: AWS:BucketName is not configured. Receipts will be stored in the database. Set AWS:BucketName, AWS:AccessKey and AWS:SecretKey to enable S3 storage.");
+    if (string.IsNullOrWhiteSpace(awsBucket))
+    {
+        Console.WriteLine("WARNING: AWS:BucketName is not configured. Receipts will be stored in the database. Set AWS:BucketName to enable S3 storage.");
+    }
+    else
+    {
+        Console.WriteLine("WARNING: AWS:BucketName is set but AWS credentials are missing or incomplete. Using database storage to avoid AWS SDK credential errors.");
+        Console.WriteLine("To enable S3, provide credentials as environment variables: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY (or app config: AWS:AccessKey and AWS:SecretKey).");
+        Console.WriteLine("If you rely on IAM roles or web identity, ensure the host environment is configured correctly (absolute webIdentityTokenFile path, valid role).\n");
+    }
 }
 
 // PayMongo configuration
 builder.Services.Configure<PayMongoOptions>(builder.Configuration.GetSection("PayMongo"));
-var paymongoKey = builder.Configuration["PayMongo:SecretKey"] ?? "";
+var paymongoKey = builder.Configuration["PayMongo:SecretKey"] ?? builder.Configuration["PayMongo__SecretKey"] ?? "";
 
 // If a PayMongo secret is configured, register the real HTTP client. Otherwise register a noop
 // implementation that surfaces a clear error when used. This prevents confusing errors like
@@ -132,6 +192,15 @@ else
     Console.WriteLine("WARNING: PayMongo:SecretKey is not configured. Payments are disabled. Set PayMongo:SecretKey in configuration or use environment variable PayMongo__SecretKey.");
 }
 
+var gmailReady = HasConfiguredValue(builder.Configuration, "Gmail:ClientId", "Gmail__ClientId")
+    && HasConfiguredValue(builder.Configuration, "Gmail:ClientSecret", "Gmail__ClientSecret")
+    && HasConfiguredValue(builder.Configuration, "Gmail:RedirectUri", "Gmail__RedirectUri");
+var paymongoReady = HasConfiguredValue(builder.Configuration, "PayMongo:SecretKey", "PayMongo__SecretKey");
+var encryptionReady = HasConfiguredValue(builder.Configuration, "Encryption:Key", "Encryption__Key")
+    && HasConfiguredValue(builder.Configuration, "Encryption:IV", "Encryption__IV");
+
+Console.WriteLine($"Production config status => Gmail: {(gmailReady ? "ready" : "missing")}, PayMongo: {(paymongoReady ? "ready" : "missing")}, Encryption: {(encryptionReady ? "ready" : "missing")}");
+
 var app = builder.Build();
 
 // ✅ APPLY MIGRATIONS ON STARTUP (replaces EnsureCreated)
@@ -144,7 +213,16 @@ using (var scope = app.Services.CreateScope())
         // Apply any pending EF Core migrations. This ensures the database schema
         // is up-to-date with the model (creates tables like Expenses when missing).
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
+        try
+        {
+            context.Database.Migrate();
+        }
+        catch (Exception migEx)
+        {
+            Console.WriteLine($"Migration warning (non-fatal): {migEx.Message}");
+            // If Migrate() fails due to a schema conflict, try to continue anyway.
+            // The app may still work if the schema is already up-to-date.
+        }
 
         // Get UserManager and RoleManager
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();

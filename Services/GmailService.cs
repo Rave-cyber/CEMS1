@@ -11,6 +11,8 @@ namespace CEMS.Services
         private readonly string _clientSecret;
         private readonly string _redirectUri;
 
+        public bool IsConfigured => true;
+
         public GmailService(IConfiguration configuration, HttpClient httpClient)
         {
             _configuration = configuration;

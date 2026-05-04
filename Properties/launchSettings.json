@@ -34,5 +34,14 @@
       "applicationUrl": "http://localhost:62449/",
       "sslPort": 44334
     }
+  },
+  "CEMS": {
+    "commandName": "Project",
+    "launchBrowser": true,
+    "environmentVariables": {
+      "ASPNETCORE_ENVIRONMENT": "Development"
+    },
+    "dotnetRunMessages": true,
+    "applicationUrl": "https://localhost:44334;http://localhost:62449"
   }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using CEMS.Models;
 using CEMS.Services;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace CEMS.Data
 {
@@ -141,37 +142,35 @@ namespace CEMS.Data
                 .HasPrecision(18, 2);
 
             // ✅ AES-256 ENCRYPTION FOR SENSITIVE FIELDS
-            // Encrypt OAuth refresh tokens using AES-256
-            var encryptionService = new EncryptionService(
-                new ConfigurationBuilder()
-                    .AddUserSecrets<ApplicationDbContext>()
-                    .AddEnvironmentVariables()
-                    .Build()
-            );
+            // Try to obtain an `IEncryptionService` from the DbContext's internal service provider.
+            var encryptionService = this.GetService<IEncryptionService>();
 
-            builder.Entity<DriverProfile>()
-                .Property(p => p.GmailRefreshToken)
-                .HasConversion(
-                    v => v == null ? null : encryptionService.Encrypt(v),
-                    v => v == null ? null : encryptionService.Decrypt(v));
+            if (encryptionService != null)
+            {
+                builder.Entity<DriverProfile>()
+                    .Property(p => p.GmailRefreshToken)
+                    .HasConversion(
+                        v => v == null ? null : encryptionService.Encrypt(v),
+                        v => v == null ? null : encryptionService.Decrypt(v));
 
-            builder.Entity<CEOProfile>()
-                .Property(p => p.GmailRefreshToken)
-                .HasConversion(
-                    v => v == null ? null : encryptionService.Encrypt(v),
-                    v => v == null ? null : encryptionService.Decrypt(v));
+                builder.Entity<CEOProfile>()
+                    .Property(p => p.GmailRefreshToken)
+                    .HasConversion(
+                        v => v == null ? null : encryptionService.Encrypt(v),
+                        v => v == null ? null : encryptionService.Decrypt(v));
 
-            builder.Entity<ManagerProfile>()
-                .Property(p => p.GmailRefreshToken)
-                .HasConversion(
-                    v => v == null ? null : encryptionService.Encrypt(v),
-                    v => v == null ? null : encryptionService.Decrypt(v));
+                builder.Entity<ManagerProfile>()
+                    .Property(p => p.GmailRefreshToken)
+                    .HasConversion(
+                        v => v == null ? null : encryptionService.Encrypt(v),
+                        v => v == null ? null : encryptionService.Decrypt(v));
 
-            builder.Entity<FinanceProfile>()
-                .Property(p => p.GmailRefreshToken)
-                .HasConversion(
-                    v => v == null ? null : encryptionService.Encrypt(v),
-                    v => v == null ? null : encryptionService.Decrypt(v));
+                builder.Entity<FinanceProfile>()
+                    .Property(p => p.GmailRefreshToken)
+                    .HasConversion(
+                        v => v == null ? null : encryptionService.Encrypt(v),
+                        v => v == null ? null : encryptionService.Decrypt(v));
+            }
         }
     }
 }

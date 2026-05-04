@@ -8,6 +8,7 @@ obj/
 
 # Local configuration and secrets (do NOT commit)
 appsettings.Development.json
+appsettings.Production.json
 appsettings.Local.json
 secrets.json
 *.usersecrets

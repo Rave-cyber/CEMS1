@@ -1,10 +1,299 @@
 ﻿@page
 @model AccessDeniedModel
 @{
-    ViewData["Title"] = "Access denied";
+    ViewData["Title"] = "Access Denied";
 }
 
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">You do not have access to this resource.</p>
-</header>
+<div class="access-denied-wrapper">
+    <div class="access-denied-card">
+
+        <!-- Icon -->
+        <div class="ad-icon-ring">
+            <div class="ad-icon-inner">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+        </div>
+
+        <!-- Code badge -->
+        <span class="ad-code-badge">403</span>
+
+        <!-- Heading -->
+        <h1 class="ad-title">Access Denied</h1>
+        <p class="ad-subtitle">
+            You don't have permission to view this page.<br>
+            If you think this is a mistake, contact your administrator.
+        </p>
+
+        <!-- Divider -->
+        <div class="ad-divider"></div>
+
+        <!-- Info row -->
+        <div class="ad-info-row">
+            <div class="ad-info-item">
+                <i class="bi bi-person-badge"></i>
+                <span>Signed in as <strong>@(User.Identity?.Name ?? "Unknown")</strong></span>
+            </div>
+            <div class="ad-info-item">
+                <i class="bi bi-clock"></i>
+                <span>@DateTime.Now.ToString("MMM dd, yyyy · h:mm tt")</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ad-actions">
+            <a asp-area="" asp-controller="Home" asp-action="GoToDashboard" class="btn ad-btn-primary">
+                <i class="bi bi-speedometer2"></i>
+                Go to My Dashboard
+            </a>
+            <a href="javascript:history.back()" class="btn ad-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Go Back
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* ── Wrapper ── */
+    .access-denied-wrapper {
+        min-height: calc(100vh - 120px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+        background: linear-gradient(160deg, #f0f6ff 0%, #f7fffe 50%, #f0f6ff 100%);
+    }
+
+    body.dark-mode .access-denied-wrapper {
+        background: linear-gradient(160deg, #1a1f2e 0%, #1e2a3a 50%, #1a1f2e 100%);
+    }
+
+    /* ── Card ── */
+    .access-denied-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(26, 107, 181, 0.10), 0 2px 8px rgba(0,0,0,0.04);
+        padding: 52px 48px 44px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        border: 1px solid rgba(26, 107, 181, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .access-denied-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #1a6bb5 0%, #2ec4b6 100%);
+        border-radius: 20px 20px 0 0;
+    }
+
+    body.dark-mode .access-denied-card {
+        background: #242d3d;
+        border-color: #3a4452;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    }
+
+    /* ── Icon ring ── */
+    .ad-icon-ring {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(26,107,181,0.10) 0%, rgba(46,196,182,0.10) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        border: 2px solid rgba(26,107,181,0.12);
+    }
+
+    .ad-icon-inner {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(26,107,181,0.30);
+    }
+
+    .ad-icon-inner i {
+        font-size: 1.75rem;
+        color: #ffffff;
+    }
+
+    /* ── 403 badge ── */
+    .ad-code-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, rgba(26,107,181,0.10) 0%, rgba(46,196,182,0.10) 100%);
+        color: #1a6bb5;
+        border: 1px solid rgba(26,107,181,0.18);
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        padding: 3px 12px;
+        margin-bottom: 14px;
+        text-transform: uppercase;
+    }
+
+    body.dark-mode .ad-code-badge {
+        background: rgba(46,196,182,0.12);
+        color: #2ec4b6;
+        border-color: rgba(46,196,182,0.25);
+    }
+
+    /* ── Text ── */
+    .ad-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #0f1724;
+        margin-bottom: 10px;
+        letter-spacing: -0.3px;
+    }
+
+    body.dark-mode .ad-title {
+        color: #e8eef5;
+    }
+
+    .ad-subtitle {
+        font-size: 0.92rem;
+        color: #64748b;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+
+    body.dark-mode .ad-subtitle {
+        color: #a0aec0;
+    }
+
+    /* ── Divider ── */
+    .ad-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(26,107,181,0.12), transparent);
+        margin: 28px 0;
+    }
+
+    body.dark-mode .ad-divider {
+        background: linear-gradient(90deg, transparent, rgba(46,196,182,0.15), transparent);
+    }
+
+    /* ── Info row ── */
+    .ad-info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 28px;
+    }
+
+    .ad-info-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.83rem;
+        color: #64748b;
+    }
+
+    .ad-info-item i {
+        font-size: 0.9rem;
+        color: #1a6bb5;
+        flex-shrink: 0;
+    }
+
+    .ad-info-item strong {
+        color: #0f1724;
+        font-weight: 600;
+    }
+
+    body.dark-mode .ad-info-item {
+        color: #a0aec0;
+    }
+
+    body.dark-mode .ad-info-item i {
+        color: #2ec4b6;
+    }
+
+    body.dark-mode .ad-info-item strong {
+        color: #e8eef5;
+    }
+
+    /* ── Buttons ── */
+    .ad-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .ad-btn-primary {
+        background: linear-gradient(135deg, #1a6bb5 0%, #2ec4b6 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 10px;
+        padding: 11px 24px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 10px rgba(26,107,181,0.25);
+        text-decoration: none;
+    }
+
+    .ad-btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(26,107,181,0.35);
+        color: #ffffff !important;
+    }
+
+    .ad-btn-secondary {
+        background: transparent;
+        color: #64748b !important;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .ad-btn-secondary:hover {
+        background: rgba(26,107,181,0.05);
+        border-color: rgba(26,107,181,0.25);
+        color: #1a6bb5 !important;
+    }
+
+    body.dark-mode .ad-btn-secondary {
+        border-color: #3a4452;
+        color: #a0aec0 !important;
+    }
+
+    body.dark-mode .ad-btn-secondary:hover {
+        background: rgba(46,196,182,0.08);
+        border-color: rgba(46,196,182,0.3);
+        color: #2ec4b6 !important;
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 480px) {
+        .access-denied-card {
+            padding: 40px 24px 36px;
+        }
+
+        .ad-title {
+            font-size: 1.4rem;
+        }
+    }
+</style>

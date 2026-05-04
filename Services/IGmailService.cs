@@ -2,6 +2,7 @@ namespace CEMS.Services
 {
     public interface IGmailService
     {
+        bool IsConfigured { get; }
         string GetAuthorizationUrl(string state);
         Task<GmailTokenResponse?> ExchangeCodeForToken(string code);
         Task<bool> RefreshAccessToken(string refreshToken);

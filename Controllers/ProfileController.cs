@@ -271,6 +271,12 @@ namespace CEMS.Controllers
         [HttpGet("/profile/gmail-connect")]
         public IActionResult GmailConnect()
         {
+            if (!_gmailService.IsConfigured)
+            {
+                TempData["Error"] = "Gmail integration is not configured on this server. Set Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri to enable connect.";
+                return RedirectToAction("GetProfile");
+            }
+
             var state = Guid.NewGuid().ToString();
             HttpContext.Session.SetString("gmail_state", state);
 
@@ -282,6 +288,12 @@ namespace CEMS.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GmailCallback(string code, string state)
         {
+            if (!_gmailService.IsConfigured)
+            {
+                TempData["Error"] = "Gmail integration is not configured on this server.";
+                return RedirectToAction("GetProfile");
+            }
+
             if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
                 return RedirectToAction("GetProfile");
 

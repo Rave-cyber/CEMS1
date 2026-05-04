@@ -5,6 +5,7 @@ namespace CEMS.Services
 {
     public interface IPayMongoService
     {
+        bool IsConfigured { get; }
 
         Task<(string SessionId, string CheckoutUrl)> CreateCheckoutSessionAsync(
             decimal amount, string description, int reportId, string successUrl, string cancelUrl,
@@ -18,6 +19,8 @@ namespace CEMS.Services
     {
         private readonly HttpClient _http;
         private readonly ILogger<PayMongoService> _logger;
+
+        public bool IsConfigured => true;
 
         public PayMongoService(HttpClient http, ILogger<PayMongoService> logger)
         {

@@ -11,8 +11,11 @@ namespace CEMS.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "MonthlyBudgets");
+            // Drop MonthlyBudgets only if it exists (safe for environments where it was never created)
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID('dbo.MonthlyBudgets', 'U') IS NOT NULL
+                    DROP TABLE [dbo].[MonthlyBudgets];
+            ");
 
             migrationBuilder.AddColumn<string>(
                 name: "GmailAddress",

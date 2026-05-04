@@ -699,6 +699,12 @@ namespace CEMS.Controllers
 
             try
             {
+                if (!_payMongo.IsConfigured)
+                {
+                    TempData["Error"] = "Payments are disabled because PayMongo is not configured on this server. Set PayMongo__SecretKey to enable checkout.";
+                    return RedirectToAction("Reimbursements");
+                }
+
                 // Build success/cancel URLs that point back to this app
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
                 var successUrl = $"{baseUrl}/Finance/PaymentSuccess?reportId={id}";
