@@ -175,57 +175,21 @@ namespace CEMS.Areas.Identity.Pages.Account
                     }
                 }
 
-                // If no account exists, we ask the user to create an account.
-                ReturnUrl = returnUrl;
-                ProviderDisplayName = info.ProviderDisplayName;
-                if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
-                {
-                    Input = new InputModel
-                    {
-                        Email = info.Principal.FindFirstValue(ClaimTypes.Email)
-                    };
-                }
-                return Page();
+                // No matching account found — block access, do not allow account creation
+                ErrorMessage = "Your Google account (@email) is not linked to any CEMS account. Please log in with your email and password, then connect your Google account from your profile settings."
+                    .Replace("@email", email ?? "unknown");
+                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
             }
         }
 
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
         {
             returnUrl = returnUrl ?? Url.Content("~/");
-            // Get the information about the user from the external login provider
-            var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null)
-            {
-                ErrorMessage = "Error loading external login information during confirmation.";
-                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
-            }
 
-            if (ModelState.IsValid)
-            {
-                var user = new IdentityUser { UserName = Input.Email, Email = Input.Email, EmailConfirmed = true };
-                var result = await _userManager.CreateAsync(user);
-                if (result.Succeeded)
-                {
-                    // Assign default role as "Manager" for new users
-                    await _userManager.AddToRoleAsync(user, "Manager");
-
-                    result = await _userManager.AddLoginAsync(user, info);
-                    if (result.Succeeded)
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
-                        _logger.LogInformation("User created an account using {Name} provider.", info.LoginProvider);
-                        return await RedirectToDashboardAsync(user.Email, returnUrl);
-                    }
-                }
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
-
-            ProviderDisplayName = info.ProviderDisplayName;
-            ReturnUrl = returnUrl;
-            return Page();
+            // Block account creation via Google for unrecognized emails.
+            // Only users whose Gmail is already linked to a profile can sign in with Google.
+            ErrorMessage = "Your Google account is not linked to any CEMS account. Please log in with your email and password, then connect your Google account from your profile settings.";
+            return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
         }
 
         private async Task<IActionResult> RedirectToDashboardAsync(string email, string defaultUrl)
@@ -234,19 +198,20 @@ namespace CEMS.Areas.Identity.Pages.Account
             if (user != null)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                
-                // Self-heal: If user has no roles, assign them to Manager
+
+                // If user has no roles, they are not a valid CEMS account — deny access
                 if (roles.Count == 0)
                 {
-                    await _userManager.AddToRoleAsync(user, "Manager");
-                    roles.Add("Manager");
+                    await _signInManager.SignOutAsync();
+                    ErrorMessage = "Your account does not have an assigned role. Please contact your administrator.";
+                    return RedirectToPage("./Login");
                 }
-                
+
                 if (roles.Contains("SuperAdmin")) return RedirectToAction("Dashboard", "SuperAdmin");
-                if (roles.Contains("CEO")) return RedirectToAction("Dashboard", "CEO");
-                if (roles.Contains("Manager")) return RedirectToAction("Dashboard", "Manager");
-                if (roles.Contains("Driver")) return RedirectToAction("Dashboard", "Driver");
-                if (roles.Contains("Finance")) return RedirectToAction("Dashboard", "Finance");
+                if (roles.Contains("CEO"))        return RedirectToAction("Dashboard", "CEO");
+                if (roles.Contains("Manager"))    return RedirectToAction("Dashboard", "Manager");
+                if (roles.Contains("Driver"))     return RedirectToAction("Dashboard", "Driver");
+                if (roles.Contains("Finance"))    return RedirectToAction("Dashboard", "Finance");
             }
             return LocalRedirect(defaultUrl);
         }

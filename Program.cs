@@ -2,6 +2,7 @@ using CEMS.Data;
 using CEMS.Models;
 using CEMS.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -28,6 +29,13 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
     // Max 20 rows × 5 MB per receipt = 100 MB, plus overhead for form fields
     options.MultipartBodyLengthLimit = 110 * 1024 * 1024; // 110 MB total request
     options.ValueLengthLimit = 4 * 1024 * 1024;
+});
+
+// Fix SameSite cookie policy so OAuth correlation cookies survive the Google redirect
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+    options.Secure = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
 });
 builder.WebHost.ConfigureKestrel(k =>
 {
@@ -62,37 +70,41 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 // ✅ Configure Google OAuth as External Login Provider
 var googleClientId = builder.Configuration["Gmail:ClientId"] ?? builder.Configuration["Gmail__ClientId"];
 var googleClientSecret = builder.Configuration["Gmail:ClientSecret"] ?? builder.Configuration["Gmail__ClientSecret"];
-var googleRedirectUri = builder.Configuration["Gmail:RedirectUri"] ?? builder.Configuration["Gmail__RedirectUri"];
-if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret) && !string.IsNullOrWhiteSpace(googleRedirectUri))
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
 {
     builder.Services.AddAuthentication()
         .AddGoogle(options =>
         {
-            options.ClientId = googleClientId;
+            options.ClientId     = googleClientId;
             options.ClientSecret = googleClientSecret;
-            if (Uri.TryCreate(googleRedirectUri, UriKind.Absolute, out var parsedRedirectUri))
-            {
-                options.CallbackPath = new PathString(parsedRedirectUri.AbsolutePath);
-            }
-            else
-            {
-                options.CallbackPath = new PathString("/profile/gmail-callback");
-                Console.WriteLine("WARNING: Gmail:RedirectUri is not an absolute URL. Falling back to /profile/gmail-callback for the Google callback path.");
-            }
+
+            // Standard Identity callback path — must match what's registered in Google Cloud Console
+            options.CallbackPath = new PathString("/signin-google");
+
             options.Scope.Add("email");
             options.ClaimActions.MapJsonKey("urn:google:profile", "picture");
+
+            // Fix: correlation cookie must be Lax (not None/Secure) so it survives the
+            // redirect back from Google, especially over HTTP in development.
+            options.CorrelationCookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+            options.CorrelationCookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+            options.CorrelationCookie.HttpOnly = true;
 
             // Force Google to show the account selection screen
             options.Events.OnRedirectToAuthorizationEndpoint = context =>
             {
-                context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
+                var uriBuilder = new UriBuilder(context.RedirectUri);
+                var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+                query["prompt"] = "select_account";
+                uriBuilder.Query = query.ToString();
+                context.Response.Redirect(uriBuilder.ToString());
                 return Task.CompletedTask;
             };
         });
 }
 else
 {
-    Console.WriteLine("WARNING: Gmail OAuth is not configured. Gmail connect will be disabled until Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri are set.");
+    Console.WriteLine("WARNING: Gmail OAuth is not configured. Set Gmail__ClientId and Gmail__ClientSecret to enable Google login.");
 }
 
 // ✅ Configure Authorization
@@ -112,7 +124,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<FuelPriceService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddHttpClient<ISmsService, SemaphoreSmsService>();
-var gmailConfigured = !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret) && !string.IsNullOrWhiteSpace(googleRedirectUri);
+var gmailConfigured = !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret);
 if (gmailConfigured)
 {
     builder.Services.AddScoped<IGmailService, GmailService>();
@@ -447,8 +459,9 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting();
+app.UseCookiePolicy();
 app.UseSession();
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();

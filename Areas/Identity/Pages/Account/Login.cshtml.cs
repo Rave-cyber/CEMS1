@@ -125,6 +125,26 @@ namespace CEMS.Areas.Identity.Pages.Account
 
             if (IsLockedOut)
             {
+                // Still log the blocked attempt with IP so it appears in security logs
+                try
+                {
+                    var blockedUser = await _userManager.FindByEmailAsync(Input.Email);
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        Action = "FailedLoginAttempt",
+                        Module = "Security",
+                        PerformedByUserId = null,
+                        TargetUserId = blockedUser?.Id,
+                        IpAddress = ipAddress,
+                        UserAgent = userAgent,
+                        Details = $"[High] Login blocked — account locked out for {Input.Email} (IP: {ipAddress}). Remaining lockout: {RemainingSeconds}s"
+                    });
+                    await _db.SaveChangesAsync();
+                }
+                catch { }
+
+                try { await _threatDetector.AnalyzeLoginAsync(Input.Email, ipAddress, userAgent, succeeded: false); } catch { }
+
                 ModelState.AddModelError(string.Empty, $"Too many failed attempts. Please wait {RemainingSeconds} seconds before trying again.");
                 return Page();
             }
@@ -144,12 +164,12 @@ namespace CEMS.Areas.Identity.Pages.Account
                         _db.AuditLogs.Add(new AuditLog
                         {
                             Action = "UserLogin",
-                            Module = "Auth",
+                            Module = "Security",
                             Role = userRoles.FirstOrDefault(),
                             PerformedByUserId = user?.Id,
                             IpAddress = ipAddress,
                             UserAgent = userAgent,
-                            Details = $"Login successful for {Input.Email}"
+                            Details = $"Login successful for {Input.Email} from IP {ipAddress}"
                         });
                         await _db.SaveChangesAsync();
                     }
@@ -197,15 +217,21 @@ namespace CEMS.Areas.Identity.Pages.Account
                     try
                     {
                         var failedUser = await _userManager.FindByEmailAsync(Input.Email);
+                        IsLockedOut = await _attemptTracker.IsLockedOutAsync(Input.Email);
+
+                        // Build severity — Critical on lockout, High on attempt 4, Medium otherwise
+                        var severity = IsLockedOut ? "Critical" : (FailedAttempts >= 4 ? "High" : "Medium");
+                        var lockoutNote = IsLockedOut ? $" — ACCOUNT LOCKED for {RemainingSeconds}s" : $" ({5 - FailedAttempts} attempts remaining)";
+
                         _db.AuditLogs.Add(new AuditLog
                         {
                             Action = "FailedLoginAttempt",
-                            Module = "Auth",
+                            Module = "Security",
                             PerformedByUserId = null,
                             TargetUserId = failedUser?.Id,
                             IpAddress = ipAddress,
                             UserAgent = userAgent,
-                            Details = $"Failed login attempt for {Input.Email} (Attempt {FailedAttempts}/5)"
+                            Details = $"[{severity}] Failed login attempt {FailedAttempts}/5 for {Input.Email}{lockoutNote} from IP {ipAddress}"
                         });
                         await _db.SaveChangesAsync();
                     }
