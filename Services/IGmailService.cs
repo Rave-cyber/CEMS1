@@ -6,6 +6,7 @@ namespace CEMS.Services
         string GetAuthorizationUrl(string state);
         Task<GmailTokenResponse?> ExchangeCodeForToken(string code);
         Task<bool> RefreshAccessToken(string refreshToken);
+        Task<string?> GetUserEmailAsync(string accessToken);
         Task<string?> GetAccessToken(string refreshToken);
         Task<bool> SendEmailAsync(string refreshToken, string toEmail, string subject, string htmlBody);
         Task<(bool Success, string Error)> SendEmailWithErrorAsync(string refreshToken, string toEmail, string subject, string htmlBody);

@@ -115,6 +115,38 @@ namespace CEMS.Services
             }
         }
 
+        public async Task<string?> GetUserEmailAsync(string accessToken)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(accessToken))
+                    return null;
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v2/userinfo");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("GetUserEmailAsync failed: {Status} {Body}", response.StatusCode, body);
+                    return null;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var document = JsonDocument.Parse(json);
+
+                return document.RootElement.TryGetProperty("email", out var emailElement)
+                    ? emailElement.GetString()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetUserEmailAsync exception");
+                return null;
+            }
+        }
+
         public async Task<string?> GetAccessToken(string refreshToken)
         {
             try

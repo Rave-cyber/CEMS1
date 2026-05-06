@@ -318,9 +318,16 @@ namespace CEMS.Controllers
             if (string.IsNullOrEmpty(tokenToStore))
                 return RedirectToAction("GoToDashboard", "Home");
 
+            var connectedGmail = tokenResponse.AccessToken != null
+                ? await _gmailService.GetUserEmailAsync(tokenResponse.AccessToken)
+                : null;
+
+            if (string.IsNullOrWhiteSpace(connectedGmail))
+                connectedGmail = user.Email;
+
             var roles = await _userManager.GetRolesAsync(user);
             var role = roles.FirstOrDefault() ?? "User";
-            var gmailEmail = user.Email ?? "Unknown";
+            var gmailEmail = connectedGmail ?? "Unknown";
 
             switch (role)
             {

@@ -22,6 +22,11 @@ namespace CEMS.Services
             throw new InvalidOperationException("Gmail integration is not configured. Set Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri in production.");
         }
 
+        public Task<string?> GetUserEmailAsync(string accessToken)
+        {
+            throw new InvalidOperationException("Gmail integration is not configured. Set Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri in production.");
+        }
+
         public Task<string?> GetAccessToken(string refreshToken)
         {
             throw new InvalidOperationException("Gmail integration is not configured. Set Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri in production.");
