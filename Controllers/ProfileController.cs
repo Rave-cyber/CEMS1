@@ -309,6 +309,15 @@ namespace CEMS.Controllers
             if (tokenResponse == null)
                 return RedirectToAction("GoToDashboard", "Home");
 
+            // Use refresh token if available, otherwise fall back to access token
+            // (access token expires in 1h but is better than nothing)
+            var tokenToStore = !string.IsNullOrEmpty(tokenResponse.RefreshToken)
+                ? tokenResponse.RefreshToken
+                : tokenResponse.AccessToken;
+
+            if (string.IsNullOrEmpty(tokenToStore))
+                return RedirectToAction("GoToDashboard", "Home");
+
             var roles = await _userManager.GetRolesAsync(user);
             var role = roles.FirstOrDefault() ?? "User";
             var gmailEmail = user.Email ?? "Unknown";
@@ -320,7 +329,7 @@ namespace CEMS.Controllers
                     if (ceo != null)
                     {
                         ceo.GmailAddress = gmailEmail;
-                        ceo.GmailRefreshToken = tokenResponse.RefreshToken;
+                        ceo.GmailRefreshToken = tokenToStore;
                     }
                     break;
                 case "Manager":
@@ -328,7 +337,7 @@ namespace CEMS.Controllers
                     if (mgr != null)
                     {
                         mgr.GmailAddress = gmailEmail;
-                        mgr.GmailRefreshToken = tokenResponse.RefreshToken;
+                        mgr.GmailRefreshToken = tokenToStore;
                     }
                     break;
                 case "Finance":
@@ -336,7 +345,7 @@ namespace CEMS.Controllers
                     if (fin != null)
                     {
                         fin.GmailAddress = gmailEmail;
-                        fin.GmailRefreshToken = tokenResponse.RefreshToken;
+                        fin.GmailRefreshToken = tokenToStore;
                     }
                     break;
                 case "Driver":
@@ -344,7 +353,7 @@ namespace CEMS.Controllers
                     if (drv != null)
                     {
                         drv.GmailAddress = gmailEmail;
-                        drv.GmailRefreshToken = tokenResponse.RefreshToken;
+                        drv.GmailRefreshToken = tokenToStore;
                     }
                     break;
             }

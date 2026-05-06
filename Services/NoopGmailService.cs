@@ -26,5 +26,13 @@ namespace CEMS.Services
         {
             throw new InvalidOperationException("Gmail integration is not configured. Set Gmail__ClientId, Gmail__ClientSecret, and Gmail__RedirectUri in production.");
         }
+
+        public Task<bool> SendEmailAsync(string refreshToken, string toEmail, string subject, string htmlBody)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<(bool Success, string Error)> SendEmailWithErrorAsync(string refreshToken, string toEmail, string subject, string htmlBody)
+            => Task.FromResult<(bool, string)>((false, "Gmail not configured."));
     }
 }

@@ -135,10 +135,12 @@
 <div class="manage-page">
     <div class="manage-container">
 
-        <!-- Back button -->
-        <a href="/" class="back-btn">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
-        </a>
+        <!-- Back button — top right -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+            <a href="/Identity/Account/Manage/Profile" id="backToDashboardBtn" class="back-btn">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
 
         <!-- Card -->
         <div style="border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(15,23,36,0.09);">
@@ -212,6 +214,27 @@
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Set Back to Dashboard link based on user role
+    (function () {
+        fetch('/Profile/GetProfile')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                var urls = {
+                    'SuperAdmin': '/SuperAdmin/Dashboard',
+                    'CEO':        '/CEO/Dashboard',
+                    'Manager':    '/Manager/Dashboard',
+                    'Driver':     '/Driver/Dashboard',
+                    'Finance':    '/Finance/Dashboard'
+                };
+                var url = urls[data.role] || '/Home/GoToDashboard';
+                var btn = document.getElementById('backToDashboardBtn');
+                if (btn) btn.href = url;
+            })
+            .catch(function () {});
+    })();
+</script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

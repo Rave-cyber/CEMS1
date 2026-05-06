@@ -424,6 +424,12 @@
                             @(Model.IsLockedOut ? "disabled" : "")>
                         Sign In
                     </button>
+                    <div style="text-align:center;margin-top:14px;">
+                        <a href="/Identity/Account/ForgotPassword"
+                           style="font-size:.88rem;color:#1a6bb5;text-decoration:none;font-weight:500;">
+                            <i class="fas fa-key" style="margin-right:4px;"></i>Forgot your password?
+                        </a>
+                    </div>
                 </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
