@@ -33,7 +33,7 @@ namespace CEMS.Controllers
         {
             // Set default date range if not provided (first of current month to today)
             if (!start.HasValue) start = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-            if (!end.HasValue) end = DateTime.UtcNow.Date;
+            end ??= DateTime.UtcNow.Date;
 
             ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
             ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
@@ -62,7 +62,7 @@ namespace CEMS.Controllers
             var pendingWithUsers = pendingReports.Select(r => new PendingExpenseReportDto
             {
                 Report = r,
-                UserName = (r.UserId != null && users.ContainsKey(r.UserId)) ? users[r.UserId] : "Unknown"
+                UserName = (r.UserId != null && users.ContainsKey(r.UserId)) ? users[r.UserId] ?? "Unknown" : "Unknown"
             }).ToList();
 
             ViewBag.PendingReports = pendingWithUsers;
@@ -143,7 +143,7 @@ namespace CEMS.Controllers
             var userIds = reports.Select(r => r.UserId).Where(id => id != null).Distinct().ToList();
             var usersDict = await _userManager.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
 
-            var dto = reports.Select(r => new PendingExpenseReportDto { Report = r, UserName = r.UserId != null && usersDict.ContainsKey(r.UserId) ? usersDict[r.UserId] : "Unknown" }).ToList();
+            var dto = reports.Select(r => new PendingExpenseReportDto { Report = r, UserName = r.UserId != null && usersDict.ContainsKey(r.UserId) ? usersDict[r.UserId] ?? "Unknown" : "Unknown" }).ToList();
             ViewBag.Reports = dto;
             return View("Reports/Index");
         }
@@ -256,7 +256,7 @@ namespace CEMS.Controllers
         {
             // Set default date range if not provided (first of current month to today)
             if (!start.HasValue) start = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-            if (!end.HasValue) end = DateTime.UtcNow.Date;
+            end ??= DateTime.UtcNow.Date;
 
             var totalPending = await _db.ExpenseReports
                 .Where(r => r.Status == ReportStatus.Submitted && r.SubmissionDate >= start && r.SubmissionDate <= end.Value.AddDays(1))
@@ -316,7 +316,7 @@ namespace CEMS.Controllers
 
             var topSubmitterIds = topSubmittersRaw.Select(t => t.UserId).Where(id => id != null).Distinct().ToList();
             var topSubmitterUsers = await _userManager.Users.Where(u => topSubmitterIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
-            var topSubmitters = topSubmittersRaw.Select(t => new { username = t.UserId != null && topSubmitterUsers.ContainsKey(t.UserId) ? topSubmitterUsers[t.UserId] : "Unknown", count = t.Count }).ToList();
+            var topSubmitters = topSubmittersRaw.Select(t => new { username = t.UserId != null && topSubmitterUsers.ContainsKey(t.UserId) ? topSubmitterUsers[t.UserId] ?? "Unknown" : "Unknown", count = t.Count }).ToList();
 
             // Top reimbursed drivers (by total reimbursed amount)
             var topReimbursedRaw = await _db.ExpenseReports
@@ -329,7 +329,7 @@ namespace CEMS.Controllers
 
             var topReimbursedIds = topReimbursedRaw.Select(t => t.UserId).Where(id => id != null).Distinct().ToList();
             var topReimbursedUsers = await _userManager.Users.Where(u => topReimbursedIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.UserName);
-            var topReimbursed = topReimbursedRaw.Select(t => new { username = t.UserId != null && topReimbursedUsers.ContainsKey(t.UserId) ? topReimbursedUsers[t.UserId] : "Unknown", total = t.Total }).ToList();
+            var topReimbursed = topReimbursedRaw.Select(t => new { username = t.UserId != null && topReimbursedUsers.ContainsKey(t.UserId) ? topReimbursedUsers[t.UserId] ?? "Unknown" : "Unknown", total = t.Total }).ToList();
 
             // Report status counts
             var submittedCount = await _db.ExpenseReports
@@ -429,7 +429,7 @@ namespace CEMS.Controllers
         {
             // Set default date range if not provided
             if (!start.HasValue) start = DateTime.UtcNow.AddMonths(-1).Date;
-            if (!end.HasValue) end = DateTime.UtcNow.Date;
+            end ??= DateTime.UtcNow.Date;
 
             ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
             ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
@@ -482,7 +482,7 @@ namespace CEMS.Controllers
                 list.Add(new OverBudgetReportDto 
                 { 
                     Report = r, 
-                    UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] : "Unknown", 
+                    UserName = r.UserId != null && users.ContainsKey(r.UserId) ? users[r.UserId] ?? "Unknown" : "Unknown", 
                     ExceedAmount = exceed 
                 });
             }

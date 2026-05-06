@@ -76,6 +76,7 @@ namespace CEMS.Controllers
         public async Task<IActionResult> Metrics(DateTime? start, DateTime? end)
         {
             var userId = _userManager.GetUserId(User);
+            end ??= DateTime.UtcNow.Date;
 
             var reportsQuery = _db.ExpenseReports.Where(r => r.UserId == userId);
             if (start.HasValue)

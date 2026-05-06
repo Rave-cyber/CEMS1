@@ -47,6 +47,9 @@ namespace CEMS.Areas.Identity.Pages.Account.Manage
             [Required]
             [StringLength(100, MinimumLength = 6,
                 ErrorMessage = "The {0} must be at least {2} and at most {1} characters.")]
+            [RegularExpression(
+                @"^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]).{6,}$",
+                ErrorMessage = "Password must be at least 6 characters and include at least one number and one special character (e.g. @, !, #).")]
             [DataType(DataType.Password)]
             [Display(Name = "New password")]
             public string NewPassword { get; set; } = "";

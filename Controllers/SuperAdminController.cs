@@ -40,7 +40,7 @@ namespace CEMS.Controllers
         {
             // Set default date range if not provided (first of current month to today)
             if (!start.HasValue) start = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
-            if (!end.HasValue) end = DateTime.UtcNow.Date;
+            end ??= DateTime.UtcNow.Date;
 
             ViewBag.FilterStart = start?.ToString("yyyy-MM-dd");
             ViewBag.FilterEnd = end?.ToString("yyyy-MM-dd");
@@ -350,7 +350,7 @@ namespace CEMS.Controllers
                     _db.CEOProfiles.Add(new CEOProfile 
                     { 
                         UserId = user.Id, 
-                        FullName = fullName?.Trim(), 
+                        FullName = fullName?.Trim() ?? string.Empty, 
                         Street = normalizedStreet, 
                         Barangay = normalizedBarangay, 
                         City = normalizedCity, 
@@ -365,7 +365,7 @@ namespace CEMS.Controllers
                     _db.ManagerProfiles.Add(new ManagerProfile 
                     { 
                         UserId = user.Id, 
-                        FullName = fullName?.Trim(), 
+                        FullName = fullName?.Trim() ?? string.Empty, 
                         Department = "General", 
                         Street = normalizedStreet, 
                         Barangay = normalizedBarangay, 
@@ -382,7 +382,7 @@ namespace CEMS.Controllers
                     _db.FinanceProfiles.Add(new FinanceProfile 
                     { 
                         UserId = user.Id, 
-                        FullName = fullName?.Trim(), 
+                        FullName = fullName?.Trim() ?? string.Empty, 
                         Department = "Accounting", 
                         Street = normalizedStreet, 
                         Barangay = normalizedBarangay, 
@@ -399,7 +399,7 @@ namespace CEMS.Controllers
                     _db.DriverProfiles.Add(new DriverProfile 
                     { 
                         UserId = user.Id, 
-                        FullName = fullName?.Trim(), 
+                        FullName = fullName?.Trim() ?? string.Empty, 
                         Street = normalizedStreet, 
                         Barangay = normalizedBarangay, 
                         City = normalizedCity, 
@@ -487,7 +487,7 @@ namespace CEMS.Controllers
 
             if (ceo != null)
             {
-                ceo.FullName = model.FullName;
+                ceo.FullName = model.FullName ?? string.Empty;
                 ceo.Street = model.Street;
                 ceo.Barangay = model.Barangay;
                 ceo.City = model.City;
@@ -498,7 +498,7 @@ namespace CEMS.Controllers
             }
             if (manager != null)
             {
-                manager.FullName = model.FullName;
+                manager.FullName = model.FullName ?? string.Empty;
                 manager.Street = model.Street;
                 manager.Barangay = model.Barangay;
                 manager.City = model.City;
@@ -509,7 +509,7 @@ namespace CEMS.Controllers
             }
             if (finance != null)
             {
-                finance.FullName = model.FullName;
+                finance.FullName = model.FullName ?? string.Empty;
                 finance.Street = model.Street;
                 finance.Barangay = model.Barangay;
                 finance.City = model.City;
@@ -520,7 +520,7 @@ namespace CEMS.Controllers
             }
             if (driver != null)
             {
-                driver.FullName = model.FullName;
+                driver.FullName = model.FullName ?? string.Empty;
                 driver.Street = model.Street;
                 driver.Barangay = model.Barangay;
                 driver.City = model.City;
@@ -714,7 +714,7 @@ namespace CEMS.Controllers
             if (!string.IsNullOrWhiteSpace(user))
             {
                 var matchingUserIds = await _userManager.Users
-                    .Where(u => u.Email!.Contains(user) || u.UserName!.Contains(user))
+                    .Where(u => u.Email!.Contains(user ?? string.Empty) || u.UserName!.Contains(user ?? string.Empty))
                     .Select(u => u.Id)
                     .ToListAsync();
                 q = q.Where(l => matchingUserIds.Contains(l.PerformedByUserId));
@@ -787,7 +787,7 @@ namespace CEMS.Controllers
             if (!string.IsNullOrWhiteSpace(user))
             {
                 var matchingUserIds = await _userManager.Users
-                    .Where(u => u.Email!.Contains(user) || u.UserName!.Contains(user))
+                    .Where(u => u.Email!.Contains(user ?? string.Empty) || u.UserName!.Contains(user ?? string.Empty))
                     .Select(u => u.Id)
                     .ToListAsync();
                 q = q.Where(l => matchingUserIds.Contains(l.PerformedByUserId));
@@ -1057,10 +1057,8 @@ namespace CEMS.Controllers
         {
             try
             {
-                var backupData = await _backupService.CreateFullBackupAsync();
-                var fileName = $"CEMS_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
-                
-                // Log backup creation
+                var (backupData, fileName) = await _backupService.CreateFullBackupAsync();
+
                 _db.AuditLogs.Add(new AuditLog
                 {
                     Action = "CreateBackup",
@@ -1071,7 +1069,7 @@ namespace CEMS.Controllers
                 });
                 await _db.SaveChangesAsync();
 
-                TempData["Success"] = $"✅ Backup created successfully! File size: {backupData.Length / 1024 / 1024} MB";
+                TempData["Success"] = $"✅ Backup created and saved to server. You can also download it below.";
                 return File(backupData, "application/zip", fileName);
             }
             catch (Exception ex)
@@ -1079,6 +1077,47 @@ namespace CEMS.Controllers
                 TempData["Error"] = $"❌ Backup failed: {ex.Message}";
                 return RedirectToAction("BackupRecovery");
             }
+        }
+
+        // Restore from a backup stored on the server (no upload needed)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreStoredBackup(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                TempData["Error"] = "No backup file specified.";
+                return RedirectToAction("BackupRecovery");
+            }
+
+            try
+            {
+                var (success, message) = await _backupService.RestoreBackupByNameAsync(fileName);
+
+                if (success)
+                {
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        Action = "RestoreBackup",
+                        Module = "Database",
+                        Role = "SuperAdmin",
+                        PerformedByUserId = _userManager.GetUserId(User),
+                        Details = $"Restored database from stored backup: {fileName}"
+                    });
+                    await _db.SaveChangesAsync();
+                    TempData["Success"] = message;
+                }
+                else
+                {
+                    TempData["Error"] = message;
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"❌ Restore failed: {ex.Message}";
+            }
+
+            return RedirectToAction("BackupRecovery");
         }
 
         [HttpPost]
@@ -1099,28 +1138,25 @@ namespace CEMS.Controllers
 
             try
             {
-                using (var stream = backupFile.OpenReadStream())
-                {
-                    var (success, message) = await _backupService.RestoreBackupAsync(stream);
-                    
-                    if (success)
-                    {
-                        _db.AuditLogs.Add(new AuditLog
-                        {
-                            Action = "RestoreBackup",
-                            Module = "Database",
-                            Role = "SuperAdmin",
-                            PerformedByUserId = _userManager.GetUserId(User),
-                            Details = $"Restored database from backup: {backupFile.FileName} ({backupFile.Length / 1024 / 1024} MB)"
-                        });
-                        await _db.SaveChangesAsync();
+                using var stream = backupFile.OpenReadStream();
+                var (success, message) = await _backupService.RestoreBackupAsync(stream);
 
-                        TempData["Success"] = $"✅ {message}";
-                    }
-                    else
+                if (success)
+                {
+                    _db.AuditLogs.Add(new AuditLog
                     {
-                        TempData["Error"] = $"❌ {message}";
-                    }
+                        Action = "RestoreBackup",
+                        Module = "Database",
+                        Role = "SuperAdmin",
+                        PerformedByUserId = _userManager.GetUserId(User),
+                        Details = $"Restored database from uploaded backup: {backupFile.FileName}"
+                    });
+                    await _db.SaveChangesAsync();
+                    TempData["Success"] = message;
+                }
+                else
+                {
+                    TempData["Error"] = message;
                 }
             }
             catch (Exception ex)

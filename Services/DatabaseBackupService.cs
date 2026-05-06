@@ -12,19 +12,31 @@ using Microsoft.AspNetCore.Identity;
 
 namespace CEMS.Services
 {
+    public class BackupFileInfo
+    {
+        public string FileName    { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public long   SizeBytes   { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     public interface IDatabaseBackupService
     {
-        Task<byte[]> CreateFullBackupAsync();
+        Task<(byte[] Data, string FileName)> CreateFullBackupAsync();
         Task<(bool Success, string Message)> RestoreBackupAsync(Stream backupStream);
-        Task<List<string>> GetBackupHistoryAsync();
+        Task<(bool Success, string Message)> RestoreBackupByNameAsync(string fileName);
+        Task<List<BackupFileInfo>> GetBackupHistoryAsync();
     }
 
     public class DatabaseBackupService : IDatabaseBackupService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext      _context;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<DatabaseBackupService> _logger;
+
+        private static readonly string BackupFolder =
+            Path.Combine(Directory.GetCurrentDirectory(), "Backups");
 
         public DatabaseBackupService(
             ApplicationDbContext context,
@@ -32,312 +44,429 @@ namespace CEMS.Services
             RoleManager<IdentityRole> roleManager,
             ILogger<DatabaseBackupService> logger)
         {
-            _context = context;
+            _context     = context;
             _userManager = userManager;
             _roleManager = roleManager;
-            _logger = logger;
+            _logger      = logger;
         }
 
-        /// <summary>
-        /// Creates a complete backup of all database tables as a ZIP file containing JSON files
-        /// </summary>
-        public async Task<byte[]> CreateFullBackupAsync()
+        // ─────────────────────────────────────────────────────────────────────────
+        // CREATE BACKUP — saves to disk AND returns bytes for download
+        // ─────────────────────────────────────────────────────────────────────────
+        public async Task<(byte[] Data, string FileName)> CreateFullBackupAsync()
         {
+            _logger.LogInformation("Starting full database backup at {DateTime}", DateTime.UtcNow);
+
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+            {
+                var users          = await _context.Users.ToListAsync();
+                var roles          = await _context.Roles.ToListAsync();
+                var userRoles      = await _context.UserRoles.ToListAsync();
+                var expenses       = await _context.Expenses.ToListAsync();
+                var expenseReports = await _context.ExpenseReports.ToListAsync();
+                var expenseItems   = await _context.ExpenseItems.ToListAsync();
+                var approvals      = await _context.Approvals.ToListAsync();
+                var budgets        = await _context.Budgets.ToListAsync();
+                var ceoProfiles    = await _context.CEOProfiles.ToListAsync();
+                var mgrProfiles    = await _context.ManagerProfiles.ToListAsync();
+                var finProfiles    = await _context.FinanceProfiles.ToListAsync();
+                var drvProfiles    = await _context.DriverProfiles.ToListAsync();
+                var payments       = await _context.ReimbursementPayments.ToListAsync();
+                var auditLogs      = await _context.AuditLogs.ToListAsync();
+                var notifications  = await _context.Notifications.ToListAsync();
+                var fuelPrices     = await _context.FuelPrices.ToListAsync();
+
+                AddToArchive(archive, "AspNetUsers.json",           users);
+                AddToArchive(archive, "AspNetRoles.json",           roles);
+                AddToArchive(archive, "AspNetUserRoles.json",       userRoles);
+                AddToArchive(archive, "Expenses.json",              expenses);
+                AddToArchive(archive, "ExpenseReports.json",        expenseReports);
+                AddToArchive(archive, "ExpenseItems.json",          expenseItems);
+                AddToArchive(archive, "Approvals.json",             approvals);
+                AddToArchive(archive, "Budgets.json",               budgets);
+                AddToArchive(archive, "CEOProfiles.json",           ceoProfiles);
+                AddToArchive(archive, "ManagerProfiles.json",       mgrProfiles);
+                AddToArchive(archive, "FinanceProfiles.json",       finProfiles);
+                AddToArchive(archive, "DriverProfiles.json",        drvProfiles);
+                AddToArchive(archive, "ReimbursementPayments.json", payments);
+                AddToArchive(archive, "AuditLogs.json",             auditLogs);
+                AddToArchive(archive, "Notifications.json",         notifications);
+                AddToArchive(archive, "FuelPrices.json",            fuelPrices);
+                AddToArchive(archive, "BACKUP_METADATA.json", new
+                {
+                    BackupDate    = DateTime.UtcNow,
+                    BackupVersion = "2.0",
+                    Counts = new
+                    {
+                        Users = users.Count, Roles = roles.Count,
+                        Expenses = expenses.Count, ExpenseReports = expenseReports.Count,
+                        Budgets = budgets.Count, FuelPrices = fuelPrices.Count
+                    }
+                });
+            }
+
+            var bytes    = ms.ToArray();
+            var fileName = $"CEMS_Backup_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+
+            // Save to disk so it can be restored later without re-uploading
             try
             {
-                _logger.LogInformation("🔄 Starting full database backup at {DateTime}", DateTime.UtcNow);
-
-                using (var memoryStream = new MemoryStream())
-                {
-                    using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-                    {
-                        // 1. Backup AspNetUsers (Identity)
-                        var users = await _context.Users.ToListAsync();
-                        AddToArchive(archive, "AspNetUsers.json", users);
-
-                        // 2. Backup AspNetRoles (Identity)
-                        var roles = await _context.Roles.ToListAsync();
-                        AddToArchive(archive, "AspNetRoles.json", roles);
-
-                        // 3. Backup AspNetUserRoles
-                        var userRoles = await _context.UserRoles.ToListAsync();
-                        AddToArchive(archive, "AspNetUserRoles.json", userRoles);
-
-                        // 4. Backup Expenses
-                        var expenses = await _context.Expenses.ToListAsync();
-                        AddToArchive(archive, "Expenses.json", expenses);
-
-                        // 5. Backup ExpenseReports
-                        var expenseReports = await _context.ExpenseReports.ToListAsync();
-                        AddToArchive(archive, "ExpenseReports.json", expenseReports);
-
-                        // 6. Backup ExpenseItems
-                        var expenseItems = await _context.ExpenseItems.ToListAsync();
-                        AddToArchive(archive, "ExpenseItems.json", expenseItems);
-
-                        // 7. Backup Approvals
-                        var approvals = await _context.Approvals.ToListAsync();
-                        AddToArchive(archive, "Approvals.json", approvals);
-
-                        // 8. Backup Budgets
-                        var budgets = await _context.Budgets.ToListAsync();
-                        AddToArchive(archive, "Budgets.json", budgets);
-
-                        // 9. Backup CEOProfiles
-                        var ceoProfiles = await _context.CEOProfiles.ToListAsync();
-                        AddToArchive(archive, "CEOProfiles.json", ceoProfiles);
-
-                        // 10. Backup ManagerProfiles
-                        var managerProfiles = await _context.ManagerProfiles.ToListAsync();
-                        AddToArchive(archive, "ManagerProfiles.json", managerProfiles);
-
-                        // 11. Backup FinanceProfiles
-                        var financeProfiles = await _context.FinanceProfiles.ToListAsync();
-                        AddToArchive(archive, "FinanceProfiles.json", financeProfiles);
-
-                        // 12. Backup DriverProfiles
-                        var driverProfiles = await _context.DriverProfiles.ToListAsync();
-                        AddToArchive(archive, "DriverProfiles.json", driverProfiles);
-
-                        // 13. Backup ReimbursementPayments
-                        var payments = await _context.ReimbursementPayments.ToListAsync();
-                        AddToArchive(archive, "ReimbursementPayments.json", payments);
-
-                        // 14. Backup AuditLogs
-                        var auditLogs = await _context.AuditLogs.ToListAsync();
-                        AddToArchive(archive, "AuditLogs.json", auditLogs);
-
-                        // 15. Backup Notifications
-                        var notifications = await _context.Notifications.ToListAsync();
-                        AddToArchive(archive, "Notifications.json", notifications);
-
-                        // 16. Backup FuelPrices
-                        var fuelPrices = await _context.FuelPrices.ToListAsync();
-                        AddToArchive(archive, "FuelPrices.json", fuelPrices);
-
-                        // 17. Create backup metadata
-                        var metadata = new
-                        {
-                            BackupDate = DateTime.UtcNow,
-                            BackupVersion = "1.0",
-                            Tables = new
-                            {
-                                Users = users.Count,
-                                Roles = roles.Count,
-                                UserRoles = userRoles.Count,
-                                Expenses = expenses.Count,
-                                ExpenseReports = expenseReports.Count,
-                                ExpenseItems = expenseItems.Count,
-                                Approvals = approvals.Count,
-                                Budgets = budgets.Count,
-                                CEOProfiles = ceoProfiles.Count,
-                                ManagerProfiles = managerProfiles.Count,
-                                FinanceProfiles = financeProfiles.Count,
-                                DriverProfiles = driverProfiles.Count,
-                                ReimbursementPayments = payments.Count,
-                                AuditLogs = auditLogs.Count,
-                                Notifications = notifications.Count,
-                                FuelPrices = fuelPrices.Count
-                            },
-                            TotalRecords = users.Count + roles.Count + userRoles.Count + expenses.Count +
-                                          expenseReports.Count + expenseItems.Count + approvals.Count +
-                                          budgets.Count + ceoProfiles.Count + managerProfiles.Count +
-                                          financeProfiles.Count + driverProfiles.Count + payments.Count +
-                                          auditLogs.Count + notifications.Count + fuelPrices.Count
-                        };
-                        AddToArchive(archive, "BACKUP_METADATA.json", metadata);
-                    }
-
-                    _logger.LogInformation("✅ Backup completed successfully at {DateTime}", DateTime.UtcNow);
-                    return memoryStream.ToArray();
-                }
+                Directory.CreateDirectory(BackupFolder);
+                var filePath = Path.Combine(BackupFolder, fileName);
+                await File.WriteAllBytesAsync(filePath, bytes);
+                _logger.LogInformation("Backup saved to disk: {Path}", filePath);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Backup failed: {Message}", ex.Message);
-                throw;
+                _logger.LogWarning("Could not save backup to disk: {Err}", ex.Message);
             }
+
+            _logger.LogInformation("Backup completed: {File}", fileName);
+            return (bytes, fileName);
         }
 
-        /// <summary>
-        /// Restores database from a backup ZIP file
-        /// </summary>
+        // ─────────────────────────────────────────────────────────────────────────
+        // RESTORE FROM STREAM (upload)
+        // ─────────────────────────────────────────────────────────────────────────
         public async Task<(bool Success, string Message)> RestoreBackupAsync(Stream backupStream)
         {
             try
             {
-                _logger.LogInformation("🔄 Starting database restore at {DateTime}", DateTime.UtcNow);
-
-                using (var archive = new ZipArchive(backupStream, ZipArchiveMode.Read))
-                {
-                    // Verify backup metadata exists
-                    var metadataEntry = archive.GetEntry("BACKUP_METADATA.json");
-                    if (metadataEntry == null)
-                    {
-                        return (false, "Invalid backup file: Missing BACKUP_METADATA.json");
-                    }
-
-                    using (var metadataStream = metadataEntry.Open())
-                    using (var reader = new StreamReader(metadataStream))
-                    {
-                        var metadataJson = await reader.ReadToEndAsync();
-                        _logger.LogInformation("📋 Backup metadata: {Metadata}", metadataJson);
-                    }
-
-                    // Clear existing data (in reverse order of foreign key dependencies)
-                    await ClearDataAsync();
-
-                    // Restore tables
-                    var restoredTables = new List<string>();
-
-                    // Restore in correct order (respecting foreign keys)
-                    if (RestoreTable(archive, "AspNetRoles.json", "AspNetRoles")) restoredTables.Add("AspNetRoles");
-                    if (RestoreTable(archive, "AspNetUsers.json", "AspNetUsers")) restoredTables.Add("AspNetUsers");
-                    if (RestoreTable(archive, "AspNetUserRoles.json", "AspNetUserRoles")) restoredTables.Add("AspNetUserRoles");
-
-                    // Profile tables
-                    if (RestoreTable(archive, "CEOProfiles.json", "CEOProfiles")) restoredTables.Add("CEOProfiles");
-                    if (RestoreTable(archive, "ManagerProfiles.json", "ManagerProfiles")) restoredTables.Add("ManagerProfiles");
-                    if (RestoreTable(archive, "FinanceProfiles.json", "FinanceProfiles")) restoredTables.Add("FinanceProfiles");
-                    if (RestoreTable(archive, "DriverProfiles.json", "DriverProfiles")) restoredTables.Add("DriverProfiles");
-
-                    // Expense-related tables
-                    if (RestoreTable(archive, "Budgets.json", "Budgets")) restoredTables.Add("Budgets");
-                    if (RestoreTable(archive, "FuelPrices.json", "FuelPrices")) restoredTables.Add("FuelPrices");
-                    if (RestoreTable(archive, "Expenses.json", "Expenses")) restoredTables.Add("Expenses");
-                    if (RestoreTable(archive, "ExpenseReports.json", "ExpenseReports")) restoredTables.Add("ExpenseReports");
-                    if (RestoreTable(archive, "ExpenseItems.json", "ExpenseItems")) restoredTables.Add("ExpenseItems");
-                    if (RestoreTable(archive, "Approvals.json", "Approvals")) restoredTables.Add("Approvals");
-
-                    // Other tables
-                    if (RestoreTable(archive, "ReimbursementPayments.json", "ReimbursementPayments")) restoredTables.Add("ReimbursementPayments");
-                    if (RestoreTable(archive, "AuditLogs.json", "AuditLogs")) restoredTables.Add("AuditLogs");
-                    if (RestoreTable(archive, "Notifications.json", "Notifications")) restoredTables.Add("Notifications");
-
-                    await _context.SaveChangesAsync();
-
-                    var message = $"✅ Restore completed successfully. Restored {restoredTables.Count} tables: {string.Join(", ", restoredTables)}";
-                    _logger.LogInformation(message);
-                    return (true, message);
-                }
+                using var archive = new ZipArchive(backupStream, ZipArchiveMode.Read);
+                return await RestoreFromArchive(archive);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Restore failed: {Message}", ex.Message);
+                _logger.LogError(ex, "Restore failed");
                 return (false, $"Restore failed: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Gets list of backup files from backup directory
-        /// </summary>
-        public async Task<List<string>> GetBackupHistoryAsync()
+        // ─────────────────────────────────────────────────────────────────────────
+        // RESTORE BY FILENAME (from stored backups on disk)
+        // ─────────────────────────────────────────────────────────────────────────
+        public async Task<(bool Success, string Message)> RestoreBackupByNameAsync(string fileName)
         {
             try
             {
-                var backupPath = Path.Combine(Directory.GetCurrentDirectory(), "Backups");
-                if (!Directory.Exists(backupPath))
-                {
-                    return new List<string>();
-                }
+                // Sanitize — only allow simple filenames, no path traversal
+                var safeName = Path.GetFileName(fileName);
+                var filePath = Path.Combine(BackupFolder, safeName);
 
-                var backups = Directory.GetFiles(backupPath, "*.zip")
-                    .OrderByDescending(f => File.GetCreationTime(f))
-                    .Select(f => new FileInfo(f))
-                    .Select(f => $"{f.Name} ({f.Length / 1024 / 1024} MB) - {f.CreationTime:yyyy-MM-dd HH:mm:ss}")
-                    .ToList();
+                if (!File.Exists(filePath))
+                    return (false, $"Backup file '{safeName}' not found on server.");
 
-                return backups;
+                using var fs      = File.OpenRead(filePath);
+                using var archive = new ZipArchive(fs, ZipArchiveMode.Read);
+                return await RestoreFromArchive(archive);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting backup history: {Message}", ex.Message);
-                return new List<string>();
+                _logger.LogError(ex, "Restore by name failed");
+                return (false, $"Restore failed: {ex.Message}");
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // LIST STORED BACKUPS
+        // ─────────────────────────────────────────────────────────────────────────
+        public Task<List<BackupFileInfo>> GetBackupHistoryAsync()
+        {
+            var list = new List<BackupFileInfo>();
+            try
+            {
+                if (!Directory.Exists(BackupFolder))
+                    return Task.FromResult(list);
+
+                list = Directory.GetFiles(BackupFolder, "*.zip")
+                    .OrderByDescending(File.GetCreationTime)
+                    .Select(f =>
+                    {
+                        var fi = new FileInfo(f);
+                        return new BackupFileInfo
+                        {
+                            FileName    = fi.Name,
+                            DisplayName = fi.Name,
+                            SizeBytes   = fi.Length,
+                            CreatedAt   = fi.CreationTime
+                        };
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing backups");
+            }
+            return Task.FromResult(list);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // CORE RESTORE LOGIC
+        // ─────────────────────────────────────────────────────────────────────────
+        private async Task<(bool Success, string Message)> RestoreFromArchive(ZipArchive archive)
+        {
+            if (archive.GetEntry("BACKUP_METADATA.json") == null)
+                return (false, "Invalid backup file: Missing BACKUP_METADATA.json");
+
+            _logger.LogInformation("Starting restore at {DateTime}", DateTime.UtcNow);
+
+            var opts = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+            };
+
+            // ── Roles ─────────────────────────────────────────────────────────────
+            var backupRoles = ReadFromArchive<List<IdentityRole>>(archive, "AspNetRoles.json", opts);
+            if (backupRoles != null)
+            {
+                var existing = (await _context.Roles.AsNoTracking().Select(r => r.Id).ToListAsync()).ToHashSet();
+                foreach (var role in backupRoles)
+                    await UpsertEntity(role, existing.Contains(role.Id));
+                _logger.LogInformation("Roles: done");
+            }
+
+            // ── Users ─────────────────────────────────────────────────────────────
+            var backupUsers = ReadFromArchive<List<IdentityUser>>(archive, "AspNetUsers.json", opts);
+            if (backupUsers != null)
+            {
+                var existing = (await _context.Users.AsNoTracking().Select(u => u.Id).ToListAsync()).ToHashSet();
+                foreach (var user in backupUsers)
+                    await UpsertEntity(user, existing.Contains(user.Id));
+                _logger.LogInformation("Users: done");
+            }
+
+            // ── UserRoles ─────────────────────────────────────────────────────────
+            var backupUserRoles = ReadFromArchive<List<IdentityUserRole<string>>>(archive, "AspNetUserRoles.json", opts);
+            if (backupUserRoles != null)
+            {
+                var existing = (await _context.UserRoles.AsNoTracking()
+                    .Select(ur => ur.UserId + "|" + ur.RoleId).ToListAsync()).ToHashSet();
+                foreach (var ur in backupUserRoles)
+                    if (!existing.Contains(ur.UserId + "|" + ur.RoleId))
+                        await UpsertEntity(ur, false);
+                _logger.LogInformation("UserRoles: done");
+            }
+
+            // ── FuelPrices (raw SQL so deleted rows with original IDs come back) ──
+            var fuelPrices = ReadFromArchive<List<FuelPrice>>(archive, "FuelPrices.json", opts);
+            if (fuelPrices != null)
+            {
+                await RawUpsertFuelPrices(fuelPrices);
+                _logger.LogInformation("FuelPrices: done");
+            }
+
+            // ── Budgets ───────────────────────────────────────────────────────────
+            await UpsertById(archive, "Budgets.json", _context.Budgets, x => x.Id, opts);
+
+            // ── Profiles ──────────────────────────────────────────────────────────
+            await UpsertById(archive, "CEOProfiles.json",     _context.CEOProfiles,     x => x.Id, opts);
+            await UpsertById(archive, "ManagerProfiles.json", _context.ManagerProfiles, x => x.Id, opts);
+            await UpsertById(archive, "FinanceProfiles.json", _context.FinanceProfiles, x => x.Id, opts);
+            await UpsertById(archive, "DriverProfiles.json",  _context.DriverProfiles,  x => x.Id, opts);
+
+            // ── Expenses ──────────────────────────────────────────────────────────
+            await UpsertById(archive, "Expenses.json",              _context.Expenses,              x => x.Id, opts);
+            await UpsertById(archive, "ExpenseReports.json",        _context.ExpenseReports,        x => x.Id, opts);
+            await UpsertById(archive, "ExpenseItems.json",          _context.ExpenseItems,          x => x.Id, opts);
+            await UpsertById(archive, "Approvals.json",             _context.Approvals,             x => x.Id, opts);
+            await UpsertById(archive, "ReimbursementPayments.json", _context.ReimbursementPayments, x => x.Id, opts);
+            await UpsertById(archive, "AuditLogs.json",             _context.AuditLogs,             x => x.Id, opts);
+            await UpsertById(archive, "Notifications.json",         _context.Notifications,         x => x.Id, opts);
+
+            _logger.LogInformation("Restore completed successfully");
+            return (true, "✅ Restore completed. Existing data preserved. Deleted records were brought back.");
+        }
+
+        /// <summary>
+        /// Restores FuelPrices using raw SQL MERGE so deleted rows with their
+        /// original identity IDs are re-inserted correctly.
+        /// </summary>
+        private async Task RawUpsertFuelPrices(List<FuelPrice> items)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                var conn = _context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using var tx = await conn.BeginTransactionAsync();
+                try
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = (System.Data.Common.DbTransaction)tx;
+
+                    cmd.CommandText = "SET IDENTITY_INSERT [FuelPrices] ON";
+                    await cmd.ExecuteNonQueryAsync();
+
+                    foreach (var fp in items)
+                    {
+                        cmd.CommandText = @"
+                            MERGE [FuelPrices] AS target
+                            USING (SELECT @Id AS Id) AS source ON target.Id = source.Id
+                            WHEN MATCHED THEN
+                                UPDATE SET
+                                    [Name]            = @Name,
+                                    [Description]     = @Description,
+                                    [Price]           = @Price,
+                                    [Unit]            = @Unit,
+                                    [Icon]            = @Icon,
+                                    [CssClass]        = @CssClass,
+                                    [UpdatedAt]       = @UpdatedAt,
+                                    [UpdatedByUserId] = @UpdatedByUserId
+                            WHEN NOT MATCHED THEN
+                                INSERT ([Id],[Name],[Description],[Price],[Unit],[Icon],[CssClass],[UpdatedAt],[UpdatedByUserId])
+                                VALUES (@Id,@Name,@Description,@Price,@Unit,@Icon,@CssClass,@UpdatedAt,@UpdatedByUserId);";
+
+                        cmd.Parameters.Clear();
+                        AddParam(cmd, "@Id",              fp.Id);
+                        AddParam(cmd, "@Name",            fp.Name);
+                        AddParam(cmd, "@Description",     fp.Description);
+                        AddParam(cmd, "@Price",           fp.Price);
+                        AddParam(cmd, "@Unit",            fp.Unit);
+                        AddParam(cmd, "@Icon",            fp.Icon);
+                        AddParam(cmd, "@CssClass",        fp.CssClass);
+                        AddParam(cmd, "@UpdatedAt",       fp.UpdatedAt);
+                        AddParam(cmd, "@UpdatedByUserId", (object?)fp.UpdatedByUserId ?? DBNull.Value);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    cmd.CommandText = "SET IDENTITY_INSERT [FuelPrices] OFF";
+                    cmd.Parameters.Clear();
+                    await cmd.ExecuteNonQueryAsync();
+
+                    await tx.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackAsync();
+                    _logger.LogError(ex, "RawUpsertFuelPrices failed");
+                    throw;
+                }
+            });
+        }
+
+        private static void AddParam(System.Data.Common.DbCommand cmd, string name, object? value)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = name;
+            p.Value = value ?? DBNull.Value;
+            cmd.Parameters.Add(p);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // HELPERS
+        // ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>Upsert a single entity — clears tracker first to avoid conflicts.</summary>
+        private async Task UpsertEntity<T>(T entity, bool exists) where T : class
+        {
+            try
+            {
+                _context.ChangeTracker.Clear();
+                _context.Entry(entity).State = exists ? EntityState.Modified : EntityState.Added;
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Skipping {Type}: {Err}", typeof(T).Name, ex.Message);
+                _context.ChangeTracker.Clear();
             }
         }
 
         /// <summary>
-        /// Helper: Add data to ZIP archive as JSON
+        /// Upsert a table with int PK. Uses SET IDENTITY_INSERT so deleted rows
+        /// can be re-inserted with their original IDs.
         /// </summary>
+        private async Task UpsertById<T>(
+            ZipArchive archive,
+            string filename,
+            DbSet<T> dbSet,
+            Func<T, int> getId,
+            JsonSerializerOptions opts) where T : class
+        {
+            var items = ReadFromArchive<List<T>>(archive, filename, opts);
+            if (items == null || items.Count == 0) return;
+
+            var entityType = _context.Model.FindEntityType(typeof(T));
+            var tableName  = entityType?.GetTableName() ?? typeof(T).Name;
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    _context.ChangeTracker.Clear();
+                    var existingIds = (await dbSet.AsNoTracking().ToListAsync())
+                                      .Select(getId).ToHashSet();
+
+                    int ins = 0, upd = 0;
+
+                    await _context.Database.ExecuteSqlRawAsync(
+                        $"SET IDENTITY_INSERT [{tableName}] ON");
+
+                    foreach (var item in items)
+                    {
+                        try
+                        {
+                            _context.ChangeTracker.Clear();
+                            var exists = existingIds.Contains(getId(item));
+                            _context.Entry(item).State = exists
+                                ? EntityState.Modified
+                                : EntityState.Added;
+                            await _context.SaveChangesAsync();
+                            if (exists) upd++; else ins++;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning("Skipping {File} id={Id}: {Err}",
+                                filename, getId(item), ex.Message);
+                            _context.ChangeTracker.Clear();
+                        }
+                    }
+
+                    await _context.Database.ExecuteSqlRawAsync(
+                        $"SET IDENTITY_INSERT [{tableName}] OFF");
+
+                    await tx.CommitAsync();
+                    _context.ChangeTracker.Clear();
+                    _logger.LogInformation("{File}: {I} inserted, {U} updated", filename, ins, upd);
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackAsync();
+                    _logger.LogError(ex, "UpsertById failed for {File}", filename);
+                    throw;
+                }
+            });
+        }
+
         private void AddToArchive<T>(ZipArchive archive, string filename, T data)
         {
             var entry = archive.CreateEntry(filename);
-            using (var writer = new StreamWriter(entry.Open()))
+            using var writer = new StreamWriter(entry.Open());
+            writer.Write(JsonSerializer.Serialize(data, new JsonSerializerOptions
             {
-                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
-                });
-                writer.Write(json);
-            }
+                WriteIndented = true,
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+            }));
         }
 
-        /// <summary>
-        /// Helper: Restore a single table from JSON in ZIP
-        /// </summary>
-        private bool RestoreTable(ZipArchive archive, string jsonFilename, string tableName)
+        private T? ReadFromArchive<T>(ZipArchive archive, string filename, JsonSerializerOptions opts)
         {
-            try
+            var entry = archive.GetEntry(filename);
+            if (entry == null)
             {
-                var entry = archive.GetEntry(jsonFilename);
-                if (entry == null)
-                {
-                    _logger.LogWarning("⚠️ {Table} not found in backup", tableName);
-                    return false;
-                }
-
-                using (var stream = entry.Open())
-                using (var reader = new StreamReader(stream))
-                {
-                    var json = reader.ReadToEnd();
-                    _logger.LogInformation("✓ Restoring {Table}...", tableName);
-                    // Note: Actual restoration handled by JsonConvert in separate implementation
-                }
-                return true;
+                _logger.LogWarning("{File} not found in backup — skipping", filename);
+                return default;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error restoring {Table}: {Message}", tableName, ex.Message);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Helper: Clear all data from database (respecting foreign key order)
-        /// </summary>
-        private async Task ClearDataAsync()
-        {
-            try
-            {
-                _logger.LogInformation("🧹 Clearing existing database data...");
-
-                // Delete in reverse order of foreign key dependencies
-                _context.Notifications.RemoveRange(_context.Notifications);
-                _context.AuditLogs.RemoveRange(_context.AuditLogs);
-                _context.ReimbursementPayments.RemoveRange(_context.ReimbursementPayments);
-                _context.Approvals.RemoveRange(_context.Approvals);
-                _context.ExpenseItems.RemoveRange(_context.ExpenseItems);
-                _context.ExpenseReports.RemoveRange(_context.ExpenseReports);
-                _context.Expenses.RemoveRange(_context.Expenses);
-                _context.FuelPrices.RemoveRange(_context.FuelPrices);
-                _context.Budgets.RemoveRange(_context.Budgets);
-                _context.CEOProfiles.RemoveRange(_context.CEOProfiles);
-                _context.ManagerProfiles.RemoveRange(_context.ManagerProfiles);
-                _context.FinanceProfiles.RemoveRange(_context.FinanceProfiles);
-                _context.DriverProfiles.RemoveRange(_context.DriverProfiles);
-                _context.UserRoles.RemoveRange(_context.UserRoles);
-                _context.Users.RemoveRange(_context.Users);
-                _context.Roles.RemoveRange(_context.Roles);
-
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("✓ Database cleared successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error clearing database: {Message}", ex.Message);
-                throw;
-            }
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            return JsonSerializer.Deserialize<T>(reader.ReadToEnd(), opts);
         }
     }
 }

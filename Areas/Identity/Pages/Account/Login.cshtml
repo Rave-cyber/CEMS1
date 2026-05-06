@@ -36,7 +36,7 @@
 
         body { background: var(--bg); overflow-x: hidden; }
 
-        /* ── Animated background ── */
+        /* Animated background */
         .bg-grid {
             position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background-image: radial-gradient(circle at 1px 1px, rgba(26,107,181,.07) 1px, transparent 0);
@@ -55,7 +55,7 @@
             100% { transform: translate(60px, -40px) scale(1.15); }
         }
 
-        /* ── Layout ── */
+        /* Layout */
         .login-page {
             position: relative; z-index: 1;
             min-height: 100vh; display: grid;
@@ -63,7 +63,7 @@
             align-items: center;
         }
 
-        /* ── Left Panel ── */
+        /* Left Panel */
         .brand-panel {
             display: flex; flex-direction: column; justify-content: center;
             padding: 60px clamp(40px, 5vw, 80px);
@@ -90,12 +90,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .brand-logo i {
-            font-size: 1.4rem;
-            background: linear-gradient(135deg, var(--accent), var(--primary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
         .brand-img {
             width: 56px; height: 56px; object-fit: contain; border-radius: 8px;
             display: inline-block; vertical-align: middle;
@@ -116,7 +110,6 @@
             line-height: 1.7; max-width: 440px; margin-bottom: 40px;
         }
 
-        /* Feature pills */
         .feature-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px; }
         .feature-item {
             display: flex; align-items: center; gap: 14px;
@@ -143,7 +136,6 @@
         .feature-text { font-size: .92rem; color: var(--text); font-weight: 500; }
         .feature-text small { display: block; font-size: .78rem; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
 
-        /* Trust bar */
         .trust-bar {
             display: flex; gap: 32px; padding-top: 32px;
             border-top: 1px solid var(--border);
@@ -155,7 +147,7 @@
         .trust-stat strong span { font-size: .75rem; color: var(--primary); font-weight: 700; }
         .trust-stat small { font-size: .78rem; color: var(--text-muted); }
 
-        /* ── Right Panel — Form ── */
+        /* Right Panel */
         .form-panel {
             display: flex; align-items: center; justify-content: center;
             padding: 40px clamp(24px, 4vw, 60px);
@@ -183,24 +175,16 @@
         }
         .form-avatar img { width: 100%; height: 100%; object-fit: contain; border-radius: 16px; }
 
-        .form-title {
-            font-size: 1.75rem; font-weight: 700; color: var(--text); margin-bottom: 8px;
-        }
-        .form-subtitle {
-            font-size: .95rem; color: var(--text-muted); font-weight: 400;
-        }
+        .form-title { font-size: 1.75rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+        .form-subtitle { font-size: .95rem; color: var(--text-muted); font-weight: 400; }
 
         /* Inputs */
-        .input-group {
-            margin-bottom: 26px;
-        }
+        .input-group { margin-bottom: 26px; }
         .input-label {
             display: block; font-size: .9rem; font-weight: 600;
             color: var(--text); margin-bottom: 10px;
         }
-        .input-wrap {
-            position: relative; display: flex; align-items: center;
-        }
+        .input-wrap { position: relative; display: flex; align-items: center; }
         .input-wrap i.input-icon {
             position: absolute; left: 16px;
             font-size: 1rem; color: var(--text-muted);
@@ -217,20 +201,14 @@
             outline: none; border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(46,196,182,.1);
         }
-        .input-wrap input:focus ~ i.input-icon,
-        .input-wrap input:focus + .pw-toggle ~ i.input-icon { color: var(--primary); }
-
         .pw-toggle {
             position: absolute; right: 14px; background: none; border: none;
             cursor: pointer; color: var(--text-muted); font-size: .95rem;
             padding: 4px; transition: color .2s;
         }
         .pw-toggle:hover { color: var(--accent); }
-
         .input-wrap input[type="password"],
-        .input-wrap input.pw-field {
-            padding-right: 48px;
-        }
+        .input-wrap input.pw-field { padding-right: 48px; }
 
         /* Validation */
         .validation-summary-errors {
@@ -241,6 +219,36 @@
         .field-validation-error {
             color: var(--danger); font-size: .8rem; margin-top: 6px; display: block;
         }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed; top: 20px; right: 20px;
+            z-index: 9999; pointer-events: none;
+        }
+        .toast {
+            background: white; border-radius: 12px; padding: 16px 20px;
+            margin-bottom: 12px; box-shadow: 0 10px 40px rgba(15,23,36,.15);
+            display: flex; align-items: center; gap: 12px;
+            min-width: 300px; max-width: 400px; pointer-events: auto;
+            animation: toastIn .4s ease forwards;
+        }
+        .toast--error  { background: linear-gradient(135deg,#fecaca,#fca5a5); border-left: 4px solid #ef4444; color: #7f1d1d; }
+        .toast--success{ background: linear-gradient(135deg,#bbf7d0,#86efac); border-left: 4px solid #22c55e; color: #166534; }
+        .toast--warning{ background: linear-gradient(135deg,#fed7aa,#fdba74); border-left: 4px solid #f97316; color: #7c2d12; }
+        .toast--info   { background: linear-gradient(135deg,#bfdbfe,#93c5fd); border-left: 4px solid #3b82f6; color: #1e3a8a; }
+        .toast-icon  { font-size: 1.1rem; flex-shrink: 0; }
+        .toast-body  { flex: 1; }
+        .toast-msg   { font-weight: 600; font-size: .9rem; }
+        .toast-sub   { font-size: .82rem; margin-top: 3px; opacity: .85; }
+        .toast-close {
+            background: none; border: none; color: currentColor;
+            cursor: pointer; font-size: 1.1rem; padding: 0; opacity: .7;
+            transition: opacity .2s; flex-shrink: 0;
+        }
+        .toast-close:hover { opacity: 1; }
+        @@keyframes toastIn  { from { opacity:0; transform:translateX(80px); } to { opacity:1; transform:translateX(0); } }
+        @@keyframes toastOut { from { opacity:1; transform:translateX(0);    } to { opacity:0; transform:translateX(80px); } }
+        .toast.hiding { animation: toastOut .3s ease forwards; }
 
         /* Submit button */
         .btn-signin {
@@ -256,14 +264,15 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 32px rgba(26,107,181,.3);
         }
+        .btn-signin:disabled {
+            opacity: .5; cursor: not-allowed; transform: none;
+        }
         .btn-signin::after {
             content: ''; position: absolute; inset: 0;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
             transform: translateX(-100%); transition: transform .6s;
         }
         .btn-signin:hover::after { transform: translateX(100%); }
-
-        .btn-signin i { margin-right: 8px; }
 
         /* Divider */
         .form-divider {
@@ -274,46 +283,37 @@
             content: ''; flex: 1; height: 1px; background: var(--border);
         }
 
-        /* External logins */
-        .external-login { display: flex; gap: 12px; flex-wrap: wrap; }
+        /* External logins — centered */
+        .external-login {
+            display: flex;
+            justify-content: center;
+        }
+        .external-login form {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
         .external-btn {
-            flex: 1; min-width: 120px; padding: 14px;
+            padding: 14px 28px;
             border: 1.5px solid var(--border); border-radius: 10px;
             background: var(--surface); color: var(--text);
             font-weight: 500; font-size: .92rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             transition: border-color .25s, transform .25s, background .25s;
+            min-width: 160px;
         }
         .external-btn:hover {
             border-color: var(--primary); background: rgba(46,196,182,.04);
             transform: translateY(-2px);
         }
+        .external-btn .fa-google { color: #ea4335; }
 
-        /* Links */
-        .form-links {
-            margin-top: 28px; text-align: center;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .form-link {
-            color: var(--accent); text-decoration: none;
-            font-size: .9rem; font-weight: 500;
-            transition: color .2s;
-        }
-        .form-link:hover { color: var(--primary-dark); text-decoration: underline; }
-
-        .back-link {
-            display: inline-flex; align-items: center; gap: 6px;
-            margin-top: 20px; font-size: .9rem; color: var(--text-muted);
-            text-decoration: none; font-weight: 500; transition: color .2s;
-        }
-        .back-link:hover { color: var(--accent); }
-
-        /* ── Responsive ── */
+        /* Responsive */
         @@media (max-width: 1024px) {
             .login-page { grid-template-columns: 1fr; }
-            .brand-panel {
-                display: none;
-            }
+            .brand-panel { display: none; }
             .form-panel { min-height: 100vh; padding: 40px 24px; }
             .form-card { max-width: 560px; }
         }
@@ -324,145 +324,31 @@
             .form-title { font-size: 1.3rem; }
             .input-wrap input { padding: 12px 12px 12px 38px; font-size: 16px; }
             .btn-signin { padding: 13px; font-size: .95rem; }
-            .external-login { flex-direction: column; }
-            .external-btn { min-width: 100%; }
-        }
-
-        /* ── Toast Notification ── */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            pointer-events: none;
-        }
-
-        .toast {
-            background: white;
-            border-radius: 12px;
-            padding: 16px 24px;
-            margin-bottom: 12px;
-            box-shadow: 0 10px 40px rgba(15,23,36,.15);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 300px;
-            pointer-events: auto;
-            animation: slideInRight .4s ease forwards;
-        }
-
-        .toast--error {
-            background: linear-gradient(135deg, #fecaca, #fca5a5);
-            border-left: 4px solid #ef4444;
-            color: #7f1d1d;
-        }
-
-        .toast--success {
-            background: linear-gradient(135deg, #bbf7d0, #86efac);
-            border-left: 4px solid #22c55e;
-            color: #166534;
-        }
-
-        .toast--warning {
-            background: linear-gradient(135deg, #fed7aa, #fdba74);
-            border-left: 4px solid #f97316;
-            color: #7c2d12;
-        }
-
-        .toast--info {
-            background: linear-gradient(135deg, #bfdbfe, #93c5fd);
-            border-left: 4px solid #3b82f6;
-            color: #1e3a8a;
-        }
-
-        .toast-icon {
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .toast-content {
-            flex: 1;
-        }
-
-        .toast-message {
-            font-weight: 500;
-            font-size: .95rem;
-        }
-
-        .toast-countdown {
-            font-size: .85rem;
-            margin-top: 4px;
-            opacity: .8;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            color: currentColor;
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0;
-            opacity: .7;
-            transition: opacity .2s;
-        }
-
-        .toast-close:hover {
-            opacity: 1;
-        }
-
-        @@keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @@keyframes slideOutRight {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-        }
-
-        .toast.hiding {
-            animation: slideOutRight .3s ease forwards;
+            .external-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <!-- Background effects -->
     <div class="bg-grid"></div>
     <div class="bg-glow bg-glow--1"></div>
     <div class="bg-glow bg-glow--2"></div>
     <div class="bg-glow bg-glow--3"></div>
 
-    <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 
     <div class="login-page">
-        <!-- Left Panel — Brand / Info -->
+        <!-- Left Panel -->
         <div class="brand-panel">
-        <a href="/" class="brand-logo">
+            <a href="/" class="brand-logo">
                 <img src="/images/logo.png" alt="CEMS logo" class="brand-img" /> CEMS
             </a>
-
             <h1 class="brand-title">
                 Welcome Back to<br><span>Expense Management</span>
             </h1>
-
             <p class="brand-sub">
                 Sign in to submit, track, and approve expense reports in real time.
                 Smart budget monitoring keeps your company finances on track.
             </p>
-
             <div class="feature-list">
                 <div class="feature-item">
                     <div class="feature-icon feature-icon--blue"><i class="fas fa-receipt"></i></div>
@@ -481,14 +367,13 @@
                     <div class="feature-text">Fast Reimbursements<small>End-to-end payment tracking</small></div>
                 </div>
             </div>
-
             <div class="trust-bar">
                 <div class="trust-stat">
                     <strong>98<span>%</span></strong>
                     <small>Faster Approvals</small>
                 </div>
                 <div class="trust-stat">
-                    <strong>₱2.4<span>M+</span></strong>
+                    <strong>&#8369;2.4<span>M+</span></strong>
                     <small>Tracked</small>
                 </div>
                 <div class="trust-stat">
@@ -498,7 +383,7 @@
             </div>
         </div>
 
-        <!-- Right Panel — Login Form -->
+        <!-- Right Panel -->
         <div class="form-panel">
             <div class="form-card">
                 <div class="form-header">
@@ -535,15 +420,15 @@
                         <span asp-validation-for="Input.Password" class="field-validation-error"></span>
                     </div>
 
-                    <button id="login-submit" type="submit" class="btn-signin">
-                         Sign In
+                    <button id="login-submit" type="submit" class="btn-signin"
+                            @(Model.IsLockedOut ? "disabled" : "")>
+                        Sign In
                     </button>
                 </form>
 
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
                     <div class="form-divider">or continue with</div>
-
                     <div class="external-login">
                         <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
                             @foreach (var provider in Model.ExternalLogins!)
@@ -558,17 +443,6 @@
                         </form>
                     </div>
                 }
-
-                @* <div class="form-links">
-                    <a id="forgot-password" asp-page="./ForgotPassword" class="form-link">Forgot your password?</a>
-                    <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="form-link">Resend email confirmation</a>
-                </div> *@
-
-                @* Custom Identity forms end *@
-
-                @* <div style="text-align: center;">
-                    <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
-                </div> *@
             </div>
         </div>
     </div>
@@ -578,78 +452,70 @@
     }
 
     <script>
-        // Toast notification system
-        class ToastNotifier {
-            static show(message, type = 'info', duration = 5000, countdown = null) {
-                const container = document.getElementById('toastContainer');
-                const toast = document.createElement('div');
-                toast.className = `toast toast--${type}`;
+        function showToast(message, type, duration, subText) {
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'toast toast--' + type;
 
-                let icon = 'info-circle';
-                if (type === 'error') icon = 'exclamation-circle';
-                if (type === 'success') icon = 'check-circle';
-                if (type === 'warning') icon = 'warning';
+            var icons = { error: 'fa-exclamation-circle', success: 'fa-check-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+            var icon = icons[type] || icons.info;
 
-                let countdownHtml = '';
-                if (countdown !== null && countdown > 0) {
-                    countdownHtml = `<div class="toast-countdown">Wait <span id="countdown-${Date.now()}">@Model.RemainingSeconds ?? 30</span>s before retrying</div>`;
-                }
+            var subHtml = subText ? '<div class="toast-sub" id="toast-sub">' + subText + '</div>' : '';
 
-                toast.innerHTML = `
-                    <i class="fas fa-${icon} toast-icon"></i>
-                    <div class="toast-content">
-                        <div class="toast-message">${message}</div>
-                        ${countdownHtml}
-                    </div>
-                    <button class="toast-close" aria-label="Close notification">&times;</button>
-                `;
+            toast.innerHTML =
+                '<i class="fas ' + icon + ' toast-icon"></i>' +
+                '<div class="toast-body"><div class="toast-msg">' + message + '</div>' + subHtml + '</div>' +
+                '<button class="toast-close" aria-label="Close">&times;</button>';
 
-                container.appendChild(toast);
+            container.appendChild(toast);
 
-                // Countdown functionality
-                if (countdown !== null && countdown > 0) {
-                    const countdownEl = toast.querySelector('[id^="countdown-"]');
-                    let remaining = countdown;
-                    const interval = setInterval(() => {
-                        remaining--;
-                        if (countdownEl) countdownEl.textContent = remaining;
-                        if (remaining <= 0) clearInterval(interval);
-                    }, 1000);
-                }
+            toast.querySelector('.toast-close').addEventListener('click', function () {
+                toast.classList.add('hiding');
+                setTimeout(function () { toast.remove(); }, 300);
+            });
 
-                // Close button
-                toast.querySelector('.toast-close').addEventListener('click', () => {
+            if (duration > 0) {
+                setTimeout(function () {
                     toast.classList.add('hiding');
-                    setTimeout(() => toast.remove(), 300);
-                });
-
-                // Auto-remove after duration
-                if (duration > 0) {
-                    setTimeout(() => {
-                        toast.classList.add('hiding');
-                        setTimeout(() => toast.remove(), 300);
-                    }, duration);
-                }
-
-                return toast;
+                    setTimeout(function () { toast.remove(); }, 300);
+                }, duration);
             }
+
+            return toast;
         }
 
+        var isLockedOut = @(Model.IsLockedOut && Model.RemainingSeconds.HasValue ? "true" : "false");
+        var lockoutSeconds = @(Model.RemainingSeconds ?? 0);
+
         document.addEventListener('DOMContentLoaded', function () {
-            // Show lockout toast if locked out
-            @if (Model.IsLockedOut && Model.RemainingSeconds.HasValue)
-            {
-                <text>
-                    ToastNotifier.show(
-                        'Too many failed attempts. Account temporarily locked.',
-                        'error',
-                        0,
-                        @Model.RemainingSeconds
-                    );
-                    document.getElementById('login-submit').disabled = true;
-                    document.getElementById('login-submit').style.opacity = '0.5';
-                    document.getElementById('login-submit').style.cursor = 'not-allowed';
-                </text>
+            if (isLockedOut && lockoutSeconds > 0) {
+                var remaining = lockoutSeconds;
+                var subSpan = document.createElement('span');
+                subSpan.id = 'toast-countdown';
+                subSpan.textContent = remaining;
+
+                var toast = showToast('Account temporarily locked', 'error', 0, '');
+                var subEl = toast.querySelector('.toast-sub');
+                if (subEl) {
+                    subEl.textContent = 'Wait ';
+                    subEl.appendChild(subSpan);
+                    subEl.appendChild(document.createTextNode('s before retrying'));
+                }
+
+                var submitBtn = document.getElementById('login-submit');
+                if (submitBtn) submitBtn.disabled = true;
+
+                var interval = setInterval(function () {
+                    remaining--;
+                    var el = document.getElementById('toast-countdown');
+                    if (el) el.textContent = remaining;
+                    if (remaining <= 0) {
+                        clearInterval(interval);
+                        toast.classList.add('hiding');
+                        setTimeout(function () { toast.remove(); }, 300);
+                        if (submitBtn) submitBtn.disabled = false;
+                    }
+                }, 1000);
             }
 
             // Password visibility toggle
@@ -667,13 +533,11 @@
                 });
             });
 
-            // Floating label effect — move icon color on filled inputs
+            // Icon color on filled inputs
             document.querySelectorAll('.input-wrap input').forEach(function (input) {
                 input.addEventListener('input', function () {
                     var icon = this.closest('.input-wrap').querySelector('.input-icon');
-                    if (icon) {
-                        icon.style.color = this.value ? 'var(--primary)' : '';
-                    }
+                    if (icon) icon.style.color = this.value ? 'var(--primary)' : '';
                 });
             });
         });

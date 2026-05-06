@@ -52,9 +52,7 @@ namespace CEMS.Controllers
             // Calculate spent dynamically from reimbursed expense items only (match Finance behavior)
             var spentByCategory = await _db.ExpenseItems
                 .Where(ei => ei.Report != null && ei.Report.Reimbursed == true
-                             && ((ei.Date >= startDate && ei.Date <= endDate.AddDays(1))
-                                 || (ei.Date == null && ei.Report.SubmissionDate >= startDate && ei.Report.SubmissionDate <= endDate.AddDays(1))
-                                 || (ei.Date == null && ei.Report.SubmissionDate < startDate && ei.Report.TripStart >= startDate && ei.Report.TripStart <= endDate.AddDays(1))))
+                             && (ei.Date >= startDate && ei.Date <= endDate.AddDays(1)))
                 .GroupBy(ei => ei.Category)
                 .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
                 .ToListAsync();
@@ -226,9 +224,7 @@ namespace CEMS.Controllers
 
             var spentByCategory = await _db.ExpenseItems
                 .Where(ei => ei.Report != null && ei.Report.Reimbursed == true
-                             && ((ei.Date >= startDate && ei.Date <= endDate.AddDays(1))
-                                 || (ei.Date == null && ei.Report.SubmissionDate >= startDate && ei.Report.SubmissionDate <= endDate.AddDays(1))
-                                 || (ei.Date == null && ei.Report.SubmissionDate < startDate && ei.Report.TripStart >= startDate && ei.Report.TripStart <= endDate.AddDays(1))))
+                             && (ei.Date >= startDate && ei.Date <= endDate.AddDays(1)))
                 .GroupBy(ei => ei.Category)
                 .Select(g => new { Category = g.Key, Total = g.Sum(ei => ei.Amount) })
                 .ToListAsync();

@@ -19,7 +19,7 @@ namespace CEMS.Controllers
         public async Task<IActionResult> Index()
         {
             // If user is authenticated, show dashboard option
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
                 var user = await _userManager.GetUserAsync(User);
                 
@@ -99,7 +99,7 @@ namespace CEMS.Controllers
                 userId = user.Id,
                 userName = user.UserName,
                 roles = roles,
-                isAuthenticated = User.Identity.IsAuthenticated,
+                isAuthenticated = User.Identity?.IsAuthenticated == true,
                 timestamp = DateTime.UtcNow
             });
         }
